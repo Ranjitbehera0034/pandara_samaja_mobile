@@ -45,3 +45,78 @@ export interface ApiResponse<T> {
   message?: string;
   data?: T;
 }
+
+export type ReactionType = 'like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry';
+
+export interface MediaItem {
+  url: string;
+  type: 'image' | 'video';
+}
+
+export interface PollOption {
+  id: string;
+  text: string;
+  votes: number;
+}
+
+export interface Poll {
+  question: string;
+  options: PollOption[];
+  totalVotes: number;
+  myVote?: string;
+  endsAt?: string;
+}
+
+export interface Comment {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string | null;
+  content: string;
+  timestamp: string;
+  parentId?: string;
+  replies: Comment[];
+  likes: number;
+  isLiked: boolean;
+}
+
+export interface Post {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string | null;
+  authorVerified?: boolean;
+  authorMembershipNo?: string;
+  location?: string;
+  content: string;
+  images?: string[];
+  media?: MediaItem[];
+  likes: number;
+  reactions: Record<ReactionType, number>;
+  myReaction?: ReactionType | null;
+  comments: Comment[];
+  commentsCount?: number;
+  timestamp: string;
+  isLiked: boolean;
+  isBookmarked?: boolean;
+  shareCount?: number;
+  views_count?: number;
+  hashtags?: string[];
+  mentions?: string[];
+  poll?: Poll;
+}
+
+export interface Story {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string | null;
+  mediaUrl: string;
+  mediaType: 'image' | 'video';
+  timestamp: string;
+  viewed: boolean;
+  textOverlay?: string;
+  textPosition?: 'top' | 'center' | 'bottom';
+  textColor?: string;
+}
+
