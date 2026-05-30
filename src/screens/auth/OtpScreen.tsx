@@ -13,7 +13,7 @@ export default function OtpScreen() {
   const route = useRoute();
   const { verifyOtp, verifyFirebaseOtp } = useAuth();
 
-  const { membershipNo, mobile, confirmationResult, useFirebase } = route.params as any;
+  const { membershipNo, mobile, useFirebase } = route.params as any;
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,10 +69,8 @@ export default function OtpScreen() {
 
     setIsLoading(true);
     try {
-      if (useFirebase && confirmationResult) {
-        const credential = await confirmationResult.confirm(otpString);
-        const idToken = await credential.user.getIdToken();
-        await verifyFirebaseOtp(idToken, membershipNo, mobile);
+      if (useFirebase) {
+        await verifyFirebaseOtp(membershipNo, mobile, otpString);
       } else {
         await verifyOtp(membershipNo, mobile, otpString);
       }

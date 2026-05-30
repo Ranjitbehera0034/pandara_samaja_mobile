@@ -1,5 +1,5 @@
 // src/screens/auth/LoginScreen.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   ScrollView, KeyboardAvoidingView, Platform,
@@ -7,10 +7,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
-import { signInWithPhoneNumber } from 'firebase/auth';
 import * as Haptics from 'expo-haptics';
-import { auth } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { AuthStackParams } from '../../navigation/AuthStack';
 import { APP_NAME, APP_TAGLINE } from '../../config/constants';
@@ -24,9 +21,6 @@ export default function LoginScreen() {
   const [membershipNo, setMembershipNo] = useState('');
   const [mobile, setMobile] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [useFirebase] = useState(true); // Firebase OTP by default
-
-  const recaptchaVerifier = useRef<FirebaseRecaptchaVerifierModal>(null);
 
   const isValid = membershipNo.trim().length > 0 && mobile.replace(/\D/g, '').length === 10;
 
@@ -53,28 +47,14 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      if (useFirebase) {
-        // Firebase OTP path
-        const formattedMobile = mobile.startsWith('+') ? mobile : `+91${mobile.replace(/\D/g, '')}`;
-        const result = await signInWithPhoneNumber(auth, formattedMobile, recaptchaVerifier.current!);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        // Pass confirmationResult to OTP screen
-        navigation.navigate('Otp', {
-          membershipNo: membershipNo.trim(),
-          mobile: mobile.replace(/\D/g, ''),
-          confirmationResult: result,
-          useFirebase: true,
-        });
-      } else {
-        // Fast2SMS path
-        await requestOtp(membershipNo.trim(), mobile);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        navigation.navigate('Otp', {
-          membershipNo: membershipNo.trim(),
-          mobile: mobile.replace(/\D/g, ''),
-          useFirebase: false,
-        });
-      }
+      // Calls credential lookup + WebView Firebase verification or dev bypass
+      const result = await requestOtp(membershipNo.trim(), mobile);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      navigation.navigate('Otp', {
+        membershipNo: membershipNo.trim(),
+        mobile: mobile.replace(/\D/g, ''),
+        useFirebase: result.useFirebase,
+      });
     } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', err.message || 'Failed to send OTP. Please try again.');
@@ -88,12 +68,6 @@ export default function LoginScreen() {
       className="flex-1 bg-slate-900"
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <FirebaseRecaptchaVerifierModal
-        ref={recaptchaVerifier}
-        firebaseConfig={auth.app.options}
-        attemptInvisibleVerification={true}
-      />
-
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}

@@ -6,7 +6,7 @@ import OtpScreen from '../screens/auth/OtpScreen';
 
 export type AuthStackParams = {
   Login: undefined;
-  Otp: { membershipNo: string; mobile: string; confirmationResult?: any; useFirebase?: boolean };
+  Otp: { membershipNo: string; mobile: string; useFirebase?: boolean };
 };
 
 const Stack = createStackNavigator<AuthStackParams>();

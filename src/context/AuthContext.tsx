@@ -1,9 +1,10 @@
 // src/context/AuthContext.tsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { STORAGE_KEYS } from '../config/constants';
 import { storage } from '../utils/secureStorage';
 import { Member, LoggedUser } from '../types';
 import client, { authEventEmitter } from '../api/client';
+import { FirebaseRecaptcha, FirebaseRecaptchaRef } from '../components/common/FirebaseRecaptcha';
 
 interface AuthContextType {
   member: Member | null;
@@ -11,12 +12,12 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  // Step 1: send OTP
-  requestOtp: (membershipNo: string, mobile: string) => Promise<void>;
+  // Step 1: send OTP. Returns { useFirebase, devOtp }
+  requestOtp: (membershipNo: string, mobile: string) => Promise<{ useFirebase: boolean; devOtp?: string }>;
   // Step 2: verify OTP (Fast2SMS path)
   verifyOtp: (membershipNo: string, mobile: string, otp: string) => Promise<void>;
-  // Step 2b: verify Firebase OTP path
-  verifyFirebaseOtp: (idToken: string, membershipNo: string, mobile: string) => Promise<void>;
+  // Step 2b: verify Firebase OTP path (takes OTP code directly)
+  verifyFirebaseOtp: (membershipNo: string, mobile: string, otp: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -27,6 +28,108 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<LoggedUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Firebase WebView OTP verification coordination
+  const recaptchaRef = useRef<FirebaseRecaptchaRef>(null);
+  const [isRecaptchaVisible, setIsRecaptchaVisible] = useState(false);
+  
+  const pendingOtpRequest = useRef<{
+    resolve: (val: { useFirebase: boolean; devOtp?: string }) => void;
+    reject: (err: Error) => void;
+    membershipNo: string;
+    mobile: string;
+  } | null>(null);
+
+  const pendingVerifyRequest = useRef<{
+    resolve: () => void;
+    reject: (err: Error) => void;
+    membershipNo: string;
+    mobile: string;
+  } | null>(null);
+
+  const handleRecaptchaEvent = async (event: any) => {
+    switch (event.type) {
+      case 'ready':
+        console.log('[RECAPTCHA] WebView Ready');
+        break;
+
+      case 'otpSent':
+        console.log('[RECAPTCHA] OTP Sent successfully');
+        setIsRecaptchaVisible(false);
+        if (pendingOtpRequest.current) {
+          pendingOtpRequest.current.resolve({ useFirebase: true });
+        }
+        break;
+
+      case 'sendOtpError':
+        console.error('[RECAPTCHA] Send OTP Error:', event.message);
+        setIsRecaptchaVisible(false);
+        if (pendingOtpRequest.current) {
+          pendingOtpRequest.current.reject(new Error(event.message || 'Failed to send OTP'));
+          pendingOtpRequest.current = null;
+        }
+        break;
+
+      case 'otpVerified':
+        console.log('[RECAPTCHA] OTP Verified. ID Token received.');
+        const idToken = event.idToken;
+        try {
+          const reqMetadata = pendingVerifyRequest.current || pendingOtpRequest.current;
+          if (!reqMetadata) {
+            throw new Error('Verification session metadata is missing');
+          }
+
+          const response = await client.post('/portal/login/firebase', {
+            idToken,
+            membership_no: reqMetadata.membershipNo,
+            mobile: reqMetadata.mobile.replace(/\D/g, ''),
+          });
+
+          if (!response.data.success) {
+            throw new Error(response.data.message || 'Firebase login verification failed on server');
+          }
+
+          await handleLoginSuccess(response.data);
+
+          if (pendingVerifyRequest.current) {
+            pendingVerifyRequest.current.resolve();
+            pendingVerifyRequest.current = null;
+          }
+        } catch (err: any) {
+          console.error('[RECAPTCHA] Backend verify error:', err);
+          if (pendingVerifyRequest.current) {
+            pendingVerifyRequest.current.reject(err);
+            pendingVerifyRequest.current = null;
+          }
+        }
+        break;
+
+      case 'verifyOtpError':
+        console.error('[RECAPTCHA] Verify OTP Error:', event.message);
+        if (pendingVerifyRequest.current) {
+          pendingVerifyRequest.current.reject(new Error(event.message || 'Invalid or expired OTP'));
+          pendingVerifyRequest.current = null;
+        }
+        break;
+
+      case 'error':
+        console.error('[RECAPTCHA] Internal WebView error:', event.message);
+        if (pendingOtpRequest.current) {
+          pendingOtpRequest.current.reject(new Error(event.message || 'Verification initialization error'));
+          pendingOtpRequest.current = null;
+          setIsRecaptchaVisible(false);
+        }
+        break;
+    }
+  };
+
+  const handleRecaptchaClose = () => {
+    setIsRecaptchaVisible(false);
+    if (pendingOtpRequest.current) {
+      pendingOtpRequest.current.reject(new Error('Security check cancelled by user.'));
+      pendingOtpRequest.current = null;
+    }
+  };
 
   // Load persisted auth on app start
   useEffect(() => {
@@ -77,18 +180,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ]);
   };
 
-  // Step 1: Request OTP via Fast2SMS
+  // Step 1: Request OTP (Checks credentials on backend, then starts Firebase if needed)
   const requestOtp = async (membershipNo: string, mobile: string) => {
     const response = await client.post('/portal/login', {
       membership_no: membershipNo.trim(),
       mobile: mobile.replace(/\D/g, ''),
     });
+
     if (!response.data.success) {
-      throw new Error(response.data.message || 'Failed to send OTP');
+      throw new Error(response.data.message || 'Failed to request verification session');
     }
+
+    // In development mode, standard OTP bypass is available
+    if (response.data.devOtp) {
+      return { useFirebase: false, devOtp: response.data.devOtp };
+    }
+
+    const formattedMobile = `+91${mobile.replace(/\D/g, '')}`;
+
+    return new Promise<{ useFirebase: boolean; devOtp?: string }>((resolve, reject) => {
+      pendingOtpRequest.current = { resolve, reject, membershipNo, mobile };
+      setIsRecaptchaVisible(true);
+
+      // Post message to WebView to start Phone Auth SMS delivery
+      setTimeout(() => {
+        recaptchaRef.current?.injectMessage({
+          type: 'sendOtp',
+          phoneNumber: formattedMobile,
+        });
+      }, 500);
+    });
   };
 
-  // Step 2a: Verify OTP (Fast2SMS path)
+  // Step 2a: Verify OTP (Fast2SMS / Dev bypass path)
   const verifyOtp = async (membershipNo: string, mobile: string, otp: string) => {
     const response = await client.post('/portal/verify-otp', {
       membership_no: membershipNo.trim(),
@@ -101,17 +225,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await handleLoginSuccess(response.data);
   };
 
-  // Step 2b: Verify Firebase OTP path
-  const verifyFirebaseOtp = async (idToken: string, membershipNo: string, mobile: string) => {
-    const response = await client.post('/portal/login/firebase', {
-      idToken,
-      membership_no: membershipNo.trim(),
-      mobile: mobile.replace(/\D/g, ''),
+  // Step 2b: Verify Firebase OTP path (uses WebView transaction)
+  const verifyFirebaseOtp = async (membershipNo: string, mobile: string, otp: string) => {
+    return new Promise<void>((resolve, reject) => {
+      pendingVerifyRequest.current = { resolve, reject, membershipNo, mobile };
+      
+      recaptchaRef.current?.injectMessage({
+        type: 'verifyOtp',
+        code: otp.trim(),
+      });
     });
-    if (!response.data.success) {
-      throw new Error(response.data.message || 'Firebase login failed');
-    }
-    await handleLoginSuccess(response.data);
   };
 
   const logout = async () => {
@@ -138,6 +261,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       logout,
     }}>
       {children}
+      <FirebaseRecaptcha
+        ref={recaptchaRef}
+        onEvent={handleRecaptchaEvent}
+        isVisible={isRecaptchaVisible}
+        onClose={handleRecaptchaClose}
+      />
     </AuthContext.Provider>
   );
 };
