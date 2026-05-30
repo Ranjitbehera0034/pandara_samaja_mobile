@@ -8,20 +8,33 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#0f172a"
     },
     "ios": {
       "bundleIdentifier": "in.nikhilaodishapandarasamaja.app",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "splash": {
+        "backgroundColor": "#0f172a",
+        "image": "./assets/splash.png"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundColor": "#0f172a"
       },
-      "package": "in.nikhilaodishapandarasamaja.app"
+      "package": "in.nikhilaodishapandarasamaja.app",
+      "splash": {
+        "backgroundColor": "#0f172a",
+        "image": "./assets/splash.png",
+        "mdpi": "./assets/splash.png",
+        "hdpi": "./assets/splash.png",
+        "xhdpi": "./assets/splash.png",
+        "xxhdpi": "./assets/splash.png",
+        "xxxhdpi": "./assets/splash.png"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -35,6 +48,12 @@
           "backgroundColor": "#0f172a"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "3d3326a8-a582-496b-98e9-9f94e9b4e4ef"
+      }
+    },
+    "owner": "ranjit0034"
   }
 }

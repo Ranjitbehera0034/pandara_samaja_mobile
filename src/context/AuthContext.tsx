@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { STORAGE_KEYS } from '../config/constants';
 import { storage } from '../utils/secureStorage';
 import { Member, LoggedUser } from '../types';
-import client from '../api/client';
+import client, { authEventEmitter } from '../api/client';
 
 interface AuthContextType {
   member: Member | null;
@@ -48,6 +48,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
     loadAuth();
+  }, []);
+
+  // Listen for forced logout event from API interceptor
+  useEffect(() => {
+    const handleForcedLogout = () => {
+      logout();
+    };
+    authEventEmitter.on('logout', handleForcedLogout);
+    return () => {
+      authEventEmitter.off('logout', handleForcedLogout);
+    };
   }, []);
 
   const handleLoginSuccess = async (data: any) => {

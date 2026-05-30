@@ -3,6 +3,8 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Home, Compass, MessageSquare, Users, User } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 
 // Import all screen placeholders
 import FeedScreen from '../screens/feed/FeedScreen';
@@ -83,46 +85,64 @@ function ProfileStack() {
 }
 
 export default function MainTabs() {
+  const insets = useSafeAreaInsets();
+
+  const handleTabPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1e293b',  // slate-800
-          borderTopColor: '#334155',   // slate-700
+          backgroundColor: '#1e293b',
+          borderTopColor: '#334155',
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom,
+          paddingTop: 6,
+          shadowOpacity: 0,
+          elevation: 0,
         },
-        tabBarActiveTintColor: '#2563eb',   // blue-600
-        tabBarInactiveTintColor: '#94a3b8', // slate-400
-        tabBarLabelStyle: { fontSize: 10, marginTop: 2 },
+        tabBarActiveTintColor: '#2563eb',
+        tabBarInactiveTintColor: '#64748b',
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          marginBottom: 2,
+        },
       }}
     >
       <Tab.Screen
         name="Feed"
         component={FeedStack}
         options={{ tabBarIcon: ({ color }) => <Home size={22} color={color} />, tabBarLabel: 'Home' }}
+        listeners={{ tabPress: handleTabPress }}
       />
       <Tab.Screen
         name="Explore"
         component={ExploreStack}
         options={{ tabBarIcon: ({ color }) => <Compass size={22} color={color} />, tabBarLabel: 'Explore' }}
+        listeners={{ tabPress: handleTabPress }}
       />
       <Tab.Screen
         name="Chat"
         component={ChatScreen}
         options={{ tabBarIcon: ({ color }) => <MessageSquare size={22} color={color} />, tabBarLabel: 'Chat' }}
+        listeners={{ tabPress: handleTabPress }}
       />
       <Tab.Screen
         name="Members"
         component={MembersStack}
         options={{ tabBarIcon: ({ color }) => <Users size={22} color={color} />, tabBarLabel: 'Members' }}
+        listeners={{ tabPress: handleTabPress }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileStack}
         options={{ tabBarIcon: ({ color }) => <User size={22} color={color} />, tabBarLabel: 'Profile' }}
+        listeners={{ tabPress: handleTabPress }}
       />
     </Tab.Navigator>
   );

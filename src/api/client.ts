@@ -26,12 +26,40 @@ client.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       // Clear auth and force re-login
-      await storage.removeItem(STORAGE_KEYS.PORTAL_TOKEN);
-      await storage.removeItem(STORAGE_KEYS.PORTAL_MEMBER);
-      await storage.removeItem(STORAGE_KEYS.PORTAL_USER);
+      try {
+        await storage.removeItem(STORAGE_KEYS.PORTAL_TOKEN);
+        await storage.removeItem(STORAGE_KEYS.PORTAL_MEMBER);
+        await storage.removeItem(STORAGE_KEYS.PORTAL_USER);
+      } catch {}
+      authEventEmitter.emit('logout');
     }
     return Promise.reject(error);
   }
 );
 
+class SimpleEventEmitter {
+  private listeners: { [event: string]: Function[] } = {};
+
+  on(event: string, callback: Function) {
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
+    }
+    this.listeners[event].push(callback);
+  }
+
+  off(event: string, callback: Function) {
+    if (!this.listeners[event]) return;
+    this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+  }
+
+  emit(event: string, ...args: any[]) {
+    if (!this.listeners[event]) return;
+    this.listeners[event].forEach(cb => cb(...args));
+  }
+}
+
+export const authEventEmitter = new SimpleEventEmitter();
+
 export default client;
+
+

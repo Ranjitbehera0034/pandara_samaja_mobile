@@ -3,12 +3,13 @@ import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   ScrollView, KeyboardAvoidingView, Platform,
-  ActivityIndicator, Alert
+  ActivityIndicator, Alert, Image
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { signInWithPhoneNumber } from 'firebase/auth';
+import * as Haptics from 'expo-haptics';
 import { auth } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { AuthStackParams } from '../../navigation/AuthStack';
@@ -27,22 +28,36 @@ export default function LoginScreen() {
 
   const recaptchaVerifier = useRef<FirebaseRecaptchaVerifierModal>(null);
 
+  const isValid = membershipNo.trim().length > 0 && mobile.replace(/\D/g, '').length === 10;
+
+  const handleMobileChange = (text: string) => {
+    const clean = text.replace(/\D/g, '');
+    setMobile(clean);
+    if (clean.length === 10) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
   const handleSendOtp = async () => {
     if (!membershipNo.trim()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', 'Please enter your Membership Number');
       return;
     }
     if (!mobile.trim() || mobile.replace(/\D/g, '').length < 10) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', 'Please enter a valid 10-digit mobile number');
       return;
     }
 
     setIsLoading(true);
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       if (useFirebase) {
         // Firebase OTP path
         const formattedMobile = mobile.startsWith('+') ? mobile : `+91${mobile.replace(/\D/g, '')}`;
         const result = await signInWithPhoneNumber(auth, formattedMobile, recaptchaVerifier.current!);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         // Pass confirmationResult to OTP screen
         navigation.navigate('Otp', {
           membershipNo: membershipNo.trim(),
@@ -53,6 +68,7 @@ export default function LoginScreen() {
       } else {
         // Fast2SMS path
         await requestOtp(membershipNo.trim(), mobile);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         navigation.navigate('Otp', {
           membershipNo: membershipNo.trim(),
           mobile: mobile.replace(/\D/g, ''),
@@ -60,6 +76,7 @@ export default function LoginScreen() {
         });
       }
     } catch (err: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', err.message || 'Failed to send OTP. Please try again.');
     } finally {
       setIsLoading(false);
@@ -84,8 +101,11 @@ export default function LoginScreen() {
       >
         {/* Logo */}
         <View className="items-center mb-10">
-          <View className="w-20 h-20 rounded-2xl bg-blue-600 items-center justify-center mb-4 shadow-2xl">
-            <Text className="text-white font-bold text-4xl">P</Text>
+          <View className="w-24 h-24 rounded-3xl bg-slate-800 items-center justify-center mb-4 border border-slate-700 shadow-2xl overflow-hidden">
+            <Image
+              source={require('../../../assets/logo.png')}
+              style={{ width: '100%', height: '100%', resizeMode: 'cover' }}
+            />
           </View>
           <Text className="text-white font-bold text-2xl text-center">{APP_NAME}</Text>
           <Text className="text-slate-400 text-xs tracking-widest mt-1">{APP_TAGLINE}</Text>
@@ -102,7 +122,10 @@ export default function LoginScreen() {
             placeholder="e.g. MEM1234567"
             placeholderTextColor="#64748b"
             value={membershipNo}
-            onChangeText={setMembershipNo}
+            onChangeText={(text) => {
+              setMembershipNo(text);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
             autoCapitalize="characters"
             autoCorrect={false}
           />
@@ -116,7 +139,7 @@ export default function LoginScreen() {
               placeholder="10-digit mobile number"
               placeholderTextColor="#64748b"
               value={mobile}
-              onChangeText={setMobile}
+              onChangeText={handleMobileChange}
               keyboardType="phone-pad"
               maxLength={10}
             />
@@ -124,9 +147,9 @@ export default function LoginScreen() {
 
           {/* Send OTP Button */}
           <TouchableOpacity
-            className={`rounded-xl py-4 items-center ${isLoading ? 'bg-blue-800' : 'bg-blue-600'}`}
+            className={`rounded-xl py-4 items-center ${!isValid || isLoading ? 'bg-slate-700 opacity-60' : 'bg-blue-600'}`}
             onPress={handleSendOtp}
-            disabled={isLoading}
+            disabled={!isValid || isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="white" />

@@ -1,15 +1,43 @@
 // src/navigation/RootNavigator.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
 import LoadingScreen from '../components/common/LoadingScreen';
+import AnimatedSplash from '../screens/SplashScreen';
+import OnboardingScreen from '../screens/OnboardingScreen';
+import { storage } from '../utils/secureStorage';
 
 export default function RootNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [showSplash, setShowSplash] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
 
-  if (isLoading) return <LoadingScreen />;
+  // Check if onboarding was already shown
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      try {
+        const val = await storage.getItem('onboardingComplete');
+        setShowOnboarding(val !== 'true');
+      } catch {
+        setShowOnboarding(true);
+      }
+    };
+    checkOnboarding();
+  }, []);
+
+  if (showSplash) {
+    return <AnimatedSplash onFinish={() => setShowSplash(false)} />;
+  }
+
+  if (showOnboarding === null || isLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (showOnboarding) {
+    return <OnboardingScreen onComplete={() => setShowOnboarding(false)} />;
+  }
 
   return (
     <NavigationContainer>
