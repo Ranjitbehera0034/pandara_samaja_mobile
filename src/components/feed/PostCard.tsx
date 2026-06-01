@@ -2,8 +2,10 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput,
-  Image, Share, Modal, ScrollView, Alert, Pressable
+  Share, Modal, ScrollView, Alert, Pressable, Animated
 } from 'react-native';
+import { Image } from 'expo-image';
+import * as Haptics from 'expo-haptics';
 import {
   MessageSquare, Share2, MoreHorizontal, Bookmark,
   Flag, Trash2, Edit3, X, Send, ThumbsUp
@@ -57,6 +59,7 @@ export default function PostCard({
   const [localReactions, setLocalReactions] = useState(
     post.reactions || { like: post.likes, love: 0, haha: 0, wow: 0, sad: 0, angry: 0 }
   );
+  const [likeScale] = useState(new Animated.Value(1));
 
   const isAuthor = member && (
     member.membership_no === post.authorId
@@ -68,8 +71,21 @@ export default function PostCard({
   const currentReaction = REACTIONS.find(r => r.type === myReaction);
   const photo = cleanPhoto(post.authorAvatar);
 
+  // Like Animation Bounce
+  const animateLike = () => {
+    likeScale.setValue(0.7);
+    Animated.spring(likeScale, {
+      toValue: 1,
+      friction: 3,
+      tension: 40,
+      useNativeDriver: true
+    }).start();
+  };
+
   // ── Reaction handler ──
   const handleReaction = (type: ReactionType) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    animateLike();
     if (myReaction === type) {
       setLocalReactions(prev => ({ ...prev, [type]: Math.max(0, prev[type] - 1) }));
       setMyReaction(null);
@@ -186,7 +202,7 @@ export default function PostCard({
           {/* Avatar with ring */}
           <View className="w-10 h-10 rounded-full bg-slate-900 border border-slate-700 overflow-hidden items-center justify-center">
             {photo ? (
-              <Image source={{ uri: photo }} className="w-full h-full" resizeMode="cover" />
+              <Image source={{ uri: photo }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} />
             ) : (
               <Text className="text-white font-bold text-sm">{getInitial(post.authorName)}</Text>
             )}
@@ -283,14 +299,16 @@ export default function PostCard({
             onLongPress={() => setShowReactions(true)}
             className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-lg ${myReaction ? 'bg-blue-500/10' : ''}`}
           >
-            {myReaction ? (
-              <Text className="text-lg leading-none">{currentReaction?.emoji}</Text>
-            ) : (
-              <ThumbsUp size={18} color="#94a3b8" />
-            )}
-            <Text className={`text-sm font-medium ${myReaction ? 'text-blue-500' : 'text-slate-400'}`}>
-              {myReaction ? currentReaction?.label : 'Like'}
-            </Text>
+            <Animated.View style={{ transform: [{ scale: likeScale }], flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {myReaction ? (
+                <Text className="text-lg leading-none">{currentReaction?.emoji}</Text>
+              ) : (
+                <ThumbsUp size={18} color="#94a3b8" />
+              )}
+              <Text className={`text-sm font-medium ${myReaction ? 'text-blue-500' : 'text-slate-400'}`}>
+                {myReaction ? currentReaction?.label : 'Like'}
+              </Text>
+            </Animated.View>
           </TouchableOpacity>
 
           {/* Comment button */}
@@ -376,7 +394,7 @@ export default function PostCard({
           <View className="flex-row items-center gap-2">
             <View className="w-8 h-8 rounded-full bg-blue-600 items-center justify-center overflow-hidden shrink-0">
               {user?.profile_photo_url ? (
-                <Image source={{ uri: cleanPhoto(user.profile_photo_url) || '' }} className="w-full h-full" resizeMode="cover" />
+                <Image source={{ uri: cleanPhoto(user.profile_photo_url) || '' }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} />
               ) : (
                 <Text className="text-white text-xs font-bold">{getInitial(user?.name || member?.name)}</Text>
               )}

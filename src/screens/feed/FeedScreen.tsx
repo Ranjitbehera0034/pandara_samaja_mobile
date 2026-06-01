@@ -1,25 +1,59 @@
 // src/screens/feed/FeedScreen.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, ActivityIndicator, Alert, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, ActivityIndicator, Alert, TouchableOpacity, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Megaphone } from 'lucide-react-native';
+import { Megaphone, Bell } from 'lucide-react-native';
+import { FlashList } from '@shopify/flash-list';
+import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { Post, Story, Poll, MediaItem } from '../../types';
 import CreatePost from '../../components/feed/CreatePost';
 import StoryRing from '../../components/feed/StoryRing';
 import StoryViewer from '../../components/feed/StoryViewer';
 import PostCard from '../../components/feed/PostCard';
+import GlobalSearch from '../../components/common/GlobalSearch';
+import SkeletonBox from '../../components/common/SkeletonBox';
+import EmptyState from '../../components/common/EmptyState';
 import { useSocket } from '../../hooks/useSocket';
 import * as feedApi from '../../api/feed';
 import { mapPost, mapAnnouncement } from '../../utils/feedUtils';
 
+// Feed skeleton list loader
+function FeedSkeleton() {
+  return (
+    <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 16 }}>
+      {[1, 2, 3].map(i => (
+        <View key={i} style={{ backgroundColor: '#1e293b', borderRadius: 16, padding: 16, gap: 12, borderWidth: 1, borderColor: '#334155/50' }}>
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+            <SkeletonBox width={40} height={40} borderRadius={20} />
+            <View style={{ gap: 6, flex: 1 }}>
+              <SkeletonBox width="65%" height={12} />
+              <SkeletonBox width="45%" height={10} />
+            </View>
+          </View>
+          <SkeletonBox width="100%" height={12} />
+          <SkeletonBox width="85%" height={12} />
+          <SkeletonBox width="100%" height={160} borderRadius={12} />
+          <View style={{ flexDirection: 'row', gap: 16, marginTop: 4 }}>
+            <SkeletonBox width={60} height={28} borderRadius={14} />
+            <SkeletonBox width={60} height={28} borderRadius={14} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export default function FeedScreen() {
   const navigation = useNavigation<any>();
   const { member } = useAuth();
+  const insets = useSafeAreaInsets();
   const [posts, setPosts] = useState<Post[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(2); // Start with mock unread count
   
   // Story viewer state
   const [selectedStoryAuthor, setSelectedStoryAuthor] = useState<string | null>(null);
@@ -96,18 +130,21 @@ export default function FeedScreen() {
         )
       );
     },
+    onNotificationCount: ({ count }) => {
+      setUnreadCount(count);
+    }
   });
 
   // ── Post actions ──
-  const handleLikePost = async (id: string) => {
+  const handleLikePost = useCallback(async (id: string) => {
     try {
       await feedApi.likePost(id);
     } catch (e) {
       console.error('[LIKE] Error:', e);
     }
-  };
+  }, []);
 
-  const handleCommentPost = async (id: string, text: string) => {
+  const handleCommentPost = useCallback(async (id: string, text: string) => {
     try {
       await feedApi.addComment(id, text);
       setPosts(prev =>
@@ -119,26 +156,26 @@ export default function FeedScreen() {
       console.error('[COMMENT] Error:', e);
       Alert.alert('Error', 'Failed to submit comment.');
     }
-  };
+  }, []);
 
-  const handleReplyPost = async (postId: string, parentCommentId: string, text: string) => {
+  const handleReplyPost = useCallback(async (postId: string, parentCommentId: string, text: string) => {
     try {
       await feedApi.addComment(postId, text, parentCommentId);
     } catch (e) {
       console.error('[REPLY] Error:', e);
       Alert.alert('Error', 'Failed to submit reply.');
     }
-  };
+  }, []);
 
-  const handleLikeComment = async (postId: string, commentId: string) => {
+  const handleLikeComment = useCallback(async (postId: string, commentId: string) => {
     try {
       await feedApi.likeComment(commentId);
     } catch (e) {
       console.error('[LIKE_COMMENT] Error:', e);
     }
-  };
+  }, []);
 
-  const handleCreatePost = async (content: string, media?: MediaItem[], files?: any[], poll?: Poll, location?: string) => {
+  const handleCreatePost = useCallback(async (content: string, media?: MediaItem[], files?: any[], poll?: Poll, location?: string) => {
     try {
       const formData = new FormData();
       formData.append('text_content', content);
@@ -156,38 +193,41 @@ export default function FeedScreen() {
       if (res.success) {
         const mapped = mapPost(res.post);
         setPosts(prev => [mapped, ...prev]);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (e: any) {
       console.error('[CREATE_POST] Error:', e);
       Alert.alert('Error', e.message || 'Failed to submit post.');
     }
-  };
+  }, []);
 
-  const handleDeletePost = async (id: string) => {
+  const handleDeletePost = useCallback(async (id: string) => {
     try {
       const res = await feedApi.deletePost(id);
       if (res.success) {
         setPosts(prev => prev.filter(p => p.id !== id));
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (e) {
       console.error('[DELETE_POST] Error:', e);
       Alert.alert('Error', 'Failed to delete post.');
     }
-  };
+  }, []);
 
-  const handleEditPost = async (id: string, text: string) => {
+  const handleEditPost = useCallback(async (id: string, text: string) => {
     try {
       const res = await feedApi.editPost(id, text);
       if (res.success) {
         setPosts(prev => prev.map(p => p.id === id ? { ...p, content: text } : p));
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (e) {
       console.error('[EDIT_POST] Error:', e);
       Alert.alert('Error', 'Failed to update post.');
     }
-  };
+  }, []);
 
-  const handleReportPost = async (id: string, reason: string) => {
+  const handleReportPost = useCallback(async (id: string, reason: string) => {
     try {
       const res = await feedApi.reportPost(id, reason);
       if (res.success) {
@@ -197,9 +237,9 @@ export default function FeedScreen() {
       console.error('[REPORT_POST] Error:', e);
       Alert.alert('Error', 'Failed to submit report.');
     }
-  };
+  }, []);
 
-  const handlePollVote = async (postId: string, optionId: string) => {
+  const handlePollVote = useCallback(async (postId: string, optionId: string) => {
     try {
       await feedApi.sharePost(postId); // Share endpoint used as vote submitter
       // Update local poll vote count
@@ -222,13 +262,14 @@ export default function FeedScreen() {
           return p;
         })
       );
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (e) {
       console.error('[VOTE] Error:', e);
     }
-  };
+  }, []);
 
   // ── Story actions ──
-  const handleAddStory = async (mediaUri: string, mediaType: 'image' | 'video') => {
+  const handleAddStory = useCallback(async (mediaUri: string, mediaType: 'image' | 'video') => {
     try {
       const formData = new FormData();
       const uriParts = mediaUri.split('/');
@@ -252,66 +293,130 @@ export default function FeedScreen() {
       console.error('[ADD_STORY] Error:', e);
       Alert.alert('Error', 'Failed to upload story.');
     }
-  };
+  }, [loadFeedData]);
 
-  const handleViewStory = (authorId: string) => {
+  const handleViewStory = useCallback((authorId: string) => {
     setSelectedStoryAuthor(authorId);
     setShowStoryViewer(true);
-  };
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
 
   const selectedAuthorStories = selectedStoryAuthor
     ? stories.filter(s => s.authorId === selectedStoryAuthor)
     : [];
 
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      await loadFeedData(true);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [loadFeedData]);
+
+  const renderPost = useCallback(({ item }: { item: Post }) => (
+    <PostCard
+      post={item}
+      onLike={handleLikePost}
+      onComment={handleCommentPost}
+      onReply={handleReplyPost}
+      onLikeComment={handleLikeComment}
+      onDelete={handleDeletePost}
+      onEdit={handleEditPost}
+      onReport={handleReportPost}
+      onPollVote={handlePollVote}
+    />
+  ), [handleLikePost, handleCommentPost, handleReplyPost, handleLikeComment, handleDeletePost, handleEditPost, handleReportPost, handlePollVote]);
+
+  const keyExtractor = useCallback((item: Post) => item.id, []);
+
+  const ListHeader = useCallback(() => (
+    <View>
+      <CreatePost onPostCreate={handleCreatePost} />
+      <StoryRing
+        stories={stories}
+        onAddStory={handleAddStory}
+        onViewStory={handleViewStory}
+      />
+    </View>
+  ), [stories, handleCreatePost, handleAddStory, handleViewStory]);
+
   return (
-    <SafeAreaView className="flex-1 bg-slate-900">
-      {/* Top Header */}
+    <View style={{ flex: 1, backgroundColor: '#0f172a', paddingTop: insets.top }}>
+      {/* Polished Top Header */}
       <View className="px-4 py-3 border-b border-slate-800 flex-row justify-between items-center bg-slate-900">
-        <Text className="text-white font-bold text-xl tracking-wide">Community Feed</Text>
-        <TouchableOpacity
-          onPress={() => navigation.navigate('Announcements')}
-          className="p-2 bg-slate-800 rounded-full flex-row items-center justify-center border border-slate-700/50"
-        >
-          <Megaphone size={18} color="#3b82f6" />
-        </TouchableOpacity>
+        <View className="flex-row items-center gap-2">
+          {/* Logo representation */}
+          <View className="w-8 h-8 rounded-lg bg-blue-600 items-center justify-center border border-blue-500/20">
+            <Text className="text-white font-extrabold text-lg leading-none">P</Text>
+          </View>
+          <Text className="text-white font-extrabold text-lg tracking-wide">Pandara Samaja</Text>
+        </View>
+        <View className="flex-row items-center gap-2.5">
+          <TouchableOpacity
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.navigate('Announcements');
+            }}
+            className="p-2.5 bg-slate-800 rounded-full flex-row items-center justify-center border border-slate-700/50"
+          >
+            <Megaphone size={18} color="#3b82f6" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.navigate('Notifications');
+              setUnreadCount(0); // clear count
+            }}
+            className="p-2.5 bg-slate-800 rounded-full flex-row items-center justify-center border border-slate-700/50"
+          >
+            <Bell size={18} color="#f8fafc" />
+            {unreadCount > 0 && (
+              <View className="absolute -top-1.5 -right-1.5 bg-rose-500 rounded-full min-w-5 h-5 items-center justify-center px-1 border border-slate-900">
+                <Text className="text-white text-[9px] font-bold leading-none">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Global Search Component inside the header flow */}
+      <View className="px-4 pt-3 pb-1 bg-slate-900">
+        <GlobalSearch />
       </View>
 
       {isLoading && !isRefreshing ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#2563eb" />
-        </View>
+        <FeedSkeleton />
       ) : (
-        <FlatList
-          data={posts}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <PostCard
-              post={item}
-              onLike={handleLikePost}
-              onComment={handleCommentPost}
-              onReply={handleReplyPost}
-              onLikeComment={handleLikeComment}
-              onDelete={handleDeletePost}
-              onEdit={handleEditPost}
-              onReport={handleReportPost}
-              onPollVote={handlePollVote}
-            />
-          )}
-          contentContainerStyle={{ padding: 16 }}
-          showsVerticalScrollIndicator={false}
-          refreshing={isRefreshing}
-          onRefresh={() => loadFeedData(true)}
-          ListHeaderComponent={
-            <View>
-              <CreatePost onPostCreate={handleCreatePost} />
-              <StoryRing
-                stories={stories}
-                onAddStory={handleAddStory}
-                onViewStory={handleViewStory}
+        <View style={{ flex: 1 }}>
+          <FlashList
+            data={posts}
+            keyExtractor={keyExtractor}
+            renderItem={renderPost}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: insets.bottom + 80 }}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={handleRefresh}
+                tintColor="#2563eb"
+                colors={['#2563eb']}
+                progressBackgroundColor="#1e293b"
               />
-            </View>
-          }
-        />
+            }
+            ListHeaderComponent={ListHeader}
+            ListEmptyComponent={
+              <EmptyState
+                emoji="📰"
+                title="No posts yet"
+                subtitle="Be the first to share something"
+              />
+            }
+          />
+        </View>
       )}
 
       {/* Story Viewer Overlay */}
@@ -331,6 +436,6 @@ export default function FeedScreen() {
           }}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }

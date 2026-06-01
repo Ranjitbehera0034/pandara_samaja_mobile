@@ -1,6 +1,7 @@
 // src/components/feed/MediaGrid.tsx
 import React from 'react';
-import { View, Image, Text, Dimensions } from 'react-native';
+import { View, Text, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { Video, ResizeMode } from 'expo-av';
 import { MediaItem } from '../../types';
 import { cleanPhoto } from '../../utils/googleDriveUrl';
@@ -37,7 +38,8 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
           <Image
             source={{ uri: cleanPhoto(item.url) || item.url }}
             style={{ width: MEDIA_WIDTH, height: MEDIA_WIDTH * 0.6 }}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={200}
           />
         )}
       </View>
@@ -54,7 +56,8 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
             key={i}
             source={{ uri: cleanPhoto(item.url) || item.url }}
             style={{ width: half, height: half * 0.9 }}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={200}
           />
         ))}
       </View>
@@ -69,7 +72,8 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
         <Image
           source={{ uri: cleanPhoto(media[0].url) || media[0].url }}
           style={{ width: MEDIA_WIDTH, height: MEDIA_WIDTH * 0.5 }}
-          resizeMode="cover"
+          contentFit="cover"
+          transition={200}
         />
         <View className="flex-row gap-0.5">
           {media.slice(1, 3).map((item, i) => (
@@ -77,7 +81,8 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
               key={i}
               source={{ uri: cleanPhoto(item.url) || item.url }}
               style={{ width: half, height: half * 0.7 }}
-              resizeMode="cover"
+              contentFit="cover"
+              transition={200}
             />
           ))}
         </View>
@@ -95,7 +100,8 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
             key={i}
             source={{ uri: cleanPhoto(item.url) || item.url }}
             style={{ width: quarter, height: quarter * 0.8 }}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={200}
           />
         ))}
       </View>
@@ -105,7 +111,8 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
             <Image
               source={{ uri: cleanPhoto(item.url) || item.url }}
               style={{ width: quarter, height: quarter * 0.8 }}
-              resizeMode="cover"
+              contentFit="cover"
+              transition={200}
             />
             {i === 1 && media.length > 4 && (
               <View className="absolute inset-0 bg-black/60 items-center justify-center">

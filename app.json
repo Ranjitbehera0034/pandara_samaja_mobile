@@ -9,8 +9,8 @@
     "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0f172a"
+      "backgroundColor": "#0f172a",
+      "resizeMode": "contain"
     },
     "ios": {
       "bundleIdentifier": "in.nikhilaodishapandarasamaja.app",
@@ -45,6 +45,8 @@
       [
         "expo-splash-screen",
         {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
           "backgroundColor": "#0f172a"
         }
       ]
@@ -54,6 +56,12 @@
         "projectId": "3d3326a8-a582-496b-98e9-9f94e9b4e4ef"
       }
     },
-    "owner": "ranjit0034"
+    "owner": "ranjit0034",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3d3326a8-a582-496b-98e9-9f94e9b4e4ef"
+    }
   }
 }

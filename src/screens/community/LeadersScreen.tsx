@@ -1,12 +1,14 @@
 // src/screens/community/LeadersScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
-  ActivityIndicator, Image, SafeAreaView, Dimensions
+  ActivityIndicator, SafeAreaView, Dimensions, Modal, Pressable
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useNavigation } from '@react-navigation/native';
-import { Picker } from '@react-native-picker/picker';
-import { ArrowLeft, Crown, MapPin, Users } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ArrowLeft, Crown, MapPin, Users, X } from 'lucide-react-native';
 import * as leadersApi from '../../api/leaders';
 import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
 
@@ -36,12 +38,14 @@ interface Leader {
 
 export default function LeadersScreen() {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const [activeLevel, setActiveLevel] = useState<LevelKey>('State');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [leaders, setLeaders] = useState<Leader[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [locationsLoading, setLocationsLoading] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
 
   const levelMeta = LEVELS.find(l => l.key === activeLevel)!;
   const needsLocation = activeLevel !== 'State';
@@ -71,11 +75,18 @@ export default function LeadersScreen() {
   }, [activeLevel, selectedLocation]);
 
   const handleLevelChange = (level: LevelKey) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActiveLevel(level);
     setLeaders([]);
   };
 
-  const LeaderCard = ({ leader }: { leader: Leader }) => {
+  const handleLocationSelect = (loc: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedLocation(loc);
+    setShowLocationModal(false);
+  };
+
+  const LeaderCard = useCallback(({ leader }: { leader: Leader }) => {
     const photo = cleanPhoto(leader.image_url);
     return (
       <View
@@ -88,7 +99,7 @@ export default function LeadersScreen() {
           className="w-16 h-16 rounded-full overflow-hidden items-center justify-center bg-slate-900 mb-2.5"
         >
           {photo ? (
-            <Image source={{ uri: photo }} className="w-full h-full" resizeMode="cover" />
+            <Image source={{ uri: photo }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} />
           ) : (
             <View className={`w-full h-full items-center justify-center ${levelMeta.bg}`}>
               <Text style={{ color: levelMeta.color }} className="font-bold text-xl">
@@ -126,7 +137,7 @@ export default function LeadersScreen() {
         ) : null}
       </View>
     );
-  };
+  }, [levelMeta]);
 
   // Grouped leaders map
   const groupedByLocation = needsLocation && !selectedLocation
@@ -138,16 +149,16 @@ export default function LeadersScreen() {
     : null;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-900">
+    <View style={{ flex: 1, backgroundColor: '#0f172a', paddingTop: insets.top }}>
       {/* Top Header */}
       <View className="px-4 py-3 border-b border-slate-800 flex-row items-center bg-slate-900 gap-3">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="p-1 rounded-full bg-slate-800/50">
+        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.goBack(); }} className="p-1 rounded-full bg-slate-800/50">
           <ArrowLeft size={22} color="#ffffff" />
         </TouchableOpacity>
         <Text className="text-white font-bold text-xl tracking-wide">Leaders</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 80 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 80 }} showsVerticalScrollIndicator={false}>
         {/* Intro */}
         <View className="flex-row items-center gap-3 mb-4">
           <View className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 items-center justify-center">
@@ -179,25 +190,21 @@ export default function LeadersScreen() {
           })}
         </View>
 
-        {/* Location Picker (for District/Taluka/Panchayat) */}
+        {/* Custom iOS-style Bottom Sheet Button for Location selector */}
         {needsLocation && (
           <View>
             {locationsLoading ? (
               <ActivityIndicator color="#3b82f6" size="small" className="py-2" />
             ) : locations.length > 0 ? (
-              <View className="mb-4 bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden px-2">
-                <Picker
-                  selectedValue={selectedLocation}
-                  onValueChange={(itemValue) => setSelectedLocation(itemValue)}
-                  style={{ color: '#fff' }}
-                  dropdownIconColor="#94a3b8"
-                >
-                  <Picker.Item label={`All ${activeLevel}s`} value="" style={{ backgroundColor: '#1e293b', color: '#fff' }} />
-                  {locations.map(loc => (
-                    <Picker.Item key={loc} label={loc} value={loc} style={{ backgroundColor: '#1e293b', color: '#fff' }} />
-                  ))}
-                </Picker>
-              </View>
+              <TouchableOpacity
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowLocationModal(true); }}
+                className="mb-4 bg-slate-800 border border-slate-700 rounded-2xl p-4 flex-row justify-between items-center active:opacity-80"
+              >
+                <Text className="text-white text-sm font-semibold">
+                  {selectedLocation ? `Location: ${selectedLocation}` : `Select ${activeLevel}`}
+                </Text>
+                <Text className="text-blue-400 text-xs font-bold">Choose ▾</Text>
+              </TouchableOpacity>
             ) : null}
           </View>
         )}
@@ -248,6 +255,51 @@ export default function LeadersScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+
+      {/* iOS-Style Bottom Sheet Location Selector Modal */}
+      <Modal
+        visible={showLocationModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowLocationModal(false)}
+      >
+        <Pressable className="flex-1 bg-black/60 justify-end" onPress={() => setShowLocationModal(false)}>
+          <View 
+            className="bg-slate-800 border-t border-slate-700 rounded-t-3xl p-6"
+            style={{ maxHeight: Dimensions.get('window').height * 0.7, paddingBottom: insets.bottom + 24 }}
+          >
+            <View className="flex-row items-center justify-between mb-5">
+              <Text className="text-white font-bold text-lg">Select Location</Text>
+              <TouchableOpacity onPress={() => setShowLocationModal(false)}>
+                <X size={20} color="#94a3b8" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} className="gap-2">
+              <TouchableOpacity
+                onPress={() => handleLocationSelect('')}
+                className={`p-4 rounded-xl border mb-2 ${!selectedLocation ? 'bg-blue-600/10 border-blue-500/40' : 'bg-slate-900/40 border-slate-700'}`}
+              >
+                <Text className={`font-semibold text-sm ${!selectedLocation ? 'text-blue-400' : 'text-slate-355'}`} style={{ color: !selectedLocation ? '#3b82f6' : '#fff' }}>
+                  All {activeLevel}s
+                </Text>
+              </TouchableOpacity>
+
+              {locations.map(loc => (
+                <TouchableOpacity
+                  key={loc}
+                  onPress={() => handleLocationSelect(loc)}
+                  className={`p-4 rounded-xl border mb-2 ${selectedLocation === loc ? 'bg-blue-600/10 border-blue-500/40' : 'bg-slate-900/40 border-slate-700'}`}
+                >
+                  <Text className={`font-semibold text-sm ${selectedLocation === loc ? 'text-blue-400' : 'text-white'}`} style={{ color: selectedLocation === loc ? '#3b82f6' : '#fff' }}>
+                    {loc}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
+    </View>
   );
 }

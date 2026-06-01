@@ -3,11 +3,12 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   ScrollView, KeyboardAvoidingView, Platform,
-  ActivityIndicator, Alert, Image
+  ActivityIndicator, Alert, Image, Linking
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 import { AuthStackParams } from '../../navigation/AuthStack';
 import { APP_NAME, APP_TAGLINE } from '../../config/constants';
@@ -17,6 +18,7 @@ type Nav = StackNavigationProp<AuthStackParams, 'Login'>;
 export default function LoginScreen() {
   const navigation = useNavigation<Nav>();
   const { requestOtp } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const [membershipNo, setMembershipNo] = useState('');
   const [mobile, setMobile] = useState('');
@@ -28,6 +30,8 @@ export default function LoginScreen() {
     const clean = text.replace(/\D/g, '');
     setMobile(clean);
     if (clean.length === 10) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } else if (clean.length > 0) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   };
@@ -63,6 +67,22 @@ export default function LoginScreen() {
     }
   };
 
+  const handleGetMembershipNo = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const url = 'https://wa.me/918249339238?text=Hello%20Pandara%20Samaja%20Support%2C%20I%20do%20not%20have%20my%20Membership%20Number.%20Please%20help%20me%20find%20it.%20My%20name%20is%3A%20';
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', 'WhatsApp is not installed on your device');
+    });
+  };
+
+  const handleUpdateMobile = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const url = 'https://wa.me/918249339238?text=Hello%20Pandara%20Samaja%20Support%2C%20I%20need%20to%20update%20my%2520registered%2520mobile%2520number.%20My%20Membership%20No%20is%3A%20' + encodeURIComponent(membershipNo);
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Error', 'WhatsApp is not installed on your device');
+    });
+  };
+
   return (
     <KeyboardAvoidingView
       className="flex-1 bg-slate-900"
@@ -70,7 +90,13 @@ export default function LoginScreen() {
     >
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: 'center',
+          paddingHorizontal: 24,
+          paddingTop: insets.top + 24,
+          paddingBottom: insets.bottom + 24
+        }}
         keyboardShouldPersistTaps="handled"
       >
         {/* Logo */}
@@ -86,13 +112,13 @@ export default function LoginScreen() {
         </View>
 
         {/* Card */}
-        <View className="bg-slate-800 rounded-2xl p-6 border border-slate-700">
+        <View className="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl">
           <Text className="text-white font-semibold text-lg mb-6">Member Login</Text>
 
           {/* Membership No */}
           <Text className="text-slate-400 text-sm mb-2">Membership Number</Text>
           <TextInput
-            className="bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 text-white mb-4 text-base"
+            className="bg-slate-900 border border-slate-700 focus:border-blue-500 rounded-xl px-4 py-3 text-white mb-4 text-base"
             placeholder="e.g. MEM1234567"
             placeholderTextColor="#64748b"
             value={membershipNo}
@@ -102,12 +128,13 @@ export default function LoginScreen() {
             }}
             autoCapitalize="characters"
             autoCorrect={false}
+            editable={!isLoading}
           />
 
           {/* Mobile */}
           <Text className="text-slate-400 text-sm mb-2">Mobile Number</Text>
-          <View className="flex-row items-center bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 mb-6">
-            <Text className="text-slate-400 mr-2">+91</Text>
+          <View className="flex-row items-center bg-slate-900 border border-slate-700 focus:border-blue-500 rounded-xl px-4 py-3 mb-6">
+            <Text className="text-slate-400 mr-2 font-medium">+91</Text>
             <TextInput
               className="flex-1 text-white text-base"
               placeholder="10-digit mobile number"
@@ -116,20 +143,54 @@ export default function LoginScreen() {
               onChangeText={handleMobileChange}
               keyboardType="phone-pad"
               maxLength={10}
+              editable={!isLoading}
             />
           </View>
 
           {/* Send OTP Button */}
           <TouchableOpacity
-            className={`rounded-xl py-4 items-center ${!isValid || isLoading ? 'bg-slate-700 opacity-60' : 'bg-blue-600'}`}
+            className={`rounded-xl py-4 items-center transition-all ${
+              !isValid || isLoading ? 'bg-slate-700 opacity-60' : 'bg-blue-600 shadow-lg shadow-blue-500/20'
+            }`}
             onPress={handleSendOtp}
             disabled={!isValid || isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text className="text-white font-semibold text-base">Send OTP</Text>
+              <Text className="text-white font-bold text-base">Send OTP</Text>
             )}
+          </TouchableOpacity>
+        </View>
+
+        {/* WhatsApp Help & Support Card */}
+        <View className="mt-6 bg-slate-800/40 border border-slate-700/40 rounded-2xl p-5">
+          <Text className="text-white font-bold text-sm mb-3">Help & Support</Text>
+          
+          {/* Find Membership No */}
+          <TouchableOpacity
+            onPress={handleGetMembershipNo}
+            className="flex-row items-center justify-between py-3 border-b border-slate-800"
+          >
+            <Text className="text-slate-300 text-xs font-semibold">
+              Don't have a Membership No.?
+            </Text>
+            <Text className="text-blue-400 text-xs font-bold">
+              Get it on WhatsApp →
+            </Text>
+          </TouchableOpacity>
+
+          {/* Update Mobile Number */}
+          <TouchableOpacity
+            onPress={handleUpdateMobile}
+            className="flex-row items-center justify-between py-3"
+          >
+            <Text className="text-slate-300 text-xs font-semibold">
+              Need to register/update Mobile No.?
+            </Text>
+            <Text className="text-blue-400 text-xs font-bold">
+              Update on WhatsApp →
+            </Text>
           </TouchableOpacity>
         </View>
 

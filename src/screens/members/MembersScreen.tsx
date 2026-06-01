@@ -2,16 +2,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  ActivityIndicator, RefreshControl, Alert, SafeAreaView
+  ActivityIndicator, RefreshControl, Alert
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
-import { Search, Filter, X, Users, RefreshCw } from 'lucide-react-native';
+import { Search, Filter, X, RefreshCw } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Member } from '../../types';
 import * as membersApi from '../../api/members';
 import { useDebounce } from '../../hooks/useDebounce';
 import MemberCard from '../../components/members/MemberCard';
 import FilterModal from '../../components/members/FilterModal';
+import SkeletonBox from '../../components/common/SkeletonBox';
+import EmptyState from '../../components/common/EmptyState';
 
 const PAGE_SIZE = 30;
 
@@ -22,8 +26,34 @@ interface FilterState {
   gender: string;
 }
 
+// Shimmer skeleton for member card list
+function MemberCardSkeleton() {
+  return (
+    <View style={{ gap: 12, paddingHorizontal: 16, paddingTop: 12 }}>
+      {[1, 2, 3, 4].map(i => (
+        <View key={i} style={{ backgroundColor: '#1e293b', borderRadius: 16, padding: 16, gap: 10, borderWidth: 1, borderColor: '#334155/50' }}>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <SkeletonBox width={56} height={56} borderRadius={28} />
+            <View style={{ flex: 1, gap: 8, justifyContent: 'center' }}>
+              <SkeletonBox width="75%" height={14} />
+              <SkeletonBox width="50%" height={11} />
+            </View>
+          </View>
+          <View style={{ height: 1, backgroundColor: '#334155/30', marginVertical: 4 }} />
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <SkeletonBox width="45%" height={10} />
+            <SkeletonBox width="20%" height={10} />
+            <SkeletonBox width="25%" height={10} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export default function MembersScreen() {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
 
   // Search + filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,6 +114,7 @@ export default function MembersScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     fetchMembers(1, true).finally(() => setRefreshing(false));
   };
 
@@ -94,6 +125,7 @@ export default function MembersScreen() {
   };
 
   const handleSubscribe = async (memberId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSubscribing(memberId);
     try {
       const data = await membersApi.toggleSubscribe(memberId);
@@ -101,13 +133,43 @@ export default function MembersScreen() {
         setMembers(prev => prev.map(m =>
           m.membership_no === memberId ? { ...m, is_subscribed: data.subscribed } : m
         ));
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (e) {
       console.error('[SUBSCRIBE] Toggle failed:', e);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setSubscribing(null);
     }
   };
+
+  const handleFilterClick = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowFilterModal(true);
+  };
+
+  const handleFilterChange = (newFilters: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setFilters(newFilters);
+  };
+
+  const renderMember = useCallback(({ item }: { item: Member }) => (
+    <MemberCard
+      member={item as any}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        navigation.navigate('MemberProfile', { id: item.membership_no });
+      }}
+      onSubscribe={() => handleSubscribe(item.membership_no)}
+      onMessage={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        navigation.navigate('Chat', { withId: item.membership_no, withName: item.name });
+      }}
+      subscribing={subscribing === item.membership_no}
+    />
+  ), [navigation, subscribing]);
+
+  const keyExtractor = useCallback((item: Member) => item.membership_no, []);
 
   const ListHeader = () => (
     <View className="pt-4 pb-2">
@@ -148,7 +210,7 @@ export default function MembersScreen() {
 
         {/* Filter button */}
         <TouchableOpacity
-          onPress={() => setShowFilterModal(true)}
+          onPress={handleFilterClick}
           className={`px-3 py-2 rounded-xl border items-center justify-center ${activeFilterCount > 0
             ? 'bg-blue-600 border-blue-600'
             : 'bg-slate-800 border-slate-700'
@@ -177,7 +239,7 @@ export default function MembersScreen() {
           {filters.district ? (
             <View className="flex-row items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">
               <Text className="text-blue-400 text-xs font-medium">{filters.district}</Text>
-              <TouchableOpacity onPress={() => setFilters(f => ({ ...f, district: '', taluka: '', panchayat: '' }))}>
+              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, district: '', taluka: '', panchayat: '' })}>
                 <X size={12} color="#3b82f6" />
               </TouchableOpacity>
             </View>
@@ -185,7 +247,7 @@ export default function MembersScreen() {
           {filters.taluka ? (
             <View className="flex-row items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">
               <Text className="text-blue-400 text-xs font-medium">{filters.taluka}</Text>
-              <TouchableOpacity onPress={() => setFilters(f => ({ ...f, taluka: '', panchayat: '' }))}>
+              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, taluka: '', panchayat: '' })}>
                 <X size={12} color="#3b82f6" />
               </TouchableOpacity>
             </View>
@@ -193,7 +255,7 @@ export default function MembersScreen() {
           {filters.panchayat ? (
             <View className="flex-row items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">
               <Text className="text-blue-400 text-xs font-medium">{filters.panchayat}</Text>
-              <TouchableOpacity onPress={() => setFilters(f => ({ ...f, panchayat: '' }))}>
+              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, panchayat: '' })}>
                 <X size={12} color="#3b82f6" />
               </TouchableOpacity>
             </View>
@@ -201,7 +263,7 @@ export default function MembersScreen() {
           {filters.gender ? (
             <View className="flex-row items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">
               <Text className="text-blue-400 text-xs font-medium">{filters.gender === 'male' ? '♂ Male HoF' : '♀ Female HoF'}</Text>
-              <TouchableOpacity onPress={() => setFilters(f => ({ ...f, gender: '' }))}>
+              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, gender: '' })}>
                 <X size={12} color="#3b82f6" />
               </TouchableOpacity>
             </View>
@@ -211,53 +273,49 @@ export default function MembersScreen() {
     </View>
   );
 
-  if (loading && members.length === 0) {
-    return (
-      <SafeAreaView className="flex-1 bg-slate-900 justify-center items-center">
-        <ActivityIndicator size="large" color="#3b82f6" />
-        <Text className="text-slate-400 text-sm mt-3">Loading members…</Text>
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView className="flex-1 bg-slate-900">
+    <View style={{ flex: 1, backgroundColor: '#0f172a', paddingTop: insets.top }}>
       <View className="flex-1 px-4">
-        <FlashList
-          data={members}
-          keyExtractor={item => item.membership_no}
-          renderItem={({ item }) => (
-            <MemberCard
-              member={item as any}
-              onPress={() => navigation.navigate('MemberProfile', { id: item.membership_no })}
-              onSubscribe={() => handleSubscribe(item.membership_no)}
-              onMessage={() => navigation.navigate('Chat', { withId: item.membership_no, withName: item.name })}
-              subscribing={subscribing === item.membership_no}
-            />
-          )}
-          ListHeaderComponent={ListHeader}
-          ListEmptyComponent={
-            <View className="items-center py-20 bg-slate-800/30 rounded-2xl border border-slate-700/50 px-6">
-              <Users size={40} color="#475569" className="mb-4" />
-              <Text className="text-slate-300 text-lg font-medium text-center">No members found</Text>
-              <Text className="text-slate-500 text-sm text-center mt-1">Try adjusting your search or filters</Text>
-            </View>
-          }
-          ListFooterComponent={
-            <View className="py-4 items-center">
-              {loadingMore && <ActivityIndicator size="small" color="#3b82f6" />}
-              {!loadingMore && page >= totalPages && members.length > 0 && (
-                <Text className="text-slate-600 text-xs">All {total.toLocaleString()} members loaded</Text>
-              )}
-            </View>
-          }
-          onEndReached={onEndReached}
-          onEndReachedThreshold={0.3}
-          contentContainerStyle={{ paddingBottom: 80 }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />
-          }
-        />
+        {loading && members.length === 0 ? (
+          <View className="flex-1">
+            <ListHeader />
+            <MemberCardSkeleton />
+          </View>
+        ) : (
+          <FlashList
+            data={members}
+            keyExtractor={keyExtractor}
+            renderItem={renderMember}
+            ListHeaderComponent={ListHeader}
+            ListEmptyComponent={
+              <EmptyState
+                emoji="👥"
+                title="No members found"
+                subtitle="Try adjusting your search or filters"
+              />
+            }
+            ListFooterComponent={
+              <View className="py-4 items-center">
+                {loadingMore && <ActivityIndicator size="small" color="#3b82f6" />}
+                {!loadingMore && page >= totalPages && members.length > 0 && (
+                  <Text className="text-slate-600 text-xs">All {total.toLocaleString()} members loaded</Text>
+                )}
+              </View>
+            }
+            onEndReached={onEndReached}
+            onEndReachedThreshold={0.3}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor="#2563eb"
+                colors={['#2563eb']}
+                progressBackgroundColor="#1e293b"
+              />
+            }
+          />
+        )}
       </View>
 
       {/* Filter Modal */}
@@ -266,9 +324,9 @@ export default function MembersScreen() {
         onClose={() => setShowFilterModal(false)}
         options={filterOptions as any}
         filters={filters}
-        onChange={setFilters}
+        onChange={handleFilterChange}
         totalResults={total}
       />
-    </SafeAreaView>
+    </View>
   );
 }
