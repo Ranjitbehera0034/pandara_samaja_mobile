@@ -75,8 +75,10 @@ const HTML_CONTENT = `
       return true;
     };
 
-    // Listen for messages from React Native
-    window.addEventListener('message', function(event) {
+    // Listen for messages from React Native.
+    // react-native-webview delivers postMessage() on "window" on iOS but
+    // only on "document" on Android, so both must be registered.
+    function handleRNMessage(event) {
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'init') {
@@ -134,7 +136,10 @@ const HTML_CONTENT = `
       } catch (err) {
         sendToRN({ type: 'error', message: 'Exception: ' + err.message });
       }
-    });
+    }
+
+    document.addEventListener('message', handleRNMessage);
+    window.addEventListener('message', handleRNMessage);
   </script>
 </body>
 </html>
