@@ -27,21 +27,19 @@ export default function RootNavigator() {
     checkOnboarding();
   }, []);
 
-  if (showSplash) {
-    return <AnimatedSplash onFinish={() => setShowSplash(false)} />;
-  }
-
-  if (showOnboarding === null || isLoading) {
-    return <LoadingScreen />;
-  }
-
-  if (showOnboarding) {
-    return <OnboardingScreen onComplete={() => setShowOnboarding(false)} />;
-  }
-
   return (
     <NavigationContainer>
-      {isAuthenticated ? <MainTabs /> : <AuthStack />}
+      {showSplash ? (
+        <AnimatedSplash onFinish={() => setShowSplash(false)} />
+      ) : showOnboarding === null || isLoading ? (
+        <LoadingScreen />
+      ) : showOnboarding ? (
+        <OnboardingScreen onComplete={() => setShowOnboarding(false)} />
+      ) : isAuthenticated ? (
+        <MainTabs />
+      ) : (
+        <AuthStack />
+      )}
     </NavigationContainer>
   );
 }
