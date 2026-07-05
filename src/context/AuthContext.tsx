@@ -1,5 +1,6 @@
 // src/context/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { Alert } from 'react-native';
 import { STORAGE_KEYS } from '../config/constants';
 import { storage } from '../utils/secureStorage';
 import { Member, LoggedUser } from '../types';
@@ -51,6 +52,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     switch (event.type) {
       case 'ready':
         console.log('[RECAPTCHA] WebView Ready');
+        if (pendingOtpRequest.current) {
+          const formattedMobile = `+91${pendingOtpRequest.current.mobile.replace(/\D/g, '')}`;
+          console.log('[RECAPTCHA] Sending OTP to:', formattedMobile);
+          recaptchaRef.current?.injectMessage({
+            type: 'sendOtp',
+            phoneNumber: formattedMobile,
+          });
+        }
         break;
 
       case 'otpSent':
@@ -63,6 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       case 'sendOtpError':
         console.error('[RECAPTCHA] Send OTP Error:', event.message);
+        Alert.alert('Firebase Error', event.message || 'Failed to send OTP. Please check your credentials and try again.');
         setIsRecaptchaVisible(false);
         if (pendingOtpRequest.current) {
           pendingOtpRequest.current.reject(new Error(event.message || 'Failed to send OTP'));
@@ -114,6 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       case 'error':
         console.error('[RECAPTCHA] Internal WebView error:', event.message);
+        Alert.alert('WebView Error', event.message || 'Verification initialization error.');
         if (pendingOtpRequest.current) {
           pendingOtpRequest.current.reject(new Error(event.message || 'Verification initialization error'));
           pendingOtpRequest.current = null;
@@ -196,19 +207,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { useFirebase: false, devOtp: response.data.devOtp };
     }
 
-    const formattedMobile = `+91${mobile.replace(/\D/g, '')}`;
-
     return new Promise<{ useFirebase: boolean; devOtp?: string }>((resolve, reject) => {
       pendingOtpRequest.current = { resolve, reject, membershipNo, mobile };
       setIsRecaptchaVisible(true);
-
-      // Post message to WebView to start Phone Auth SMS delivery
-      setTimeout(() => {
-        recaptchaRef.current?.injectMessage({
-          type: 'sendOtp',
-          phoneNumber: formattedMobile,
-        });
-      }, 500);
     });
   };
 

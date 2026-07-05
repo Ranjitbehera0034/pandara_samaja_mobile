@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "956457904180",
+    "project_id": "nikhila-odisha-pandara-samaja",
+    "storage_bucket": "nikhila-odisha-pandara-samaja.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:956457904180:android:3d626dcb6a244ceb4f4261",
+        "android_client_info": {
+          "package_name": "in.nikhilaodishapandarasamaja.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzEBG59P-fbaimGOm0jB6O9V3lwhj3rsU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

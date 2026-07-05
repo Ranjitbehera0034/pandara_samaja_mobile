@@ -26,6 +26,7 @@
         "backgroundColor": "#0f172a"
       },
       "package": "in.nikhilaodishapandarasamaja.app",
+      "googleServicesFile": "./google-services.json",
       "splash": {
         "backgroundColor": "#0f172a",
         "image": "./assets/splash.png",
