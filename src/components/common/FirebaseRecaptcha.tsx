@@ -79,8 +79,21 @@ const HTML_CONTENT = `
     // react-native-webview delivers postMessage() on "window" on iOS but
     // only on "document" on Android, so both must be registered.
     function handleRNMessage(event) {
+      if (typeof event.data !== 'string') return;
+      
+      let data;
       try {
-        const data = JSON.parse(event.data);
+        data = JSON.parse(event.data);
+      } catch (err) {
+        // Silently ignore parse errors for third-party or iframe internal messages
+        return;
+      }
+      
+      if (!data || !['init', 'sendOtp', 'verifyOtp'].includes(data.type)) {
+        return;
+      }
+
+      try {
         if (data.type === 'init') {
           setStatus('Initializing verification...');
           const config = data.config;
@@ -253,7 +266,7 @@ const styles = StyleSheet.create({
   },
   webViewContainer: {
     width: '100%',
-    height: 150,
+    height: 480,
     backgroundColor: '#0f172a',
   },
   webView: {
