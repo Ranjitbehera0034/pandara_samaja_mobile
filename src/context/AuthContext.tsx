@@ -33,7 +33,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Firebase WebView OTP verification coordination
   const recaptchaRef = useRef<FirebaseRecaptchaRef>(null);
   const [isRecaptchaVisible, setIsRecaptchaVisible] = useState(false);
-  
+  // The WebView now mounts once at app launch (kept alive persistently — see
+  // FirebaseRecaptcha.tsx) instead of remounting each time it's shown, so its
+  // one-shot 'ready' event fires immediately at launch, long before any OTP
+  // request exists. Track readiness separately so requestOtp() can send the
+  // 'sendOtp' message itself instead of waiting for a 'ready' that already
+  // happened and will never fire again.
+  const isRecaptchaReady = useRef(false);
+
   const pendingOtpRequest = useRef<{
     resolve: (val: { useFirebase: boolean; devOtp?: string }) => void;
     reject: (err: Error) => void;
@@ -52,6 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     switch (event.type) {
       case 'ready':
         console.log('[RECAPTCHA] WebView Ready');
+        isRecaptchaReady.current = true;
         if (pendingOtpRequest.current) {
           const formattedMobile = `+91${pendingOtpRequest.current.mobile.replace(/\D/g, '')}`;
           console.log('[RECAPTCHA] Sending OTP to:', formattedMobile);
@@ -210,6 +218,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return new Promise<{ useFirebase: boolean; devOtp?: string }>((resolve, reject) => {
       pendingOtpRequest.current = { resolve, reject, membershipNo, mobile };
       setIsRecaptchaVisible(true);
+
+      // The WebView is persistently mounted, so its 'ready' event almost
+      // certainly already fired at app launch, before this request existed —
+      // send now instead of waiting for a 'ready' that won't come again.
+      if (isRecaptchaReady.current) {
+        const formattedMobile = `+91${mobile.replace(/\D/g, '')}`;
+        console.log('[RECAPTCHA] Already ready — sending OTP to:', formattedMobile);
+        recaptchaRef.current?.injectMessage({
+          type: 'sendOtp',
+          phoneNumber: formattedMobile,
+        });
+      }
+      // If it's not ready yet (e.g. user taps Send OTP within the first
+      // instant of a cold start), the 'ready' handler above still covers it.
     });
   };
 
