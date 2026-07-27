@@ -8,6 +8,7 @@ export interface MembersParams {
   district?: string;
   taluka?: string;
   panchayat?: string;
+  village?: string;
   gender?: string;
 }
 
@@ -18,11 +19,11 @@ export const fetchMembers = async (params: MembersParams = {}) => {
   // Returns: { success, members, page, total, totalPages }
 };
 
-// GET /api/portal/members/filters — district/taluka/panchayat options
+// GET /api/portal/members/filters — district/taluka/panchayat/village options
 export const fetchMemberFilters = async () => {
   const res = await client.get('/portal/members/filters');
   return res.data;
-  // Returns: { success, filters: { districts, talukas, panchayats } }
+  // Returns: { success, filters: { districts, talukas, panchayats, villages } }
 };
 
 // GET /api/portal/members/:id — single member

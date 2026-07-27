@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import Toast from 'react-native-toast-message';
 import { ArrowLeft, Heart, X, MapPin, Briefcase, GraduationCap, Calendar, UserCheck } from 'lucide-react-native';
-import { C } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import SkeletonBox from '../../components/common/SkeletonBox';
 import EmptyState from '../../components/common/EmptyState';
@@ -133,7 +133,7 @@ const MOCK_CANDIDATES: Candidate[] = [
   }
 ];
 
-function MatrimonySkeleton() {
+function MatrimonySkeleton({ colors: C }: { colors: ReturnType<typeof useTheme>['colors'] }) {
   return (
     <View style={{ padding: 16, gap: 16 }}>
       {[1, 2].map(i => (
@@ -154,7 +154,8 @@ function MatrimonySkeleton() {
 export default function MatrimonyScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
+  const { colors: C } = useTheme();
 
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,14 +199,13 @@ export default function MatrimonyScreen() {
       prev.map(c => {
         if (c.id === id) {
           const nextShort = !c.isShortlisted;
+          const displayName = lang === 'od' ? c.nameOdia : name;
           Toast.show({
             type: 'success',
-            text1: nextShort 
-              ? (lang === 'od' ? 'ପସନ୍ଦ ତାଲିକାରେ ଯୋଡ଼ାଗଲା' : 'Added to Shortlist')
-              : (lang === 'od' ? 'ପସନ୍ଦ ତାଲିକାରୁ ବାଦ୍ ଦିଆଗଲା' : 'Removed from Shortlist'),
+            text1: nextShort ? t('matrimony', 'shortlistAddedTitle') : t('matrimony', 'shortlistRemovedTitle'),
             text2: nextShort
-              ? (lang === 'od' ? `${c.nameOdia} ଙ୍କୁ ଆପଣ ପସନ୍ଦ କରିଛନ୍ତି` : `You have shortlisted ${name}`)
-              : (lang === 'od' ? `${c.nameOdia} ଙ୍କୁ ବାଦ୍ ଦିଆଯାଇଛି` : `You removed ${name} from shortlist`),
+              ? `${t('matrimony', 'shortlistAddedMessagePrefix')} ${displayName} ${t('matrimony', 'shortlistAddedMessageSuffix')}`.trim()
+              : `${t('matrimony', 'shortlistRemovedMessagePrefix')} ${displayName} ${t('matrimony', 'shortlistRemovedMessageSuffix')}`.trim(),
             visibilityTime: 2000,
           });
           return { ...c, isShortlisted: nextShort };
@@ -221,12 +221,13 @@ export default function MatrimonyScreen() {
       prev.map(c => {
         if (c.id === id) {
           const nextInterest = !c.isInterestSent;
+          const displayName = lang === 'od' ? c.nameOdia : name;
           Toast.show({
             type: 'success',
-            text1: nextInterest ? 'Interest Expressed!' : 'Interest Retracted',
-            text2: nextInterest 
-              ? `A request has been sent to ${name}'s family.`
-              : `You canceled interest in ${name}`,
+            text1: nextInterest ? t('matrimony', 'interestExpressedToastTitle') : t('matrimony', 'interestRetractedToastTitle'),
+            text2: nextInterest
+              ? `${t('matrimony', 'interestExpressedMessagePrefix')} ${displayName}${t('matrimony', 'interestExpressedMessageSuffix')}`.trim()
+              : `${t('matrimony', 'interestCanceledMessagePrefix')} ${displayName} ${t('matrimony', 'interestCanceledMessageSuffix')}`.trim(),
           });
           if (selectedCandidate?.id === id) {
             setSelectedCandidate(prevSelected => prevSelected ? { ...prevSelected, isInterestSent: nextInterest } : null);
@@ -303,9 +304,7 @@ export default function MatrimonyScreen() {
             borderRadius: 8,
           }}>
             <Text style={{ color: 'white', fontSize: 11, fontWeight: '700' }}>
-              {item.gender === 'male' 
-                ? (lang === 'od' ? 'ପାତ୍ର ♂' : 'Groom ♂') 
-                : (lang === 'od' ? 'ପାତ୍ରୀ ♀' : 'Bride ♀')}
+              {item.gender === 'male' ? t('matrimony', 'groomTag') : t('matrimony', 'brideTag')}
             </Text>
           </View>
         </View>
@@ -317,7 +316,7 @@ export default function MatrimonyScreen() {
           </Text>
 
           <Text style={{ color: C.primaryLight, fontSize: 13, fontWeight: '600', marginTop: 4, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
-            {lang === 'od' ? `ଗୋତ୍ର: ${item.gotraOdia}` : `Gotra: ${item.gotra}`}
+            {t('matrimony', 'gotraLabel')} {lang === 'od' ? item.gotraOdia : item.gotra}
           </Text>
 
           <View style={{ marginTop: 12, gap: 6 }}>
@@ -357,7 +356,7 @@ export default function MatrimonyScreen() {
             }}>
               <UserCheck size={14} color={C.success} />
               <Text style={{ color: C.success, fontSize: 12, fontWeight: '600' }}>
-                {lang === 'od' ? 'ଆଗ୍ରହ ପଠାଯାଇଛି ✓' : 'Interest Expressed'}
+                {t('matrimony', 'interestExpressedCard')}
               </Text>
             </View>
           )}
@@ -381,7 +380,7 @@ export default function MatrimonyScreen() {
       }}>
         <UserCheck size={14} color={C.accent} style={{ marginRight: 6 }} />
         <Text style={{ color: C.text, fontSize: 12, fontWeight: '600', textAlign: 'center' }}>
-          {lang === 'od' ? 'ସମସ୍ତ ପ୍ରୋଫାଇଲ୍ ସମାଜ ଦ୍ୱାରା ଯାଞ୍ଚ ହୋଇଛି' : 'All matrimony profiles are 100% verified by Samaja.'}
+          {t('matrimony', 'verifiedBanner')}
         </Text>
       </View>
 
@@ -405,7 +404,7 @@ export default function MatrimonyScreen() {
           <ArrowLeft size={20} color={C.text} />
         </TouchableOpacity>
         <Text style={{ color: C.text, fontSize: 18, fontWeight: '700', fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }}>
-          {lang === 'od' ? 'ବୈବାହିକ ପ୍ରସ୍ତାବ' : 'Matrimony Services'}
+          {t('matrimony', 'title')}
         </Text>
       </View>
 
@@ -435,7 +434,7 @@ export default function MatrimonyScreen() {
               fontSize: 13,
               fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined
             }}>
-              {lang === 'od' ? 'ସବୁ' : 'All Candidates'}
+              {t('matrimony', 'filterAll')}
             </Text>
           </TouchableOpacity>
 
@@ -455,7 +454,7 @@ export default function MatrimonyScreen() {
               fontSize: 13,
               fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined
             }}>
-              {lang === 'od' ? 'ପାତ୍ରୀ ♀' : 'Brides ♀'}
+              {t('matrimony', 'filterBrides')}
             </Text>
           </TouchableOpacity>
 
@@ -475,7 +474,7 @@ export default function MatrimonyScreen() {
               fontSize: 13,
               fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined
             }}>
-              {lang === 'od' ? 'ପାତ୍ର ♂' : 'Grooms ♂'}
+              {t('matrimony', 'filterGrooms')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -483,14 +482,14 @@ export default function MatrimonyScreen() {
 
       {/* Candidates List */}
       {loading ? (
-        <MatrimonySkeleton />
+        <MatrimonySkeleton colors={C} />
       ) : filteredCandidates.length === 0 ? (
         <EmptyState
           emoji="💍"
-          title={lang === 'od' ? 'କୌଣସି ପାତ୍ର/ପାତ୍ରୀ ମିଳିଲେ ନାହିଁ' : 'No Profiles Found'}
-          subtitle={lang === 'od' ? 'ଅନ୍ୟ ଫିଲ୍ଟର ଚେଷ୍ଟା କରନ୍ତୁ' : 'No profiles match your current selection filter.'}
+          title={t('matrimony', 'emptyTitle')}
+          subtitle={t('matrimony', 'emptySubtitle')}
           action={{
-            label: lang === 'od' ? 'ଫିଲ୍ଟର୍ ରିସେଟ୍ କରନ୍ତୁ' : 'Reset Filter',
+            label: t('matrimony', 'resetFilter'),
             onPress: () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setGenderFilter('all');
@@ -560,30 +559,30 @@ export default function MatrimonyScreen() {
                     {lang === 'od' ? selectedCandidate.nameOdia : selectedCandidate.name}
                   </Text>
                   <Text style={{ color: C.text, fontSize: 20, fontWeight: '700' }}>
-                    {selectedCandidate.age} yrs
+                    {selectedCandidate.age} {t('matrimony', 'yearsAbbrev')}
                   </Text>
                 </View>
                 <Text style={{ color: C.primaryLight, fontSize: 15, fontWeight: '600', marginTop: 4, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
-                  {lang === 'od' ? `ଗୋତ୍ର: ${selectedCandidate.gotraOdia}` : `Gotra: ${selectedCandidate.gotra}`}
+                  {t('matrimony', 'gotraLabel')} {lang === 'od' ? selectedCandidate.gotraOdia : selectedCandidate.gotra}
                 </Text>
               </View>
 
               {/* Personal Details */}
               <View style={{ marginTop: 20 }}>
                 <Text style={{ color: C.textMuted, fontSize: 13, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 12 }}>
-                  {lang === 'od' ? 'ବ୍ୟକ୍ତିଗତ ବିବରଣୀ' : 'Profile Details'}
+                  {t('matrimony', 'profileDetailsHeader')}
                 </Text>
 
                 <View style={{ gap: 12 }}>
                   {/* Height */}
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
-                    <Text style={{ color: C.textMuted, fontSize: 14 }}>{lang === 'od' ? 'ଉଚ୍ଚତା' : 'Height'}</Text>
+                    <Text style={{ color: C.textMuted, fontSize: 14 }}>{t('matrimony', 'heightLabel')}</Text>
                     <Text style={{ color: C.text, fontSize: 14, fontWeight: '600' }}>{selectedCandidate.height}</Text>
                   </View>
 
                   {/* Education */}
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
-                    <Text style={{ color: C.textMuted, fontSize: 14 }}>{lang === 'od' ? 'ଶିକ୍ଷାଗତ ଯୋଗ୍ୟତା' : 'Education'}</Text>
+                    <Text style={{ color: C.textMuted, fontSize: 14 }}>{t('matrimony', 'educationLabel')}</Text>
                     <Text style={{ color: C.text, fontSize: 14, fontWeight: '600', textAlign: 'right', flex: 1, marginLeft: 20, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
                       {lang === 'od' ? selectedCandidate.educationOdia : selectedCandidate.education}
                     </Text>
@@ -591,7 +590,7 @@ export default function MatrimonyScreen() {
 
                   {/* Occupation */}
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
-                    <Text style={{ color: C.textMuted, fontSize: 14 }}>{lang === 'od' ? 'ବୃତ୍ତି / ଚାକିରି' : 'Occupation'}</Text>
+                    <Text style={{ color: C.textMuted, fontSize: 14 }}>{t('matrimony', 'occupationLabel')}</Text>
                     <Text style={{ color: C.text, fontSize: 14, fontWeight: '600', textAlign: 'right', flex: 1, marginLeft: 20, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
                       {lang === 'od' ? selectedCandidate.occupationOdia : selectedCandidate.occupation}
                     </Text>
@@ -599,7 +598,7 @@ export default function MatrimonyScreen() {
 
                   {/* Parents */}
                   <View style={{ flexDirection: 'column', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: C.border, gap: 4 }}>
-                    <Text style={{ color: C.textMuted, fontSize: 14 }}>{lang === 'od' ? 'ପିତାମାତାଙ୍କ ପରିଚୟ' : 'Parents / Guardians'}</Text>
+                    <Text style={{ color: C.textMuted, fontSize: 14 }}>{t('matrimony', 'parentsLabel')}</Text>
                     <Text style={{ color: C.text, fontSize: 14, fontWeight: '600', lineHeight: 20, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
                       {lang === 'od' ? selectedCandidate.parentsOdia : selectedCandidate.parents}
                     </Text>
@@ -607,7 +606,7 @@ export default function MatrimonyScreen() {
 
                   {/* Location */}
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 }}>
-                    <Text style={{ color: C.textMuted, fontSize: 14 }}>{lang === 'od' ? 'ସ୍ଥାନ' : 'Location'}</Text>
+                    <Text style={{ color: C.textMuted, fontSize: 14 }}>{t('matrimony', 'locationLabel')}</Text>
                     <Text style={{ color: C.text, fontSize: 14, fontWeight: '600', fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
                       {lang === 'od' ? selectedCandidate.locationOdia : selectedCandidate.location}
                     </Text>
@@ -655,9 +654,9 @@ export default function MatrimonyScreen() {
                     fontWeight: '700',
                     fontSize: 16,
                   }}>
-                    {selectedCandidate.isInterestSent 
-                      ? (lang === 'od' ? 'ଆଗ୍ରହ ପଠାଯାଇଛି ✓' : 'Interest Expressed ✓') 
-                      : (lang === 'od' ? 'ଆଗ୍ରହ ପ୍ରକାଶ କରନ୍ତୁ' : 'Send Interest')}
+                    {selectedCandidate.isInterestSent
+                      ? t('matrimony', 'interestExpressedModal')
+                      : t('matrimony', 'sendInterest')}
                   </Text>
                 </TouchableOpacity>
               </View>

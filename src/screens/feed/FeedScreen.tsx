@@ -18,13 +18,15 @@ import EmptyState from '../../components/common/EmptyState';
 import { useSocket } from '../../hooks/useSocket';
 import * as feedApi from '../../api/feed';
 import { mapPost, mapAnnouncement } from '../../utils/feedUtils';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Feed skeleton list loader
-function FeedSkeleton() {
+function FeedSkeleton({ colors }: { colors: ReturnType<typeof useTheme>['colors'] }) {
   return (
     <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 16 }}>
       {[1, 2, 3].map(i => (
-        <View key={i} style={{ backgroundColor: '#1e293b', borderRadius: 16, padding: 16, gap: 12, borderWidth: 1, borderColor: '#334155/50' }}>
+        <View key={i} style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, gap: 12, borderWidth: 1, borderColor: colors.border }}>
           <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
             <SkeletonBox width={40} height={40} borderRadius={20} />
             <View style={{ gap: 6, flex: 1 }}>
@@ -49,6 +51,8 @@ export default function FeedScreen() {
   const navigation = useNavigation<any>();
   const { member } = useAuth();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const { t } = useLanguage();
   const [posts, setPosts] = useState<Post[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,7 +99,7 @@ export default function FeedScreen() {
       setStories(parsedStories);
     } catch (e) {
       console.error('[FEED] Failed to load feed data:', e);
-      Alert.alert('Error', 'Failed to load community feed.');
+      Alert.alert(t('common', 'errorTitle'), t('feed', 'loadError'));
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -154,7 +158,7 @@ export default function FeedScreen() {
       );
     } catch (e) {
       console.error('[COMMENT] Error:', e);
-      Alert.alert('Error', 'Failed to submit comment.');
+      Alert.alert(t('common', 'errorTitle'), t('feed', 'commentError'));
     }
   }, []);
 
@@ -163,7 +167,7 @@ export default function FeedScreen() {
       await feedApi.addComment(postId, text, parentCommentId);
     } catch (e) {
       console.error('[REPLY] Error:', e);
-      Alert.alert('Error', 'Failed to submit reply.');
+      Alert.alert(t('common', 'errorTitle'), t('feed', 'replyError'));
     }
   }, []);
 
@@ -197,7 +201,7 @@ export default function FeedScreen() {
       }
     } catch (e: any) {
       console.error('[CREATE_POST] Error:', e);
-      Alert.alert('Error', e.message || 'Failed to submit post.');
+      Alert.alert(t('common', 'errorTitle'), e.message || t('feed', 'postError'));
     }
   }, []);
 
@@ -210,7 +214,7 @@ export default function FeedScreen() {
       }
     } catch (e) {
       console.error('[DELETE_POST] Error:', e);
-      Alert.alert('Error', 'Failed to delete post.');
+      Alert.alert(t('common', 'errorTitle'), t('feed', 'deleteError'));
     }
   }, []);
 
@@ -223,7 +227,7 @@ export default function FeedScreen() {
       }
     } catch (e) {
       console.error('[EDIT_POST] Error:', e);
-      Alert.alert('Error', 'Failed to update post.');
+      Alert.alert(t('common', 'errorTitle'), t('feed', 'editError'));
     }
   }, []);
 
@@ -231,11 +235,11 @@ export default function FeedScreen() {
     try {
       const res = await feedApi.reportPost(id, reason);
       if (res.success) {
-        Alert.alert('Report Submitted', 'Thank you for keeping our community safe. We will review this post.');
+        Alert.alert(t('feed', 'reportSuccessTitle'), t('feed', 'reportSuccessMessage'));
       }
     } catch (e) {
       console.error('[REPORT_POST] Error:', e);
-      Alert.alert('Error', 'Failed to submit report.');
+      Alert.alert(t('common', 'errorTitle'), t('feed', 'reportError'));
     }
   }, []);
 
@@ -286,12 +290,12 @@ export default function FeedScreen() {
 
       const res = await feedApi.createStory(formData);
       if (res.success) {
-        Alert.alert('Success', 'Story uploaded successfully!');
+        Alert.alert(t('common', 'successTitle'), t('feed', 'storySuccessMessage'));
         loadFeedData();
       }
     } catch (e) {
       console.error('[ADD_STORY] Error:', e);
-      Alert.alert('Error', 'Failed to upload story.');
+      Alert.alert(t('common', 'errorTitle'), t('feed', 'storyError'));
     }
   }, [loadFeedData]);
 
@@ -343,25 +347,25 @@ export default function FeedScreen() {
   ), [stories, handleCreatePost, handleAddStory, handleViewStory]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0f172a', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
       {/* Polished Top Header */}
-      <View className="px-4 py-3 border-b border-slate-800 flex-row justify-between items-center bg-slate-900">
-        <View className="flex-row items-center gap-2">
+      <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.bg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {/* Logo representation */}
-          <View className="w-8 h-8 rounded-lg bg-blue-600 items-center justify-center border border-blue-500/20">
-            <Text className="text-white font-extrabold text-lg leading-none">P</Text>
+          <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.primaryLight }}>
+            <Text style={{ color: colors.text, fontWeight: '800', fontSize: 18, lineHeight: 18 }}>P</Text>
           </View>
-          <Text className="text-white font-extrabold text-lg tracking-wide">Pandara Samaja</Text>
+          <Text style={{ color: colors.text, fontWeight: '800', fontSize: 18, letterSpacing: 0.3 }}>{t('common', 'appName')}</Text>
         </View>
-        <View className="flex-row items-center gap-2.5">
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <TouchableOpacity
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               navigation.navigate('Announcements');
             }}
-            className="p-2.5 bg-slate-800 rounded-full flex-row items-center justify-center border border-slate-700/50"
+            style={{ padding: 10, backgroundColor: colors.card, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
           >
-            <Megaphone size={18} color="#3b82f6" />
+            <Megaphone size={18} color={colors.primaryLight} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
@@ -369,12 +373,12 @@ export default function FeedScreen() {
               navigation.navigate('Notifications');
               setUnreadCount(0); // clear count
             }}
-            className="p-2.5 bg-slate-800 rounded-full flex-row items-center justify-center border border-slate-700/50"
+            style={{ padding: 10, backgroundColor: colors.card, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
           >
-            <Bell size={18} color="#f8fafc" />
+            <Bell size={18} color={colors.text} />
             {unreadCount > 0 && (
-              <View className="absolute -top-1.5 -right-1.5 bg-rose-500 rounded-full min-w-5 h-5 items-center justify-center px-1 border border-slate-900">
-                <Text className="text-white text-[9px] font-bold leading-none">
+              <View style={{ position: 'absolute', top: -6, right: -6, backgroundColor: colors.error, borderRadius: 999, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 1, borderColor: colors.bg }}>
+                <Text style={{ color: '#ffffff', fontSize: 9, fontWeight: '700', lineHeight: 9 }}>
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </Text>
               </View>
@@ -384,12 +388,12 @@ export default function FeedScreen() {
       </View>
 
       {/* Global Search Component inside the header flow */}
-      <View className="px-4 pt-3 pb-1 bg-slate-900">
+      <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, backgroundColor: colors.bg }}>
         <GlobalSearch />
       </View>
 
       {isLoading && !isRefreshing ? (
-        <FeedSkeleton />
+        <FeedSkeleton colors={colors} />
       ) : (
         <View style={{ flex: 1 }}>
           <FlashList
@@ -402,17 +406,17 @@ export default function FeedScreen() {
               <RefreshControl
                 refreshing={isRefreshing}
                 onRefresh={handleRefresh}
-                tintColor="#2563eb"
-                colors={['#2563eb']}
-                progressBackgroundColor="#1e293b"
+                tintColor={colors.primary}
+                colors={[colors.primary]}
+                progressBackgroundColor={colors.card}
               />
             }
             ListHeaderComponent={ListHeader}
             ListEmptyComponent={
               <EmptyState
                 emoji="📰"
-                title="No posts yet"
-                subtitle="Be the first to share something"
+                title={t('feed', 'noPostsTitle')}
+                subtitle={t('feed', 'noPostsSubtitle')}
               />
             }
           />

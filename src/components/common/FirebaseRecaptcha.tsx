@@ -2,6 +2,8 @@
 import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { View, Modal, ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export interface FirebaseRecaptchaProps {
   onEvent: (event: any) => void;
@@ -160,6 +162,10 @@ const HTML_CONTENT = `
 
 export const FirebaseRecaptcha = forwardRef<FirebaseRecaptchaRef, FirebaseRecaptchaProps>(
   ({ onEvent, isVisible, onClose }, ref) => {
+    const { colors } = useTheme();
+    const { lang, t } = useLanguage();
+    const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;
+    const fontFamilyBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
     const webViewRef = useRef<WebView>(null);
     const [isWebViewReady, setIsWebViewReady] = useState(false);
 
@@ -200,7 +206,7 @@ export const FirebaseRecaptcha = forwardRef<FirebaseRecaptchaRef, FirebaseRecapt
         onRequestClose={onClose}
       >
         <View style={styles.container}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {/* WebView container */}
             <View style={styles.webViewContainer}>
               <WebView
@@ -220,18 +226,20 @@ export const FirebaseRecaptcha = forwardRef<FirebaseRecaptchaRef, FirebaseRecapt
             </View>
 
             {/* Loading Indicator / Help text */}
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#3b82f6" />
-              <Text style={styles.text}>Security Check in Progress</Text>
-              <Text style={styles.subtext}>
-                Please wait a moment while we establish a secure connection.
+            <View style={[styles.loadingContainer, { borderTopColor: colors.border }]}>
+              <ActivityIndicator size="large" color={colors.primaryLight} />
+              <Text style={[styles.text, { color: colors.text, fontFamily: fontFamilyBold }]}>
+                {t('common', 'securityCheckTitle')}
+              </Text>
+              <Text style={[styles.subtext, { color: colors.textMuted, fontFamily }]}>
+                {t('common', 'securityCheckMessage')}
               </Text>
               {onClose && (
                 <TouchableOpacity
                   onPress={onClose}
-                  style={styles.cancelButton}
+                  style={[styles.cancelButton, { backgroundColor: colors.border }]}
                 >
-                  <Text style={styles.cancelText}>Cancel</Text>
+                  <Text style={[styles.cancelText, { color: colors.text, fontFamily }]}>{t('common', 'cancel')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -245,6 +253,7 @@ export const FirebaseRecaptcha = forwardRef<FirebaseRecaptchaRef, FirebaseRecapt
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    // Fixed dark scrim behind the modal — intentionally not theme-dependent (matches other modal backdrops in the app).
     backgroundColor: 'rgba(15, 23, 42, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -253,10 +262,9 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '100%',
     maxWidth: 360,
-    backgroundColor: '#1e293b',
+    // backgroundColor/borderColor set inline from theme colors
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#334155',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
@@ -267,6 +275,7 @@ const styles = StyleSheet.create({
   webViewContainer: {
     width: '100%',
     height: 480,
+    // Matches the WebView's own hardcoded dark HTML background (out of scope to theme) to avoid a color flash while it loads.
     backgroundColor: '#0f172a',
   },
   webView: {
@@ -277,16 +286,14 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#334155',
+    // borderTopColor set inline from theme colors
   },
   text: {
-    color: '#f8fafc',
     fontSize: 16,
     fontWeight: 'bold',
     marginTop: 16,
   },
   subtext: {
-    color: '#94a3b8',
     fontSize: 12,
     textAlign: 'center',
     marginTop: 8,
@@ -297,10 +304,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 10,
-    backgroundColor: '#334155',
   },
   cancelText: {
-    color: '#f8fafc',
     fontSize: 14,
     fontWeight: '600',
   },

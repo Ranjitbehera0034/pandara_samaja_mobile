@@ -5,17 +5,21 @@ import {
   ScrollView, Pressable
 } from 'react-native';
 import { X, Check } from 'lucide-react-native';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface FilterOptions {
   districts: string[];
   talukas: Record<string, string[]>;
   panchayats: Record<string, string[]>;
+  villages: Record<string, string[]>;
 }
 
 interface FilterState {
   district: string;
   taluka: string;
   panchayat: string;
+  village: string;
   gender: string;
 }
 
@@ -28,14 +32,16 @@ interface Props {
   totalResults: number;
 }
 
-const GENDER_OPTIONS = [
-  { value: '', label: 'All Genders' },
-  { value: 'male', label: '♂ Male Head' },
-  { value: 'female', label: '♀ Female Head' },
-];
-
 export default function FilterModal({ visible, onClose, options, filters, onChange, totalResults }: Props) {
+  const { colors: C } = useTheme();
+  const { lang, t } = useLanguage();
   const [local, setLocal] = useState<FilterState>(filters);
+
+  const GENDER_OPTIONS = [
+    { value: '', label: t('members', 'allGenders') },
+    { value: 'male', label: t('members', 'maleHead') },
+    { value: 'female', label: t('members', 'femaleHead') },
+  ];
 
   // Sync state when modal becomes visible
   useEffect(() => {
@@ -46,10 +52,11 @@ export default function FilterModal({ visible, onClose, options, filters, onChan
 
   const talukas = local.district ? (options.talukas?.[local.district] || []) : [];
   const panchayats = local.taluka ? (options.panchayats?.[local.taluka] || []) : [];
+  const villages = local.panchayat ? (options.villages?.[local.panchayat] || []) : [];
 
   const apply = () => { onChange(local); onClose(); };
   const reset = () => {
-    const empty = { district: '', taluka: '', panchayat: '', gender: '' };
+    const empty = { district: '', taluka: '', panchayat: '', village: '', gender: '' };
     setLocal(empty);
     onChange(empty);
     onClose();
@@ -59,17 +66,26 @@ export default function FilterModal({ visible, onClose, options, filters, onChan
   const OptionRow = ({ label, selected, onSelect }: { label: string; selected: boolean; onSelect: () => void }) => (
     <TouchableOpacity
       onPress={onSelect}
-      className={`flex-row items-center justify-between px-4 py-3 border-b border-slate-700/30 ${selected ? 'bg-blue-500/10' : ''}`}
+      style={{ borderColor: C.border + '4d', backgroundColor: selected ? C.primary + '1a' : 'transparent' }}
+      className="flex-row items-center justify-between px-4 py-3 border-b"
     >
-      <Text className={`text-sm ${selected ? 'text-blue-400 font-semibold' : 'text-slate-300'}`}>{label}</Text>
-      {selected && <Check size={16} color="#3b82f6" />}
+      <Text
+        style={{ color: selected ? C.primaryLight : C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}
+        className={`text-sm ${selected ? 'font-semibold' : ''}`}
+      >
+        {label}
+      </Text>
+      {selected && <Check size={16} color={C.primaryLight} />}
     </TouchableOpacity>
   );
 
   // Section component
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <View className="mb-4">
-      <Text className="text-slate-500 text-xs font-bold uppercase tracking-wider px-4 py-2 bg-slate-900/40">
+      <Text
+        style={{ color: C.textFaint, backgroundColor: C.bg + '99', fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}
+        className="text-xs font-bold uppercase tracking-wider px-4 py-2"
+      >
         {title}
       </Text>
       {children}
@@ -79,50 +95,62 @@ export default function FilterModal({ visible, onClose, options, filters, onChan
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Pressable className="flex-1 bg-black/60" onPress={onClose} />
-      <View className="absolute bottom-0 left-0 right-0 bg-slate-800 rounded-t-3xl max-h-[85%]">
+      <View style={{ backgroundColor: C.card }} className="absolute bottom-0 left-0 right-0 rounded-t-3xl max-h-[85%]">
         {/* Header */}
-        <View className="flex-row items-center justify-between p-5 border-b border-slate-700">
-          <Text className="text-white font-bold text-lg">Filter Members</Text>
+        <View style={{ borderColor: C.border }} className="flex-row items-center justify-between p-5 border-b">
+          <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-bold text-lg">
+            {t('members', 'filterModalTitle')}
+          </Text>
           <TouchableOpacity onPress={onClose}>
-            <X size={20} color="#94a3b8" />
+            <X size={20} color={C.textMuted} />
           </TouchableOpacity>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* District */}
-          <Section title="District">
-            <OptionRow label="All Districts" selected={!local.district} onSelect={() => setLocal(f => ({ ...f, district: '', taluka: '', panchayat: '' }))} />
+          <Section title={t('members', 'districtSectionTitle')}>
+            <OptionRow label={t('members', 'allDistricts')} selected={!local.district} onSelect={() => setLocal(f => ({ ...f, district: '', taluka: '', panchayat: '', village: '' }))} />
             {(options.districts || []).sort().map(d => (
               <OptionRow
                 key={d} label={d}
                 selected={local.district === d}
-                onSelect={() => setLocal(f => ({ ...f, district: d, taluka: '', panchayat: '' }))}
+                onSelect={() => setLocal(f => ({ ...f, district: d, taluka: '', panchayat: '', village: '' }))}
               />
             ))}
           </Section>
 
           {/* Taluka — only if district selected */}
           {local.district && talukas.length > 0 && (
-            <Section title="Taluka">
-              <OptionRow label={`All Talukas in ${local.district}`} selected={!local.taluka} onSelect={() => setLocal(f => ({ ...f, taluka: '', panchayat: '' }))} />
-              {talukas.sort().map(t => (
-                <OptionRow key={t} label={t} selected={local.taluka === t} onSelect={() => setLocal(f => ({ ...f, taluka: t, panchayat: '' }))} />
+            <Section title={t('members', 'talukaSectionTitle')}>
+              <OptionRow label={`${t('members', 'allTalukasInPrefix')} ${local.district}`} selected={!local.taluka} onSelect={() => setLocal(f => ({ ...f, taluka: '', panchayat: '', village: '' }))} />
+              {talukas.sort().map(tk => (
+                <OptionRow key={tk} label={tk} selected={local.taluka === tk} onSelect={() => setLocal(f => ({ ...f, taluka: tk, panchayat: '', village: '' }))} />
               ))}
             </Section>
           )}
 
           {/* Panchayat — only if taluka selected */}
           {local.taluka && panchayats.length > 0 && (
-            <Section title="Panchayat">
-              <OptionRow label={`All Panchayats in ${local.taluka}`} selected={!local.panchayat} onSelect={() => setLocal(f => ({ ...f, panchayat: '' }))} />
+            <Section title={t('members', 'panchayatSectionTitle')}>
+              <OptionRow label={`${t('members', 'allPanchayatsInPrefix')} ${local.taluka}`} selected={!local.panchayat} onSelect={() => setLocal(f => ({ ...f, panchayat: '', village: '' }))} />
               {panchayats.sort().map(p => (
-                <OptionRow key={p} label={p} selected={local.panchayat === p} onSelect={() => setLocal(f => ({ ...f, panchayat: p }))} />
+                <OptionRow key={p} label={p} selected={local.panchayat === p} onSelect={() => setLocal(f => ({ ...f, panchayat: p, village: '' }))} />
+              ))}
+            </Section>
+          )}
+
+          {/* Village — only if panchayat selected */}
+          {local.panchayat && villages.length > 0 && (
+            <Section title={t('members', 'villageSectionTitle')}>
+              <OptionRow label={`${t('members', 'allVillagesInPrefix')} ${local.panchayat}`} selected={!local.village} onSelect={() => setLocal(f => ({ ...f, village: '' }))} />
+              {villages.sort().map(v => (
+                <OptionRow key={v} label={v} selected={local.village === v} onSelect={() => setLocal(f => ({ ...f, village: v }))} />
               ))}
             </Section>
           )}
 
           {/* Gender */}
-          <Section title="Head of Family Gender">
+          <Section title={t('members', 'genderSectionTitle')}>
             {GENDER_OPTIONS.map(g => (
               <OptionRow key={g.value} label={g.label} selected={local.gender === g.value} onSelect={() => setLocal(f => ({ ...f, gender: g.value }))} />
             ))}
@@ -132,13 +160,15 @@ export default function FilterModal({ visible, onClose, options, filters, onChan
         </ScrollView>
 
         {/* Footer */}
-        <View className="flex-row gap-3 p-4 border-t border-slate-700">
-          <TouchableOpacity onPress={reset} className="flex-1 py-3 bg-slate-700 rounded-xl items-center">
-            <Text className="text-white text-sm font-medium">Reset</Text>
+        <View style={{ borderColor: C.border }} className="flex-row gap-3 p-4 border-t">
+          <TouchableOpacity onPress={reset} style={{ backgroundColor: C.border }} className="flex-1 py-3 rounded-xl items-center">
+            <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-sm font-medium">
+              {t('members', 'resetButton')}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={apply} className="flex-1 py-3 bg-blue-600 rounded-xl items-center">
-            <Text className="text-white text-sm font-semibold">
-              Show {totalResults.toLocaleString()} Results
+          <TouchableOpacity onPress={apply} style={{ backgroundColor: C.primary }} className="flex-1 py-3 rounded-xl items-center">
+            <Text style={{ fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-white text-sm font-semibold">
+              {t('members', 'showResultsPrefix')} {totalResults.toLocaleString()} {t('members', 'showResultsSuffix')}
             </Text>
           </TouchableOpacity>
         </View>

@@ -16,6 +16,8 @@ import MemberCard from '../../components/members/MemberCard';
 import FilterModal from '../../components/members/FilterModal';
 import SkeletonBox from '../../components/common/SkeletonBox';
 import EmptyState from '../../components/common/EmptyState';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const PAGE_SIZE = 30;
 
@@ -23,15 +25,17 @@ interface FilterState {
   district: string;
   taluka: string;
   panchayat: string;
+  village: string;
   gender: string;
 }
 
 // Shimmer skeleton for member card list
 function MemberCardSkeleton() {
+  const { colors: C } = useTheme();
   return (
     <View style={{ gap: 12, paddingHorizontal: 16, paddingTop: 12 }}>
       {[1, 2, 3, 4].map(i => (
-        <View key={i} style={{ backgroundColor: '#1e293b', borderRadius: 16, padding: 16, gap: 10, borderWidth: 1, borderColor: '#334155/50' }}>
+        <View key={i} style={{ backgroundColor: C.card, borderRadius: 16, padding: 16, gap: 10, borderWidth: 1, borderColor: C.border }}>
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <SkeletonBox width={56} height={56} borderRadius={28} />
             <View style={{ flex: 1, gap: 8, justifyContent: 'center' }}>
@@ -39,7 +43,7 @@ function MemberCardSkeleton() {
               <SkeletonBox width="50%" height={11} />
             </View>
           </View>
-          <View style={{ height: 1, backgroundColor: '#334155/30', marginVertical: 4 }} />
+          <View style={{ height: 1, backgroundColor: C.border, marginVertical: 4 }} />
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <SkeletonBox width="45%" height={10} />
             <SkeletonBox width="20%" height={10} />
@@ -54,13 +58,15 @@ function MemberCardSkeleton() {
 export default function MembersScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { colors: C } = useTheme();
+  const { lang, t } = useLanguage();
 
   // Search + filter state
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 400);
-  const [filters, setFilters] = useState<FilterState>({ district: '', taluka: '', panchayat: '', gender: '' });
+  const [filters, setFilters] = useState<FilterState>({ district: '', taluka: '', panchayat: '', village: '', gender: '' });
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [filterOptions, setFilterOptions] = useState({ districts: [], talukas: {}, panchayats: {} });
+  const [filterOptions, setFilterOptions] = useState({ districts: [], talukas: {}, panchayats: {}, villages: {} });
 
   // Data state
   const [members, setMembers] = useState<Member[]>([]);
@@ -91,6 +97,7 @@ export default function MembersScreen() {
         district: filters.district || undefined,
         taluka: filters.taluka || undefined,
         panchayat: filters.panchayat || undefined,
+        village: filters.village || undefined,
         gender: filters.gender || undefined,
       });
 
@@ -102,9 +109,9 @@ export default function MembersScreen() {
       }
     } catch (e) {
       console.error('[MEMBERS] Fetch failed:', e);
-      Alert.alert('Error', 'Failed to load members');
+      Alert.alert(t('common', 'errorTitle'), t('members', 'loadError'));
     }
-  }, [debouncedSearch, filters]);
+  }, [debouncedSearch, filters, t]);
 
   // Reload on search/filter change
   useEffect(() => {
@@ -176,25 +183,28 @@ export default function MembersScreen() {
       {/* Title */}
       <View className="flex-row items-center justify-between mb-4">
         <View>
-          <Text className="text-white text-2xl font-bold">Members</Text>
-          <Text className="text-slate-400 text-sm">
-            {members.length} / {total.toLocaleString()} members
-            {debouncedSearch ? ` matching "${debouncedSearch}"` : ''}
+          <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="text-2xl font-bold">
+            {t('members', 'title')}
+          </Text>
+          <Text style={{ color: C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-sm">
+            {members.length} / {total.toLocaleString()} {t('members', 'countSuffix')}
+            {debouncedSearch ? ` ${t('members', 'matchingPrefix')} "${debouncedSearch}"` : ''}
           </Text>
         </View>
         {loading && members.length > 0 && (
-          <ActivityIndicator size="small" color="#3b82f6" />
+          <ActivityIndicator size="small" color={C.primaryLight} />
         )}
       </View>
 
       {/* Search bar */}
       <View className="flex-row gap-2 mb-3">
-        <View className="flex-1 flex-row items-center bg-slate-800 border border-slate-700 rounded-xl px-3 gap-2">
-          <Search size={15} color="#94a3b8" />
+        <View style={{ backgroundColor: C.card, borderColor: C.border }} className="flex-1 flex-row items-center border rounded-xl px-3 gap-2">
+          <Search size={15} color={C.textMuted} />
           <TextInput
-            className="flex-1 text-white text-sm py-2.5"
-            placeholder="Name · #no · village · mobile…"
-            placeholderTextColor="#64748b"
+            style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}
+            className="flex-1 text-sm py-2.5"
+            placeholder={t('members', 'searchPlaceholder')}
+            placeholderTextColor={C.textFaint}
             value={searchQuery}
             onChangeText={setSearchQuery}
             returnKeyType="search"
@@ -203,7 +213,7 @@ export default function MembersScreen() {
           />
           {searchQuery ? (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <X size={14} color="#64748b" />
+              <X size={14} color={C.textFaint} />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -211,14 +221,15 @@ export default function MembersScreen() {
         {/* Filter button */}
         <TouchableOpacity
           onPress={handleFilterClick}
-          className={`px-3 py-2 rounded-xl border items-center justify-center ${activeFilterCount > 0
-            ? 'bg-blue-600 border-blue-600'
-            : 'bg-slate-800 border-slate-700'
-          }`}
+          style={{
+            backgroundColor: activeFilterCount > 0 ? C.primary : C.card,
+            borderColor: activeFilterCount > 0 ? C.primary : C.border,
+          }}
+          className="px-3 py-2 rounded-xl border items-center justify-center"
         >
-          <Filter size={16} color={activeFilterCount > 0 ? 'white' : '#94a3b8'} />
+          <Filter size={16} color={activeFilterCount > 0 ? 'white' : C.textMuted} />
           {activeFilterCount > 0 && (
-            <View className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-500 items-center justify-center">
+            <View style={{ backgroundColor: C.error }} className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full items-center justify-center">
               <Text className="text-white text-xs font-bold">{activeFilterCount}</Text>
             </View>
           )}
@@ -227,9 +238,10 @@ export default function MembersScreen() {
         {/* Refresh */}
         <TouchableOpacity
           onPress={onRefresh}
-          className="px-3 py-2 rounded-xl border border-slate-700 bg-slate-800 items-center justify-center"
+          style={{ backgroundColor: C.card, borderColor: C.border }}
+          className="px-3 py-2 rounded-xl border items-center justify-center"
         >
-          <RefreshCw size={15} color="#94a3b8" />
+          <RefreshCw size={15} color={C.textMuted} />
         </TouchableOpacity>
       </View>
 
@@ -237,34 +249,42 @@ export default function MembersScreen() {
       {activeFilterCount > 0 && (
         <View className="flex-row flex-wrap gap-2 mb-3">
           {filters.district ? (
-            <View className="flex-row items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">
-              <Text className="text-blue-400 text-xs font-medium">{filters.district}</Text>
-              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, district: '', taluka: '', panchayat: '' })}>
-                <X size={12} color="#3b82f6" />
+            <View style={{ backgroundColor: C.primary + '1a', borderColor: C.primary + '33' }} className="flex-row items-center gap-1 border px-2.5 py-1 rounded-full">
+              <Text style={{ color: C.primaryLight }} className="text-xs font-medium">{filters.district}</Text>
+              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, district: '', taluka: '', panchayat: '', village: '' })}>
+                <X size={12} color={C.primaryLight} />
               </TouchableOpacity>
             </View>
           ) : null}
           {filters.taluka ? (
-            <View className="flex-row items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">
-              <Text className="text-blue-400 text-xs font-medium">{filters.taluka}</Text>
-              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, taluka: '', panchayat: '' })}>
-                <X size={12} color="#3b82f6" />
+            <View style={{ backgroundColor: C.primary + '1a', borderColor: C.primary + '33' }} className="flex-row items-center gap-1 border px-2.5 py-1 rounded-full">
+              <Text style={{ color: C.primaryLight }} className="text-xs font-medium">{filters.taluka}</Text>
+              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, taluka: '', panchayat: '', village: '' })}>
+                <X size={12} color={C.primaryLight} />
               </TouchableOpacity>
             </View>
           ) : null}
           {filters.panchayat ? (
-            <View className="flex-row items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">
-              <Text className="text-blue-400 text-xs font-medium">{filters.panchayat}</Text>
-              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, panchayat: '' })}>
-                <X size={12} color="#3b82f6" />
+            <View style={{ backgroundColor: C.primary + '1a', borderColor: C.primary + '33' }} className="flex-row items-center gap-1 border px-2.5 py-1 rounded-full">
+              <Text style={{ color: C.primaryLight }} className="text-xs font-medium">{filters.panchayat}</Text>
+              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, panchayat: '', village: '' })}>
+                <X size={12} color={C.primaryLight} />
+              </TouchableOpacity>
+            </View>
+          ) : null}
+          {filters.village ? (
+            <View style={{ backgroundColor: C.primary + '1a', borderColor: C.primary + '33' }} className="flex-row items-center gap-1 border px-2.5 py-1 rounded-full">
+              <Text style={{ color: C.primaryLight }} className="text-xs font-medium">{filters.village}</Text>
+              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, village: '' })}>
+                <X size={12} color={C.primaryLight} />
               </TouchableOpacity>
             </View>
           ) : null}
           {filters.gender ? (
-            <View className="flex-row items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">
-              <Text className="text-blue-400 text-xs font-medium">{filters.gender === 'male' ? '♂ Male HoF' : '♀ Female HoF'}</Text>
+            <View style={{ backgroundColor: C.primary + '1a', borderColor: C.primary + '33' }} className="flex-row items-center gap-1 border px-2.5 py-1 rounded-full">
+              <Text style={{ color: C.primaryLight }} className="text-xs font-medium">{filters.gender === 'male' ? t('members', 'maleHof') : t('members', 'femaleHof')}</Text>
               <TouchableOpacity onPress={() => handleFilterChange({ ...filters, gender: '' })}>
-                <X size={12} color="#3b82f6" />
+                <X size={12} color={C.primaryLight} />
               </TouchableOpacity>
             </View>
           ) : null}
@@ -274,7 +294,7 @@ export default function MembersScreen() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0f172a', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top }}>
       <View className="flex-1 px-4">
         {loading && members.length === 0 ? (
           <View className="flex-1">
@@ -290,15 +310,17 @@ export default function MembersScreen() {
             ListEmptyComponent={
               <EmptyState
                 emoji="👥"
-                title="No members found"
-                subtitle="Try adjusting your search or filters"
+                title={t('members', 'noMembersTitle')}
+                subtitle={t('members', 'noMembersSubtitle')}
               />
             }
             ListFooterComponent={
               <View className="py-4 items-center">
-                {loadingMore && <ActivityIndicator size="small" color="#3b82f6" />}
+                {loadingMore && <ActivityIndicator size="small" color={C.primaryLight} />}
                 {!loadingMore && page >= totalPages && members.length > 0 && (
-                  <Text className="text-slate-600 text-xs">All {total.toLocaleString()} members loaded</Text>
+                  <Text style={{ color: C.textFaint }} className="text-xs">
+                    {t('members', 'allLoadedPrefix')} {total.toLocaleString()} {t('members', 'allLoadedSuffix')}
+                  </Text>
                 )}
               </View>
             }
@@ -309,9 +331,9 @@ export default function MembersScreen() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                tintColor="#2563eb"
-                colors={['#2563eb']}
-                progressBackgroundColor="#1e293b"
+                tintColor={C.primary}
+                colors={[C.primary]}
+                progressBackgroundColor={C.card}
               />
             }
           />

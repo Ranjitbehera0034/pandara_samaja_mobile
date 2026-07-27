@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface Props {
   uri: string | null;
@@ -10,12 +11,14 @@ interface Props {
   placeholderColor?: string;
 }
 
-export default function CommunityImage({ uri, style, resizeMode = 'cover', placeholderColor = '#334155' }: Props) {
+export default function CommunityImage({ uri, style, resizeMode = 'cover', placeholderColor }: Props) {
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const bgColor = placeholderColor ?? colors.border;
 
   if (!uri || error) {
-    return <View style={[style, { backgroundColor: placeholderColor }]} />;
+    return <View style={[style, { backgroundColor: bgColor }]} />;
   }
 
   // Map react-native resizeMode to expo-image contentFit
@@ -27,8 +30,8 @@ export default function CommunityImage({ uri, style, resizeMode = 'cover', place
   return (
     <View style={style}>
       {loading && (
-        <View style={[{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: placeholderColor, zIndex: 1 }]}>
-          <ActivityIndicator size="small" color="#2563eb" />
+        <View style={[{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: bgColor, zIndex: 1 }]}>
+          <ActivityIndicator size="small" color={colors.primary} />
         </View>
       )}
       <Image

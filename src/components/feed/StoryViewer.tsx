@@ -9,6 +9,7 @@ import { X } from 'lucide-react-native';
 import { Story } from '../../types';
 import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
 import { timeAgoShort } from '../../utils/feedUtils';
+import { useTheme } from '../../theme/ThemeContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const STORY_DURATION = 5000; // 5 seconds per story
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export default function StoryViewer({ visible, stories, onClose, onStoryViewed }: Props) {
+  const { colors } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -33,14 +35,14 @@ export default function StoryViewer({ visible, stories, onClose, onStoryViewed }
   // Triggered when current story index changes
   useEffect(() => {
     if (!visible || stories.length === 0) return;
-    
+
     // Mark story as viewed
     if (activeStory && onStoryViewed && !activeStory.viewed) {
       onStoryViewed(activeStory.id);
     }
 
     startProgress();
-    
+
     return () => {
       clearTimer();
     };
@@ -49,7 +51,7 @@ export default function StoryViewer({ visible, stories, onClose, onStoryViewed }
   const startProgress = (resumeFrom = 0) => {
     clearTimer();
     progressAnim.setValue(resumeFrom);
-    
+
     const remainingTime = STORY_DURATION * (1 - resumeFrom);
     startTimeRef.current = Date.now();
     elapsedBeforePauseRef.current = resumeFrom * STORY_DURATION;
@@ -118,6 +120,7 @@ export default function StoryViewer({ visible, stories, onClose, onStoryViewed }
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      {/* Story viewer is an immersive full-bleed overlay — background stays black in both themes */}
       <View className="flex-1 bg-black justify-between relative">
         {/* Touch zones */}
         <Pressable
@@ -185,7 +188,7 @@ export default function StoryViewer({ visible, stories, onClose, onStoryViewed }
           {/* Author Header */}
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center gap-3">
-              <View className="w-9 h-9 rounded-full bg-slate-800 border border-white/20 overflow-hidden items-center justify-center">
+              <View style={{ backgroundColor: colors.primary }} className="w-9 h-9 rounded-full border border-white/20 overflow-hidden items-center justify-center">
                 {photo ? (
                   <Image source={{ uri: photo }} className="w-full h-full" />
                 ) : (

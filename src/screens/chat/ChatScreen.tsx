@@ -11,13 +11,21 @@ import {
   Modal,
   SafeAreaView,
   Animated,
-  Dimensions
+  Dimensions,
+  Alert,
 } from 'react-native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Search, Send, ArrowLeft, MessageSquare, Circle, Check, CheckCheck } from 'lucide-react-native';
-import { C } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../hooks/useSocket';
+import * as chatApi from '../../api/chat';
+import { ChatContact } from '../../api/chat';
+import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
+import { timeAgoShort } from '../../utils/feedUtils';
 import SkeletonBox from '../../components/common/SkeletonBox';
 import EmptyState from '../../components/common/EmptyState';
 import { Image } from 'expo-image';
@@ -29,73 +37,40 @@ interface ChatMessage {
   sender: 'me' | 'other';
   text: string;
   timestamp: string;
+  read: boolean;
 }
 
 interface ChatThread {
   id: string;
   name: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
   lastMessage: string;
   timestamp: string;
   unreadCount: number;
   online: boolean;
-  messages: ChatMessage[];
 }
 
-const INITIAL_THREADS: ChatThread[] = [
-  {
-    id: 't1',
-    name: 'Sasmita Das',
-    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-    lastMessage: 'Yes, I will attend the upcoming executive meeting.',
-    timestamp: '10:42 AM',
-    unreadCount: 2,
-    online: true,
-    messages: [
-      { id: 'm1', sender: 'other', text: 'Namaskar! Did you receive the agenda for the general body assembly?', timestamp: '10:30 AM' },
-      { id: 'm2', sender: 'me', text: 'Yes, I got the email copy. Are the timings finalized?', timestamp: '10:35 AM' },
-      { id: 'm3', sender: 'other', text: 'Yes, it starts at 10 AM. I will attend the upcoming executive meeting.', timestamp: '10:42 AM' }
-    ]
-  },
-  {
-    id: 't2',
-    name: 'Bipin Bihari Pandara',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    lastMessage: 'Please check the draft for the temple ritual timings.',
-    timestamp: 'Yesterday',
-    unreadCount: 0,
-    online: false,
-    messages: [
-      { id: 'm4', sender: 'me', text: 'Bipin Babu, did we finish the layout draft?', timestamp: 'Yesterday' },
-      { id: 'm5', sender: 'other', text: 'Please check the draft for the temple ritual timings.', timestamp: 'Yesterday' }
-    ]
-  },
-  {
-    id: 't3',
-    name: 'Ramesh Chandra Behera',
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-    lastMessage: 'Jai Jagannath! Are you coming to Puri tomorrow?',
-    timestamp: '2 days ago',
-    unreadCount: 0,
-    online: true,
-    messages: [
-      { id: 'm6', sender: 'other', text: 'Jai Jagannath! Are you coming to Puri tomorrow?', timestamp: '2 days ago' }
-    ]
-  },
-  {
-    id: 't4',
-    name: 'Gitanjali Samal',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    lastMessage: 'Thank you for sharing the matrimonial profile.',
-    timestamp: '3 days ago',
-    unreadCount: 0,
-    online: false,
-    messages: [
-      { id: 'm7', sender: 'me', text: 'Shared the profile of the candidate.', timestamp: '3 days ago' },
-      { id: 'm8', sender: 'other', text: 'Thank you for sharing the matrimonial profile.', timestamp: '3 days ago' }
-    ]
-  }
-];
+function mapContactToThread(c: ChatContact, online: boolean): ChatThread {
+  return {
+    id: c.contact_id,
+    name: c.contact_name,
+    avatarUrl: cleanPhoto(c.contact_avatar),
+    lastMessage: c.last_message,
+    timestamp: timeAgoShort(c.last_message_at),
+    unreadCount: c.unread_count,
+    online,
+  };
+}
+
+function mapRowToMessage(row: chatApi.ChatMessageRow, myId: string): ChatMessage {
+  return {
+    id: row.id,
+    sender: row.sender_id === myId ? 'me' : 'other',
+    text: row.content,
+    timestamp: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    read: row.read,
+  };
+}
 
 function InboxSkeleton() {
   return (
@@ -117,7 +92,7 @@ function InboxSkeleton() {
 }
 
 // Bouncing typing indicator component
-function TypingIndicator() {
+function TypingIndicator({ colors }: { colors: ReturnType<typeof useTheme>['colors'] }) {
   const [dot1] = useState(new Animated.Value(0));
   const [dot2] = useState(new Animated.Value(0));
   const [dot3] = useState(new Animated.Value(0));
@@ -150,117 +125,196 @@ function TypingIndicator() {
   }, []);
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: C.card, borderRadius: 16, alignSelf: 'flex-start', marginLeft: 44, marginTop: 4 }}>
-      <Animated.View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.textMuted, transform: [{ translateY: dot1 }] }} />
-      <Animated.View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.textMuted, transform: [{ translateY: dot2 }] }} />
-      <Animated.View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.textMuted, transform: [{ translateY: dot3 }] }} />
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.card, borderRadius: 16, alignSelf: 'flex-start', marginLeft: 44, marginTop: 4 }}>
+      <Animated.View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.textMuted, transform: [{ translateY: dot1 }] }} />
+      <Animated.View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.textMuted, transform: [{ translateY: dot2 }] }} />
+      <Animated.View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.textMuted, transform: [{ translateY: dot3 }] }} />
     </View>
   );
 }
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
+  const { colors: C } = useTheme();
+  const { member } = useAuth();
+  const route = useRoute<any>();
+  const navigation = useNavigation<any>();
+  const myId = member?.membership_no;
 
   const [search, setSearch] = useState('');
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [loading, setLoading] = useState(true);
+  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
+
   const [activeThread, setActiveThread] = useState<ChatThread | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
   const flatListRef = useRef<FlatList>(null);
+  const activeThreadIdRef = useRef<string | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    // Simulate loading inboxes
-    setTimeout(() => {
-      setThreads(INITIAL_THREADS);
+    activeThreadIdRef.current = activeThread?.id ?? null;
+  }, [activeThread?.id]);
+
+  const loadContacts = useCallback(async () => {
+    try {
+      const data = await chatApi.fetchContacts();
+      if (data.success) {
+        setThreads(data.contacts.map(c => mapContactToThread(c, onlineIds.has(c.contact_id))));
+      }
+    } catch (e) {
+      console.error('[CHAT] Failed to load contacts:', e);
+      Alert.alert(t('common', 'errorTitle'), t('chat', 'loadError'));
+    } finally {
       setLoading(false);
-    }, 800);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleThreadPress = (thread: ChatThread) => {
+  useEffect(() => {
+    loadContacts();
+  }, [loadContacts]);
+
+  const openThread = useCallback(async (thread: ChatThread) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Mark as read locally
-    setThreads(prev =>
-      prev.map(t => (t.id === thread.id ? { ...t, unreadCount: 0 } : t))
-    );
-    setActiveThread({ ...thread, unreadCount: 0 });
+    setActiveThread(thread);
+    setThreads(prev => prev.map(t2 => (t2.id === thread.id ? { ...t2, unreadCount: 0 } : t2)));
+    setMessagesLoading(true);
+    setMessages([]);
+    try {
+      const data = await chatApi.fetchConversation(thread.id);
+      if (data.success && myId) {
+        setMessages(data.messages.map(row => mapRowToMessage(row, myId)));
+      }
+    } catch (e) {
+      console.error('[CHAT] Failed to load conversation:', e);
+    } finally {
+      setMessagesLoading(false);
+    }
+  }, [myId]);
+
+  // Deep-link into a thread from the member directory (navigation.navigate('Chat', { withId, withName }))
+  useEffect(() => {
+    const withId = route.params?.withId;
+    const withName = route.params?.withName;
+    if (!withId || loading) return;
+
+    const existing = threads.find(t2 => t2.id === withId);
+    if (existing) {
+      openThread(existing);
+    } else {
+      openThread({ id: withId, name: withName || withId, avatarUrl: null, lastMessage: '', timestamp: '', unreadCount: 0, online: onlineIds.has(withId) });
+    }
+    navigation.setParams({ withId: undefined, withName: undefined });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route.params?.withId, loading]);
+
+  const { joinChat, sendMessage, typingStart, typingStop } = useSocket({
+    onReceiveMessage: (msg) => {
+      handleIncomingMessage(msg);
+    },
+    onMessageSent: (msg) => {
+      handleIncomingMessage(msg);
+    },
+    onMessageError: () => {
+      Alert.alert(t('common', 'errorTitle'), t('chat', 'sendError'));
+    },
+    onTypingStart: ({ senderId }) => {
+      if (senderId === activeThreadIdRef.current) setIsTyping(true);
+    },
+    onTypingStop: ({ senderId }) => {
+      if (senderId === activeThreadIdRef.current) setIsTyping(false);
+    },
+    onMessagesRead: ({ readerId }) => {
+      if (readerId === activeThreadIdRef.current) {
+        setMessages(prev => prev.map(m => (m.sender === 'me' ? { ...m, read: true } : m)));
+      }
+    },
+    onUserOnline: ({ userId }) => {
+      setOnlineIds(prev => new Set(prev).add(userId));
+      setThreads(prev => prev.map(t2 => (t2.id === userId ? { ...t2, online: true } : t2)));
+      setActiveThread(prev => (prev && prev.id === userId ? { ...prev, online: true } : prev));
+    },
+    onUserOffline: ({ userId }) => {
+      setOnlineIds(prev => {
+        const next = new Set(prev);
+        next.delete(userId);
+        return next;
+      });
+      setThreads(prev => prev.map(t2 => (t2.id === userId ? { ...t2, online: false } : t2)));
+      setActiveThread(prev => (prev && prev.id === userId ? { ...prev, online: false } : prev));
+    },
+  });
+
+  const handleIncomingMessage = useCallback((msg: any) => {
+    if (!myId) return;
+    const otherParty = msg.senderId === myId ? msg.receiverId : msg.senderId;
+    const isFromOther = msg.senderId !== myId;
+
+    if (otherParty === activeThreadIdRef.current) {
+      setMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, mapRowToMessage({
+        id: msg.id, sender_id: msg.senderId, receiver_id: msg.receiverId,
+        content: msg.content, type: msg.type, read: msg.read, created_at: msg.timestamp,
+      }, myId)]));
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      if (isFromOther) setIsTyping(false);
+    }
+
+    setThreads(prev => {
+      const idx = prev.findIndex(t2 => t2.id === otherParty);
+      const bump = {
+        id: otherParty,
+        name: idx >= 0 ? prev[idx].name : msg.senderName || otherParty,
+        avatarUrl: idx >= 0 ? prev[idx].avatarUrl : cleanPhoto(msg.senderAvatar),
+        lastMessage: msg.content,
+        timestamp: timeAgoShort(msg.timestamp),
+        unreadCount: isFromOther && otherParty !== activeThreadIdRef.current ? (idx >= 0 ? prev[idx].unreadCount + 1 : 1) : (idx >= 0 ? prev[idx].unreadCount : 0),
+        online: idx >= 0 ? prev[idx].online : onlineIds.has(otherParty),
+      };
+      const rest = prev.filter(t2 => t2.id !== otherParty);
+      return [bump, ...rest];
+    });
+  }, [myId, onlineIds]);
+
+  useEffect(() => {
+    if (myId) joinChat(myId);
+  }, [myId, joinChat]);
+
+  const handleThreadPress = (thread: ChatThread) => openThread(thread);
+
+  const handleCloseThread = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (activeThread) typingStop(activeThread.id);
+    setActiveThread(null);
+    setIsTyping(false);
+  };
+
+  const handleTextChange = (value: string) => {
+    setMessageText(value);
+    if (!activeThread) return;
+    typingStart(activeThread.id);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => typingStop(activeThread.id), 2000);
   };
 
   const handleSendMessage = () => {
     if (!messageText.trim() || !activeThread) return;
-
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const newMsg: ChatMessage = {
-      id: `m-me-${Date.now()}`,
-      sender: 'me',
-      text: messageText.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    const updatedMessages = [...activeThread.messages, newMsg];
-    const threadId = activeThread.id;
-    const threadName = activeThread.name;
-
-    // Update state
-    setThreads(prev =>
-      prev.map(t =>
-        t.id === threadId
-          ? { ...t, lastMessage: newMsg.text, timestamp: 'Just now', messages: updatedMessages }
-          : t
-      )
-    );
-
-    setActiveThread(prev => prev ? { ...prev, messages: updatedMessages } : null);
+    sendMessage(activeThread.id, messageText.trim());
     setMessageText('');
-
-    // Trigger auto scroll
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingStop(activeThread.id);
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-
-    // Simulate smart replies/responses!
-    setIsTyping(true);
-    setTimeout(() => {
-      const responses = [
-        `Jai Jagannath! Yes, I received your message. Let's align soon.`,
-        `Okay, sounds good! I will get back to you by evening.`,
-        `Thank you for confirming. See you at the Pandara Samaja meeting!`,
-        `Dhanyabaad! I will review the documents and ping you.`
-      ];
-      const randomReply = responses[Math.floor(Math.random() * responses.length)];
-
-      const replyMsg: ChatMessage = {
-        id: `m-reply-${Date.now()}`,
-        sender: 'other',
-        text: randomReply,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-
-      setIsTyping(false);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      const finalMessages = [...updatedMessages, replyMsg];
-
-      setThreads(prev =>
-        prev.map(t =>
-          t.id === threadId
-            ? { ...t, lastMessage: replyMsg.text, timestamp: 'Just now', messages: finalMessages }
-            : t
-        )
-      );
-
-      if (activeThread && activeThread.id === threadId) {
-        setActiveThread(prev => prev ? { ...prev, messages: finalMessages } : null);
-      }
-
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-
-    }, 2000);
   };
 
-  const filteredThreads = threads.filter(t =>
-    t.name.toLowerCase().includes(search.toLowerCase()) ||
-    t.lastMessage.toLowerCase().includes(search.toLowerCase())
+  const filteredThreads = threads.filter(t2 =>
+    t2.name.toLowerCase().includes(search.toLowerCase()) ||
+    t2.lastMessage.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -276,7 +330,7 @@ export default function ChatScreen() {
         borderBottomColor: C.border,
       }}>
         <Text style={{ color: C.text, fontSize: 20, fontWeight: '800', fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }}>
-          {lang === 'od' ? 'ସନ୍ଦେଶ' : 'Direct Messages'}
+          {t('chat', 'title')}
         </Text>
       </View>
 
@@ -296,7 +350,7 @@ export default function ChatScreen() {
           }}>
             <Search size={16} color={C.textMuted} style={{ marginRight: 8 }} />
             <TextInput
-              placeholder={lang === 'od' ? 'ସନ୍ଦେଶ ବା ସଦସ୍ୟ ଖୋଜନ୍ତୁ...' : 'Search conversations...'}
+              placeholder={t('chat', 'searchPlaceholder')}
               placeholderTextColor={C.textFaint}
               value={search}
               onChangeText={setSearch}
@@ -310,8 +364,8 @@ export default function ChatScreen() {
         ) : filteredThreads.length === 0 ? (
           <EmptyState
             emoji="💬"
-            title={lang === 'od' ? 'କୌଣସି ଆଲାପ ମିଳିଲା ନାହିଁ' : 'No Conversations'}
-            subtitle={lang === 'od' ? 'ସଦସ୍ୟ ତାଲିକାରୁ ଯାଇ ଚାଟ୍ ଆରମ୍ଭ କରନ୍ତୁ' : 'Start a chat from the member directory to connect.'}
+            title={t('chat', 'noConversationsTitle')}
+            subtitle={t('chat', 'noConversationsSubtitle')}
           />
         ) : (
           <FlatList
@@ -331,10 +385,16 @@ export default function ChatScreen() {
               >
                 {/* Avatar with Online indicator */}
                 <View style={{ position: 'relative', marginRight: 12 }}>
-                  <Image
-                    source={{ uri: item.avatarUrl }}
-                    style={{ width: 50, height: 50, borderRadius: 25 }}
-                  />
+                  {item.avatarUrl ? (
+                    <Image
+                      source={{ uri: item.avatarUrl }}
+                      style={{ width: 50, height: 50, borderRadius: 25 }}
+                    />
+                  ) : (
+                    <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 18 }}>{getInitial(item.name)}</Text>
+                    </View>
+                  )}
                   {item.online && (
                     <View style={{
                       position: 'absolute',
@@ -396,7 +456,7 @@ export default function ChatScreen() {
         <Modal
           visible={!!activeThread}
           animationType="slide"
-          onRequestClose={() => setActiveThread(null)}
+          onRequestClose={handleCloseThread}
         >
           <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
             {/* Header */}
@@ -411,21 +471,21 @@ export default function ChatScreen() {
               backgroundColor: C.card,
             }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <TouchableOpacity
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setActiveThread(null);
-                  }}
-                  style={{ padding: 4 }}
-                >
+                <TouchableOpacity onPress={handleCloseThread} style={{ padding: 4 }}>
                   <ArrowLeft size={20} color={C.text} />
                 </TouchableOpacity>
 
                 <View style={{ position: 'relative' }}>
-                  <Image
-                    source={{ uri: activeThread.avatarUrl }}
-                    style={{ width: 38, height: 38, borderRadius: 19 }}
-                  />
+                  {activeThread.avatarUrl ? (
+                    <Image
+                      source={{ uri: activeThread.avatarUrl }}
+                      style={{ width: 38, height: 38, borderRadius: 19 }}
+                    />
+                  ) : (
+                    <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>{getInitial(activeThread.name)}</Text>
+                    </View>
+                  )}
                   {activeThread.online && (
                     <View style={{
                       position: 'absolute',
@@ -446,7 +506,7 @@ export default function ChatScreen() {
                     {activeThread.name}
                   </Text>
                   <Text style={{ color: C.success, fontSize: 11, fontWeight: '600' }}>
-                    {activeThread.online ? 'Online' : 'Offline'}
+                    {activeThread.online ? t('chat', 'online') : t('chat', 'offline')}
                   </Text>
                 </View>
               </View>
@@ -459,64 +519,80 @@ export default function ChatScreen() {
               keyboardVerticalOffset={Platform.OS === 'ios' ? 44 : 0}
             >
               {/* Message List */}
-              <FlatList
-                ref={flatListRef}
-                data={activeThread.messages}
-                keyExtractor={item => item.id}
-                contentContainerStyle={{ padding: 16, gap: 12 }}
-                onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-                renderItem={({ item }) => {
-                  const isMe = item.sender === 'me';
-                  return (
-                    <View style={{
-                      flexDirection: 'row',
-                      justifyContent: isMe ? 'flex-end' : 'flex-start',
-                      alignItems: 'flex-end',
-                      gap: 8,
-                    }}>
-                      {/* Avatar for received messages ONLY */}
-                      {!isMe && (
-                        <Image
-                          source={{ uri: activeThread.avatarUrl }}
-                          style={{ width: 28, height: 28, borderRadius: 14 }}
-                        />
-                      )}
-                      
+              {messagesLoading ? (
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                  <SkeletonBox width="60%" height={14} />
+                </View>
+              ) : (
+                <FlatList
+                  ref={flatListRef}
+                  data={messages}
+                  keyExtractor={item => item.id}
+                  contentContainerStyle={{ padding: 16, gap: 12 }}
+                  onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                  renderItem={({ item }) => {
+                    const isMe = item.sender === 'me';
+                    return (
                       <View style={{
-                        maxWidth: W * 0.7,
-                        backgroundColor: isMe ? C.primary : C.card,
-                        paddingHorizontal: 14,
-                        paddingVertical: 10,
-                        borderRadius: 18,
-                        borderTopRightRadius: isMe ? 2 : 18,
-                        borderTopLeftRadius: isMe ? 18 : 2,
-                        borderWidth: isMe ? 0 : 1,
-                        borderColor: C.border,
+                        flexDirection: 'row',
+                        justifyContent: isMe ? 'flex-end' : 'flex-start',
+                        alignItems: 'flex-end',
+                        gap: 8,
                       }}>
-                        <Text style={{ color: C.text, fontSize: 14, lineHeight: 18 }}>
-                          {item.text}
-                        </Text>
-                        
+                        {/* Avatar for received messages ONLY */}
+                        {!isMe && (
+                          activeThread.avatarUrl ? (
+                            <Image
+                              source={{ uri: activeThread.avatarUrl }}
+                              style={{ width: 28, height: 28, borderRadius: 14 }}
+                            />
+                          ) : (
+                            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
+                              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 11 }}>{getInitial(activeThread.name)}</Text>
+                            </View>
+                          )
+                        )}
+
                         <View style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          justifyContent: 'flex-end',
-                          marginTop: 4,
-                          gap: 4
+                          maxWidth: W * 0.7,
+                          backgroundColor: isMe ? C.primary : C.card,
+                          paddingHorizontal: 14,
+                          paddingVertical: 10,
+                          borderRadius: 18,
+                          borderTopRightRadius: isMe ? 2 : 18,
+                          borderTopLeftRadius: isMe ? 18 : 2,
+                          borderWidth: isMe ? 0 : 1,
+                          borderColor: C.border,
                         }}>
-                          <Text style={{ color: isMe ? 'rgba(255, 255, 255, 0.6)' : C.textMuted, fontSize: 10 }}>
-                            {item.timestamp}
+                          <Text style={{ color: isMe ? '#fff' : C.text, fontSize: 14, lineHeight: 18 }}>
+                            {item.text}
                           </Text>
-                          {isMe && <CheckCheck size={12} color="rgba(255, 255, 255, 0.8)" />}
+
+                          <View style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'flex-end',
+                            marginTop: 4,
+                            gap: 4
+                          }}>
+                            <Text style={{ color: isMe ? 'rgba(255, 255, 255, 0.6)' : C.textMuted, fontSize: 10 }}>
+                              {item.timestamp}
+                            </Text>
+                            {isMe && (
+                              item.read
+                                ? <CheckCheck size={12} color="rgba(255, 255, 255, 0.8)" />
+                                : <Check size={12} color="rgba(255, 255, 255, 0.6)" />
+                            )}
+                          </View>
                         </View>
                       </View>
-                    </View>
-                  );
-                }}
-                ListFooterComponent={() => (
-                  isTyping ? <TypingIndicator /> : null
-                )}
-              />
+                    );
+                  }}
+                  ListFooterComponent={() => (
+                    isTyping ? <TypingIndicator colors={C} /> : null
+                  )}
+                />
+              )}
 
               {/* Chat Input Bar */}
               <View style={{
@@ -529,10 +605,10 @@ export default function ChatScreen() {
                 borderTopColor: C.border,
               }}>
                 <TextInput
-                  placeholder={lang === 'od' ? 'ବାର୍ତ୍ତା ଲେଖନ୍ତୁ...' : 'Type a message...'}
+                  placeholder={t('chat', 'messagePlaceholder')}
                   placeholderTextColor={C.textFaint}
                   value={messageText}
-                  onChangeText={setMessageText}
+                  onChangeText={handleTextChange}
                   style={{
                     flex: 1,
                     color: C.text,
@@ -547,7 +623,7 @@ export default function ChatScreen() {
                     fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined,
                   }}
                 />
-                
+
                 <TouchableOpacity
                   onPress={handleSendMessage}
                   disabled={!messageText.trim()}

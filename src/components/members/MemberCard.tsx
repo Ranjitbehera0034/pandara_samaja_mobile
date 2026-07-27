@@ -10,6 +10,8 @@ import {
 } from 'lucide-react-native';
 import { Member, FamilyMember } from '../../types';
 import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -32,6 +34,8 @@ interface Props {
 }
 
 export default function MemberCard({ member, onPress, onSubscribe, onMessage, subscribing }: Props) {
+  const { colors: C } = useTheme();
+  const { lang, t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const fmList: FamilyMember[] = Array.isArray(member.family_members) ? member.family_members : [];
   const isActive = wasRecentlyActive(member.last_portal_login);
@@ -44,20 +48,22 @@ export default function MemberCard({ member, onPress, onSubscribe, onMessage, su
   };
 
   return (
-    <View className="bg-slate-800/80 border border-slate-700/60 rounded-2xl overflow-hidden shadow-lg mb-3">
+    <View style={{ backgroundColor: C.card, borderColor: C.border }} className="border rounded-2xl overflow-hidden shadow-lg mb-3">
 
       {/* ── Header: membership_no + active badge + actions ── */}
       <View className="flex-row items-center justify-between px-4 pt-3 pb-1">
         <View className="flex-row items-center gap-2">
-          <View className="bg-slate-700/60 px-2 py-0.5 rounded-lg">
-            <Text className="text-slate-400 text-xs font-mono font-semibold">
+          <View style={{ backgroundColor: C.border }} className="px-2 py-0.5 rounded-lg">
+            <Text style={{ color: C.textMuted }} className="text-xs font-mono font-semibold">
               #{member.membership_no}
             </Text>
           </View>
           {isActive && (
-            <View className="flex-row items-center gap-1 bg-green-400/10 border border-green-400/20 px-1.5 py-0.5 rounded-full">
-              <View className="w-1.5 h-1.5 rounded-full bg-green-400" />
-              <Text className="text-green-400 text-xs font-bold uppercase tracking-wider">ACTIVE</Text>
+            <View style={{ backgroundColor: C.success + '1a', borderColor: C.success + '33' }} className="flex-row items-center gap-1 border px-1.5 py-0.5 rounded-full">
+              <View style={{ backgroundColor: C.success }} className="w-1.5 h-1.5 rounded-full" />
+              <Text style={{ color: C.success }} className="text-xs font-bold uppercase tracking-wider">
+                {t('members', 'activeBadge')}
+              </Text>
             </View>
           )}
         </View>
@@ -65,18 +71,16 @@ export default function MemberCard({ member, onPress, onSubscribe, onMessage, su
           <TouchableOpacity
             onPress={onSubscribe}
             disabled={subscribing}
-            className={`p-1.5 rounded-xl ${member.is_subscribed
-              ? 'bg-blue-500/15'
-              : 'bg-slate-700'
-            }`}
+            style={{ backgroundColor: member.is_subscribed ? C.primaryLight + '26' : C.border }}
+            className="p-1.5 rounded-xl"
           >
             {member.is_subscribed
-              ? <UserCheck size={13} color="#3b82f6" />
-              : <UserPlus size={13} color="#94a3b8" />
+              ? <UserCheck size={13} color={C.primaryLight} />
+              : <UserPlus size={13} color={C.textMuted} />
             }
           </TouchableOpacity>
-          <TouchableOpacity onPress={onMessage} className="p-1.5 rounded-xl bg-slate-700">
-            <MessageSquare size={13} color="#94a3b8" />
+          <TouchableOpacity onPress={onMessage} style={{ backgroundColor: C.border }} className="p-1.5 rounded-xl">
+            <MessageSquare size={13} color={C.textMuted} />
           </TouchableOpacity>
         </View>
       </View>
@@ -84,11 +88,11 @@ export default function MemberCard({ member, onPress, onSubscribe, onMessage, su
       {/* ── Avatar + Name row ── */}
       <TouchableOpacity onPress={onPress} className="flex-row items-start gap-3 px-4 py-2">
         {/* Avatar */}
-        <View className={`w-14 h-14 rounded-full overflow-hidden items-center justify-center shrink-0`}>
+        <View className="w-14 h-14 rounded-full overflow-hidden items-center justify-center shrink-0">
           {photo ? (
             <Image source={{ uri: photo }} className="w-full h-full" resizeMode="cover" />
           ) : (
-            <View className={`w-full h-full items-center justify-center ${female ? 'bg-pink-600' : 'bg-blue-600'}`}>
+            <View style={{ backgroundColor: female ? C.female : C.male }} className="w-full h-full items-center justify-center">
               <Text className="text-white font-bold text-lg">{getInitial(member.name)}</Text>
             </View>
           )}
@@ -96,20 +100,20 @@ export default function MemberCard({ member, onPress, onSubscribe, onMessage, su
 
         <View className="flex-1 min-w-0">
           <View className="flex-row items-center gap-1.5 flex-wrap">
-            <Text className="text-white font-bold text-base leading-tight" numberOfLines={1}>
+            <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-bold text-base leading-tight" numberOfLines={1}>
               {member.name}
             </Text>
             {member.is_verified && (
-              <Text className="text-blue-400 text-xs">✓</Text>
+              <Text style={{ color: C.primaryLight }} className="text-xs">✓</Text>
             )}
           </View>
           {member.mobile ? (
-            <Text className="text-slate-400 text-xs mt-0.5" numberOfLines={1}>{member.mobile}</Text>
+            <Text style={{ color: C.textMuted }} className="text-xs mt-0.5" numberOfLines={1}>{member.mobile}</Text>
           ) : null}
           {(member.panchayat || member.taluka || member.district) && (
             <View className="flex-row items-center gap-1 mt-0.5">
-              <MapPin size={10} color="#64748b" />
-              <Text className="text-slate-500 text-xs uppercase tracking-wide" numberOfLines={1}>
+              <MapPin size={10} color={C.textFaint} />
+              <Text style={{ color: C.textFaint }} className="text-xs uppercase tracking-wide" numberOfLines={1}>
                 {[member.panchayat, member.taluka, member.district].filter(Boolean).join(', ')}
               </Text>
             </View>
@@ -118,21 +122,27 @@ export default function MemberCard({ member, onPress, onSubscribe, onMessage, su
       </TouchableOpacity>
 
       {/* ── Info grid: Gender / Male / Female counts ── */}
-      <View className="flex-row border-t border-slate-700/40 px-4 py-2 gap-4">
+      <View style={{ borderColor: C.border + '66' }} className="flex-row border-t px-4 py-2 gap-4">
         <View className="flex-1">
-          <Text className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-0.5">Head Gender</Text>
-          <Text className={`font-semibold text-sm ${female ? 'text-pink-400' : 'text-blue-400'}`}>
-            {female ? '♀ Female' : '♂ Male'}
+          <Text style={{ color: C.textFaint, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-xs font-bold uppercase tracking-wider mb-0.5">
+            {t('members', 'headGenderTitle')}
+          </Text>
+          <Text style={{ color: female ? C.female : C.male }} className="font-semibold text-sm">
+            {female ? t('members', 'genderFemaleTag') : t('members', 'genderMaleTag')}
           </Text>
         </View>
         <View className="flex-row gap-4">
           <View>
-            <Text className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-0.5">Male</Text>
-            <Text className="text-blue-400 font-bold text-sm">{member.male ?? 0}</Text>
+            <Text style={{ color: C.textFaint, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-xs font-bold uppercase tracking-wider mb-0.5">
+              {t('members', 'maleWord')}
+            </Text>
+            <Text style={{ color: C.male }} className="font-bold text-sm">{member.male ?? 0}</Text>
           </View>
           <View>
-            <Text className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-0.5">Female</Text>
-            <Text className="text-pink-400 font-bold text-sm">{member.female ?? 0}</Text>
+            <Text style={{ color: C.textFaint, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-xs font-bold uppercase tracking-wider mb-0.5">
+              {t('members', 'femaleWord')}
+            </Text>
+            <Text style={{ color: C.female }} className="font-bold text-sm">{member.female ?? 0}</Text>
           </View>
         </View>
       </View>
@@ -141,16 +151,17 @@ export default function MemberCard({ member, onPress, onSubscribe, onMessage, su
       {fmList.length > 0 && (
         <TouchableOpacity
           onPress={toggleExpand}
-          className="flex-row items-center justify-between px-4 py-2.5 border-t border-slate-700/40"
+          style={{ borderColor: C.border + '66' }}
+          className="flex-row items-center justify-between px-4 py-2.5 border-t"
         >
-          <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
-            Family Members List
+          <Text style={{ color: C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-xs font-semibold uppercase tracking-wider">
+            {t('members', 'familyMembersListLabel')}
           </Text>
           <View className="flex-row items-center gap-1">
-            <Text className="text-slate-500 text-xs">({fmList.length})</Text>
+            <Text style={{ color: C.textFaint }} className="text-xs">({fmList.length})</Text>
             {expanded
-              ? <ChevronUp size={13} color="#94a3b8" />
-              : <ChevronDown size={13} color="#94a3b8" />
+              ? <ChevronUp size={13} color={C.textMuted} />
+              : <ChevronDown size={13} color={C.textMuted} />
             }
           </View>
         </TouchableOpacity>
@@ -158,7 +169,7 @@ export default function MemberCard({ member, onPress, onSubscribe, onMessage, su
 
       {/* ── Expandable family list ── */}
       {expanded && fmList.length > 0 && (
-        <View className="bg-slate-900/50">
+        <View style={{ backgroundColor: C.bg + '80' }}>
           {fmList.map((fm, i) => {
             const fmFemale = isFemale(fm.gender);
             // @ts-ignore
@@ -166,29 +177,27 @@ export default function MemberCard({ member, onPress, onSubscribe, onMessage, su
             return (
               <View
                 key={i}
-                className="flex-row items-center justify-between px-4 py-2.5 border-t border-slate-700/30"
+                style={{ borderColor: C.border + '4d' }}
+                className="flex-row items-center justify-between px-4 py-2.5 border-t"
               >
                 <View className="flex-row items-center gap-2.5 flex-1 min-w-0">
                   {/* Mini avatar */}
-                  <View className={`w-7 h-7 rounded-full overflow-hidden items-center justify-center shrink-0 ${fmFemale ? 'bg-pink-600' : 'bg-blue-600'}`}>
+                  <View style={{ backgroundColor: fmFemale ? C.female : C.male }} className="w-7 h-7 rounded-full overflow-hidden items-center justify-center shrink-0">
                     {fmPhoto ? (
                       <Image source={{ uri: fmPhoto }} className="w-full h-full" resizeMode="cover" />
                     ) : (
                       <Text className="text-white text-xs font-bold">{getInitial(fm.name)}</Text>
                     )}
                   </View>
-                  <Text className="text-white text-sm font-medium" numberOfLines={1}>{fm.name}</Text>
+                  <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-sm font-medium" numberOfLines={1}>{fm.name}</Text>
                 </View>
                 <View className="flex-row items-center gap-2 shrink-0 ml-2">
                   {fm.mobile ? (
-                    <Phone size={11} color="#64748b" />
+                    <Phone size={11} color={C.textFaint} />
                   ) : null}
-                  <View className={`px-2 py-0.5 rounded-full border ${fmFemale
-                    ? 'bg-pink-500/10 border-pink-500/20'
-                    : 'bg-blue-500/10 border-blue-500/20'
-                  }`}>
-                    <Text className={`text-xs font-semibold ${fmFemale ? 'text-pink-400' : 'text-blue-400'}`}>
-                      {fm.relation || (fmFemale ? 'Female' : 'Male')}
+                  <View style={{ backgroundColor: fmFemale ? C.female + '1a' : C.male + '1a', borderColor: fmFemale ? C.female + '33' : C.male + '33' }} className="px-2 py-0.5 rounded-full border">
+                    <Text style={{ color: fmFemale ? C.female : C.male, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-xs font-semibold">
+                      {fm.relation || (fmFemale ? t('members', 'femaleWord') : t('members', 'maleWord'))}
                     </Text>
                   </View>
                 </View>

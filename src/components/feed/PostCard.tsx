@@ -19,6 +19,8 @@ import RichContent from './RichContent';
 import PollDisplay from './PollDisplay';
 import CommentItem from './CommentItem';
 import * as feedApi from '../../api/feed';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface Props {
   post: Post;
@@ -40,6 +42,10 @@ export default function PostCard({
   onDelete, onEdit, onReport, onShare, onBookmark, onPollVote
 }: Props) {
   const { member, user } = useAuth();
+  const { colors } = useTheme();
+  const { lang, t } = useLanguage();
+  const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;
+  const fontFamilyBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
   const [showComments, setShowComments] = useState(false);
   const [localComments, setLocalComments] = useState<Comment[]>(post.comments || []);
   const [loadingComments, setLoadingComments] = useState(false);
@@ -129,7 +135,7 @@ export default function PostCard({
   const handleCommentSubmit = async () => {
     if (!commentText.trim()) return;
     if (containsBannedContent(commentText)) {
-      Alert.alert('Warning', 'Your comment contains inappropriate content.');
+      Alert.alert(t('feedComponents', 'warningTitle'), t('feedComponents', 'inappropriateCommentMessage'));
       return;
     }
     const newComment: Comment = {
@@ -158,7 +164,7 @@ export default function PostCard({
     try {
       await Share.share({
         message: `${post.authorName}: ${post.content.substring(0, 100)}`,
-        title: `Post by ${post.authorName}`,
+        title: `${t('feedComponents', 'sharePostTitlePrefix')} ${post.authorName}`,
       });
       if (onShare) onShare(post.id);
     } catch (e) {
@@ -168,10 +174,10 @@ export default function PostCard({
 
   // ── Delete ──
   const handleDelete = () => {
-    Alert.alert('Delete Post', 'Are you sure you want to delete this post?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('feedComponents', 'deletePostConfirmTitle'), t('feedComponents', 'deletePostConfirmMessage'), [
+      { text: t('feedComponents', 'cancelButtonLabel'), style: 'cancel' },
       {
-        text: 'Delete', style: 'destructive', onPress: () => {
+        text: t('feedComponents', 'deleteButtonLabel'), style: 'destructive', onPress: () => {
           if (onDelete) onDelete(post.id);
           setShowMenu(false);
         }
@@ -181,8 +187,13 @@ export default function PostCard({
 
   // ── Report ──
   const REPORT_REASONS = [
-    'Adult / Sexual content', 'Harassment or bullying', 'Hate speech',
-    'Spam or misleading', 'Violence or dangerous content', 'False information', 'Other'
+    t('feedComponents', 'reportReasonAdult'),
+    t('feedComponents', 'reportReasonHarassment'),
+    t('feedComponents', 'reportReasonHateSpeech'),
+    t('feedComponents', 'reportReasonSpam'),
+    t('feedComponents', 'reportReasonViolence'),
+    t('feedComponents', 'reportReasonFalseInfo'),
+    t('feedComponents', 'reportReasonOther'),
   ];
 
   // Build nested comment tree
@@ -194,13 +205,13 @@ export default function PostCard({
   const nestedComments = buildCommentTree(undefined);
 
   return (
-    <View className="bg-slate-800/80 rounded-2xl border border-slate-700/50 p-4 mb-4 shadow-lg">
+    <View style={{ backgroundColor: colors.card + 'cc', borderColor: colors.border + '80' }} className="rounded-2xl border p-4 mb-4 shadow-lg">
 
       {/* ── Header ── */}
       <View className="flex-row justify-between items-start mb-3">
         <View className="flex-row items-center gap-3">
           {/* Avatar with ring */}
-          <View className="w-10 h-10 rounded-full bg-slate-900 border border-slate-700 overflow-hidden items-center justify-center">
+          <View style={{ backgroundColor: colors.primary, borderColor: colors.border }} className="w-10 h-10 rounded-full border overflow-hidden items-center justify-center">
             {photo ? (
               <Image source={{ uri: photo }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} />
             ) : (
@@ -209,10 +220,10 @@ export default function PostCard({
           </View>
           <View>
             <View className="flex-row items-center gap-1.5">
-              <Text className="text-white font-semibold text-sm">{post.authorName}</Text>
-              {post.authorVerified && <Text className="text-blue-500 text-xs">✓</Text>}
+              <Text style={{ color: colors.text, fontFamily: fontFamilyBold }} className="font-semibold text-sm">{post.authorName}</Text>
+              {post.authorVerified && <Text style={{ color: colors.primaryLight }} className="text-xs">✓</Text>}
             </View>
-            <Text className="text-slate-500 text-xs">
+            <Text style={{ color: colors.textFaint }} className="text-xs">
               {timeAgoShort(post.timestamp)}
               {post.location ? ` · ${post.location}` : ''}
             </Text>
@@ -221,7 +232,7 @@ export default function PostCard({
 
         {/* Three-dot menu */}
         <TouchableOpacity onPress={() => setShowMenu(true)} className="p-1.5">
-          <MoreHorizontal size={18} color="#94a3b8" />
+          <MoreHorizontal size={18} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
 
@@ -230,7 +241,8 @@ export default function PostCard({
         {isEditing ? (
           <View className="gap-2">
             <TextInput
-              className="bg-slate-900/50 text-white rounded-xl px-4 py-3 border border-slate-700 text-sm"
+              style={{ backgroundColor: colors.bg + '80', color: colors.text, borderColor: colors.border, fontFamily }}
+              className="rounded-xl px-4 py-3 border text-sm"
               value={editContent}
               onChangeText={setEditContent}
               multiline
@@ -238,13 +250,14 @@ export default function PostCard({
             />
             <View className="flex-row justify-end gap-2">
               <TouchableOpacity onPress={() => setIsEditing(false)} className="px-3 py-1.5">
-                <Text className="text-slate-400 text-sm">Cancel</Text>
+                <Text style={{ color: colors.textMuted, fontFamily }} className="text-sm">{t('feedComponents', 'cancelButtonLabel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => { if (onEdit && editContent.trim()) { onEdit(post.id, editContent); } setIsEditing(false); }}
-                className="px-4 py-1.5 bg-blue-600 rounded-lg"
+                style={{ backgroundColor: colors.primary }}
+                className="px-4 py-1.5 rounded-lg"
               >
-                <Text className="text-white text-sm font-medium">Save</Text>
+                <Text style={{ fontFamily }} className="text-white text-sm font-medium">{t('feedComponents', 'saveButtonLabel')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -276,13 +289,13 @@ export default function PostCard({
               <Text key={r.type} className="text-base">{r.emoji}</Text>
             ))}
             {totalReactions > 0 && (
-              <Text className="text-slate-400 text-xs ml-1">{totalReactions}</Text>
+              <Text style={{ color: colors.textMuted }} className="text-xs ml-1">{totalReactions}</Text>
             )}
           </View>
           {(post.commentsCount ?? 0) > 0 && (
             <TouchableOpacity onPress={toggleComments}>
-              <Text className="text-slate-400 text-xs hover:text-white">
-                {post.commentsCount} comment{post.commentsCount === 1 ? '' : 's'}
+              <Text style={{ color: colors.textMuted, fontFamily }} className="text-xs">
+                {post.commentsCount} {post.commentsCount === 1 ? t('feedComponents', 'commentWord') : t('feedComponents', 'commentsWordPlural')}
               </Text>
             </TouchableOpacity>
           )}
@@ -290,23 +303,24 @@ export default function PostCard({
       )}
 
       {/* ── Action buttons ── */}
-      <View className="flex-row items-center justify-between border-t border-slate-700/50 pt-3 mt-1">
+      <View style={{ borderColor: colors.border + '80' }} className="flex-row items-center justify-between border-t pt-3 mt-1">
         <View className="flex-row items-center gap-1 flex-1">
 
           {/* Like / Reaction button */}
           <TouchableOpacity
             onPress={() => handleReaction('like')}
             onLongPress={() => setShowReactions(true)}
-            className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-lg ${myReaction ? 'bg-blue-500/10' : ''}`}
+            style={{ backgroundColor: myReaction ? colors.primary + '1a' : 'transparent' }}
+            className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-lg"
           >
             <Animated.View style={{ transform: [{ scale: likeScale }], flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               {myReaction ? (
                 <Text className="text-lg leading-none">{currentReaction?.emoji}</Text>
               ) : (
-                <ThumbsUp size={18} color="#94a3b8" />
+                <ThumbsUp size={18} color={colors.textMuted} />
               )}
-              <Text className={`text-sm font-medium ${myReaction ? 'text-blue-500' : 'text-slate-400'}`}>
-                {myReaction ? currentReaction?.label : 'Like'}
+              <Text style={{ color: myReaction ? colors.primaryLight : colors.textMuted, fontFamily }} className="text-sm font-medium">
+                {myReaction ? currentReaction?.label : t('feedComponents', 'likeLabel')}
               </Text>
             </Animated.View>
           </TouchableOpacity>
@@ -314,11 +328,12 @@ export default function PostCard({
           {/* Comment button */}
           <TouchableOpacity
             onPress={toggleComments}
-            className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-lg ${showComments ? 'bg-blue-500/10' : ''}`}
+            style={{ backgroundColor: showComments ? colors.primary + '1a' : 'transparent' }}
+            className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-lg"
           >
-            <MessageSquare size={18} color={showComments ? '#3b82f6' : '#94a3b8'} />
+            <MessageSquare size={18} color={showComments ? colors.primaryLight : colors.textMuted} />
             {(post.commentsCount ?? 0) > 0 && (
-              <Text className="text-slate-400 text-sm">{post.commentsCount}</Text>
+              <Text style={{ color: colors.textMuted }} className="text-sm">{post.commentsCount}</Text>
             )}
           </TouchableOpacity>
 
@@ -327,9 +342,9 @@ export default function PostCard({
             onPress={handleShare}
             className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-lg"
           >
-            <Share2 size={18} color="#94a3b8" />
+            <Share2 size={18} color={colors.textMuted} />
             {(post.shareCount ?? 0) > 0 && (
-              <Text className="text-slate-400 text-sm">{post.shareCount}</Text>
+              <Text style={{ color: colors.textMuted }} className="text-sm">{post.shareCount}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -339,7 +354,7 @@ export default function PostCard({
           onPress={() => { setBookmarked(!bookmarked); if (onBookmark) onBookmark(post.id); }}
           className="p-1.5 rounded-lg"
         >
-          <Bookmark size={18} color={bookmarked ? '#f59e0b' : '#94a3b8'} fill={bookmarked ? '#f59e0b' : 'none'} />
+          <Bookmark size={18} color={bookmarked ? colors.amber : colors.textMuted} fill={bookmarked ? colors.amber : 'none'} />
         </TouchableOpacity>
       </View>
 
@@ -349,12 +364,13 @@ export default function PostCard({
           className="absolute inset-0 z-50"
           onPress={() => setShowReactions(false)}
         >
-          <View className="absolute bottom-16 left-4 flex-row gap-1 bg-slate-800 border border-slate-700 rounded-full px-2 py-1.5 shadow-2xl z-50">
+          <View style={{ backgroundColor: colors.card, borderColor: colors.border }} className="absolute bottom-16 left-4 flex-row gap-1 border rounded-full px-2 py-1.5 shadow-2xl z-50">
             {REACTIONS.map(r => (
               <TouchableOpacity
                 key={r.type}
                 onPress={() => handleReaction(r.type as ReactionType)}
-                className={`p-1 rounded-full ${myReaction === r.type ? 'bg-slate-700' : ''}`}
+                style={{ backgroundColor: myReaction === r.type ? colors.border : 'transparent' }}
+                className="p-1 rounded-full"
               >
                 <Text className="text-2xl">{r.emoji}</Text>
               </TouchableOpacity>
@@ -365,11 +381,11 @@ export default function PostCard({
 
       {/* ── Comments section ── */}
       {showComments && (
-        <View className="mt-3 pt-3 border-t border-slate-700/30">
+        <View style={{ borderColor: colors.border + '4d' }} className="mt-3 pt-3 border-t">
           <ScrollView className="max-h-64" showsVerticalScrollIndicator={false}>
             <View className="gap-3 mb-4">
               {nestedComments.length === 0 && !loadingComments && (
-                <Text className="text-center text-slate-500 text-sm py-2">No comments yet</Text>
+                <Text style={{ color: colors.textFaint, fontFamily }} className="text-center text-sm py-2">{t('feedComponents', 'noCommentsYetText')}</Text>
               )}
               {nestedComments.map(comment => (
                 <CommentItem
@@ -382,9 +398,10 @@ export default function PostCard({
               {hasMoreComments && (
                 <TouchableOpacity
                   onPress={() => loadComments(commentsPage + 1)}
-                  className="py-2 bg-blue-500/10 rounded-lg items-center"
+                  style={{ backgroundColor: colors.primary + '1a' }}
+                  className="py-2 rounded-lg items-center"
                 >
-                  <Text className="text-blue-400 text-sm font-medium">Load more comments</Text>
+                  <Text style={{ color: colors.primaryLight, fontFamily }} className="text-sm font-medium">{t('feedComponents', 'loadMoreCommentsLabel')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -392,7 +409,7 @@ export default function PostCard({
 
           {/* Comment input */}
           <View className="flex-row items-center gap-2">
-            <View className="w-8 h-8 rounded-full bg-blue-600 items-center justify-center overflow-hidden shrink-0">
+            <View style={{ backgroundColor: colors.primary }} className="w-8 h-8 rounded-full items-center justify-center overflow-hidden shrink-0">
               {user?.profile_photo_url ? (
                 <Image source={{ uri: cleanPhoto(user.profile_photo_url) || '' }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} />
               ) : (
@@ -400,16 +417,17 @@ export default function PostCard({
               )}
             </View>
             <TextInput
-              className="flex-1 bg-slate-900/50 border border-slate-700/50 rounded-full px-4 py-2 text-white text-sm"
-              placeholder="Write a comment..."
-              placeholderTextColor="#64748b"
+              style={{ backgroundColor: colors.bg + '80', borderColor: colors.border + '80', color: colors.text, fontFamily }}
+              className="flex-1 rounded-full px-4 py-2 text-sm border"
+              placeholder={t('feedComponents', 'writeCommentPlaceholder')}
+              placeholderTextColor={colors.textFaint}
               value={commentText}
               onChangeText={setCommentText}
               returnKeyType="send"
               onSubmitEditing={handleCommentSubmit}
             />
             <TouchableOpacity onPress={handleCommentSubmit} disabled={!commentText.trim()}>
-              <Send size={18} color={commentText.trim() ? '#3b82f6' : '#475569'} />
+              <Send size={18} color={commentText.trim() ? colors.primaryLight : colors.border} />
             </TouchableOpacity>
           </View>
         </View>
@@ -422,41 +440,41 @@ export default function PostCard({
         animationType="fade"
         onRequestClose={() => setShowMenu(false)}
       >
-        <Pressable className="flex-1 bg-black/60" onPress={() => setShowMenu(false)}>
-          <View className="absolute bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 rounded-t-3xl p-4 pb-8">
+        <Pressable style={{ backgroundColor: '#00000099' }} className="flex-1" onPress={() => setShowMenu(false)}>
+          <View style={{ backgroundColor: colors.card, borderColor: colors.border }} className="absolute bottom-0 left-0 right-0 border-t rounded-t-3xl p-4 pb-8">
             {isAuthor && (
               <>
                 <TouchableOpacity
                   onPress={() => { setIsEditing(true); setShowMenu(false); }}
                   className="flex-row items-center gap-3 px-4 py-3"
                 >
-                  <Edit3 size={18} color="#94a3b8" />
-                  <Text className="text-slate-300 text-sm">Edit Post</Text>
+                  <Edit3 size={18} color={colors.textMuted} />
+                  <Text style={{ color: colors.textMuted, fontFamily }} className="text-sm">{t('feedComponents', 'editPostLabel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleDelete}
                   className="flex-row items-center gap-3 px-4 py-3"
                 >
-                  <Trash2 size={18} color="#f87171" />
-                  <Text className="text-red-400 text-sm">Delete Post</Text>
+                  <Trash2 size={18} color={colors.error} />
+                  <Text style={{ color: colors.error, fontFamily }} className="text-sm">{t('feedComponents', 'deletePostLabel')}</Text>
                 </TouchableOpacity>
-                <View className="border-t border-slate-700/50 my-1" />
+                <View style={{ borderColor: colors.border + '80' }} className="border-t my-1" />
               </>
             )}
             <TouchableOpacity
               onPress={() => { setBookmarked(!bookmarked); if (onBookmark) onBookmark(post.id); setShowMenu(false); }}
               className="flex-row items-center gap-3 px-4 py-3"
             >
-              <Bookmark size={18} color="#94a3b8" />
-              <Text className="text-slate-300 text-sm">{bookmarked ? 'Unsave Post' : 'Save Post'}</Text>
+              <Bookmark size={18} color={colors.textMuted} />
+              <Text style={{ color: colors.textMuted, fontFamily }} className="text-sm">{bookmarked ? t('feedComponents', 'unsavePostLabel') : t('feedComponents', 'savePostLabel')}</Text>
             </TouchableOpacity>
             {!isAuthor && (
               <TouchableOpacity
                 onPress={() => { setShowReportModal(true); setShowMenu(false); }}
                 className="flex-row items-center gap-3 px-4 py-3"
               >
-                <Flag size={18} color="#f87171" />
-                <Text className="text-red-400 text-sm">Report Post</Text>
+                <Flag size={18} color={colors.error} />
+                <Text style={{ color: colors.error, fontFamily }} className="text-sm">{t('feedComponents', 'reportPostLabel')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -470,26 +488,27 @@ export default function PostCard({
         animationType="slide"
         onRequestClose={() => setShowReportModal(false)}
       >
-        <Pressable className="flex-1 bg-black/70" onPress={() => setShowReportModal(false)}>
-          <View className="absolute bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 rounded-t-3xl p-6 pb-10">
+        <Pressable style={{ backgroundColor: '#000000b3' }} className="flex-1" onPress={() => setShowReportModal(false)}>
+          <View style={{ backgroundColor: colors.card, borderColor: colors.border }} className="absolute bottom-0 left-0 right-0 border-t rounded-t-3xl p-6 pb-10">
             <View className="flex-row items-center justify-between mb-5">
-              <Text className="text-white font-bold text-lg">Report Post</Text>
+              <Text style={{ color: colors.text, fontFamily: fontFamilyBold }} className="font-bold text-lg">{t('feedComponents', 'reportPostModalTitle')}</Text>
               <TouchableOpacity onPress={() => setShowReportModal(false)}>
-                <X size={20} color="#94a3b8" />
+                <X size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
-            <Text className="text-slate-400 text-sm mb-4">Why are you reporting this post?</Text>
+            <Text style={{ color: colors.textMuted, fontFamily }} className="text-sm mb-4">{t('feedComponents', 'reportPostPrompt')}</Text>
             <View className="gap-2 mb-5">
               {REPORT_REASONS.map(reason => (
                 <TouchableOpacity
                   key={reason}
                   onPress={() => setReportReason(reason)}
-                  className={`px-4 py-2.5 rounded-xl border ${reportReason === reason
-                    ? 'bg-red-500/20 border-red-500/30'
-                    : 'bg-slate-700/30 border-transparent'
-                    }`}
+                  style={{
+                    backgroundColor: reportReason === reason ? colors.error + '33' : colors.border + '4d',
+                    borderColor: reportReason === reason ? colors.error + '4d' : 'transparent',
+                  }}
+                  className="px-4 py-2.5 rounded-xl border"
                 >
-                  <Text className={reportReason === reason ? 'text-red-300 text-sm' : 'text-slate-300 text-sm'}>
+                  <Text style={{ color: reportReason === reason ? colors.error : colors.textMuted, fontFamily }} className="text-sm">
                     {reason}
                   </Text>
                 </TouchableOpacity>
@@ -498,9 +517,10 @@ export default function PostCard({
             <View className="flex-row gap-3">
               <TouchableOpacity
                 onPress={() => setShowReportModal(false)}
-                className="flex-1 py-2.5 bg-slate-700 rounded-xl items-center"
+                style={{ backgroundColor: colors.border }}
+                className="flex-1 py-2.5 rounded-xl items-center"
               >
-                <Text className="text-white text-sm font-medium">Cancel</Text>
+                <Text style={{ color: colors.text, fontFamily }} className="text-sm font-medium">{t('feedComponents', 'cancelButtonLabel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
@@ -510,9 +530,10 @@ export default function PostCard({
                   setReportReason('');
                 }}
                 disabled={!reportReason}
-                className={`flex-1 py-2.5 rounded-xl items-center ${reportReason ? 'bg-red-600' : 'bg-red-900/50'}`}
+                style={{ backgroundColor: reportReason ? colors.error : colors.error + '80' }}
+                className="flex-1 py-2.5 rounded-xl items-center"
               >
-                <Text className="text-white text-sm font-medium">Submit Report</Text>
+                <Text style={{ fontFamily }} className="text-white text-sm font-medium">{t('feedComponents', 'submitReportLabel')}</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -1,5 +1,5 @@
 // src/screens/community/LeadersScreen.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
   ActivityIndicator, SafeAreaView, Dimensions, Modal, Pressable
@@ -11,15 +11,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Crown, MapPin, Users, X } from 'lucide-react-native';
 import * as leadersApi from '../../api/leaders';
 import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 type LevelKey = 'State' | 'District' | 'Taluka' | 'Panchayat';
-
-const LEVELS: { key: LevelKey; label: string; labelOr: string; emoji: string; color: string; border: string; bg: string }[] = [
-  { key: 'State', label: 'State', labelOr: 'ରାଜ୍ୟ', emoji: '🏛️', color: '#f59e0b', border: 'border-amber-500/30', bg: 'bg-amber-500/10' },
-  { key: 'District', label: 'District', labelOr: 'ଜିଲ୍ଲା', emoji: '🗺️', color: '#3b82f6', border: 'border-blue-500/30', bg: 'bg-blue-500/10' },
-  { key: 'Taluka', label: 'Taluka', labelOr: 'ତାଲୁକ', emoji: '🏘️', color: '#10b981', border: 'border-emerald-500/30', bg: 'bg-emerald-500/10' },
-  { key: 'Panchayat', label: 'Panchayat', labelOr: 'ପଞ୍ଚାୟତ', emoji: '🌿', color: '#8b5cf6', border: 'border-purple-500/30', bg: 'bg-purple-500/10' },
-];
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 40) / 2; // Two items per row
@@ -39,6 +34,8 @@ interface Leader {
 export default function LeadersScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const { lang, t } = useLanguage();
   const [activeLevel, setActiveLevel] = useState<LevelKey>('State');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [leaders, setLeaders] = useState<Leader[]>([]);
@@ -46,6 +43,13 @@ export default function LeadersScreen() {
   const [loading, setLoading] = useState(true);
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
+
+  const LEVELS: { key: LevelKey; label: string; labelOr: string; emoji: string; color: string }[] = useMemo(() => [
+    { key: 'State', label: t('leaders', 'levelState'), labelOr: t('leaders', 'levelStateOr'), emoji: '🏛️', color: colors.amber },
+    { key: 'District', label: t('leaders', 'levelDistrict'), labelOr: t('leaders', 'levelDistrictOr'), emoji: '🗺️', color: colors.primaryLight },
+    { key: 'Taluka', label: t('leaders', 'levelTaluka'), labelOr: t('leaders', 'levelTalukaOr'), emoji: '🏘️', color: colors.success },
+    { key: 'Panchayat', label: t('leaders', 'levelPanchayat'), labelOr: t('leaders', 'levelPanchayatOr'), emoji: '🌿', color: colors.accent },
+  ], [colors, lang]);
 
   const levelMeta = LEVELS.find(l => l.key === activeLevel)!;
   const needsLocation = activeLevel !== 'State';
@@ -90,18 +94,18 @@ export default function LeadersScreen() {
     const photo = cleanPhoto(leader.image_url);
     return (
       <View
-        style={{ width: CARD_WIDTH }}
-        className="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-4 items-center mb-3 shadow-md"
+        style={{ width: CARD_WIDTH, backgroundColor: colors.card + '80', borderColor: colors.border + '60' }}
+        className="border rounded-2xl p-4 items-center mb-3 shadow-md"
       >
         {/* Avatar */}
         <View
-          style={{ borderColor: levelMeta.color, borderWidth: 2 }}
-          className="w-16 h-16 rounded-full overflow-hidden items-center justify-center bg-slate-900 mb-2.5"
+          style={{ borderColor: levelMeta.color, borderWidth: 2, backgroundColor: colors.bg }}
+          className="w-16 h-16 rounded-full overflow-hidden items-center justify-center mb-2.5"
         >
           {photo ? (
             <Image source={{ uri: photo }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} />
           ) : (
-            <View className={`w-full h-full items-center justify-center ${levelMeta.bg}`}>
+            <View style={{ backgroundColor: levelMeta.color + '10' }} className="w-full h-full items-center justify-center">
               <Text style={{ color: levelMeta.color }} className="font-bold text-xl">
                 {getInitial(leader.name)}
               </Text>
@@ -110,18 +114,18 @@ export default function LeadersScreen() {
         </View>
 
         {/* Details */}
-        <Text className="text-white font-bold text-sm text-center" numberOfLines={1}>
+        <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-bold text-sm text-center" numberOfLines={1}>
           {leader.name}
         </Text>
         {leader.name_or ? (
-          <Text className="text-slate-400 text-xs mt-0.5 text-center" numberOfLines={1}>
+          <Text style={{ color: colors.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-xs mt-0.5 text-center" numberOfLines={1}>
             {leader.name_or}
           </Text>
         ) : null}
 
         {/* Role Badge */}
-        <View className={`mt-2.5 px-3 py-1 rounded-full border ${levelMeta.border} ${levelMeta.bg}`}>
-          <Text style={{ color: levelMeta.color }} className="text-[10px] font-bold text-center">
+        <View style={{ borderColor: levelMeta.color + '30', backgroundColor: levelMeta.color + '10' }} className="mt-2.5 px-3 py-1 rounded-full border">
+          <Text style={{ color: levelMeta.color, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="text-[10px] font-bold text-center">
             {leader.role_or || leader.role}
           </Text>
         </View>
@@ -129,15 +133,15 @@ export default function LeadersScreen() {
         {/* Location tag */}
         {leader.location ? (
           <View className="flex-row items-center gap-1 mt-2">
-            <MapPin size={10} color="#64748b" />
-            <Text className="text-slate-500 text-[10px] uppercase tracking-wide" numberOfLines={1}>
+            <MapPin size={10} color={colors.textFaint} />
+            <Text style={{ color: colors.textFaint }} className="text-[10px] uppercase tracking-wide" numberOfLines={1}>
               {leader.location}
             </Text>
           </View>
         ) : null}
       </View>
     );
-  }, [levelMeta]);
+  }, [levelMeta, colors, lang]);
 
   // Grouped leaders map
   const groupedByLocation = needsLocation && !selectedLocation
@@ -149,42 +153,47 @@ export default function LeadersScreen() {
     : null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0f172a', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
       {/* Top Header */}
-      <View className="px-4 py-3 border-b border-slate-800 flex-row items-center bg-slate-900 gap-3">
-        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.goBack(); }} className="p-1 rounded-full bg-slate-800/50">
-          <ArrowLeft size={22} color="#ffffff" />
+      <View style={{ borderBottomColor: colors.border, backgroundColor: colors.bg }} className="px-4 py-3 border-b flex-row items-center gap-3">
+        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.goBack(); }} style={{ backgroundColor: colors.card + '80' }} className="p-1 rounded-full">
+          <ArrowLeft size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text className="text-white font-bold text-xl tracking-wide">Leaders</Text>
+        <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-bold text-xl tracking-wide">
+          {t('leaders', 'title')}
+        </Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 80 }} showsVerticalScrollIndicator={false}>
         {/* Intro */}
         <View className="flex-row items-center gap-3 mb-4">
-          <View className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 items-center justify-center">
-            <Crown size={20} color="#f59e0b" />
+          <View style={{ backgroundColor: colors.amber + '10', borderColor: colors.amber + '20' }} className="w-10 h-10 rounded-xl border items-center justify-center">
+            <Crown size={20} color={colors.amber} />
           </View>
           <View>
-            <Text className="text-white font-bold text-lg">Community Leaders</Text>
-            <Text className="text-slate-400 text-xs font-medium">ସମାଜ ନେତୃତ୍ୱ — Leadership Tiers</Text>
+            <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-bold text-lg">
+              {t('leaders', 'communityLeaders')}
+            </Text>
+            <Text style={{ color: colors.textMuted }} className="text-xs font-medium">{t('leaders', 'leadershipSubtitle')}</Text>
           </View>
         </View>
 
         {/* Level Selector Tabs */}
-        <View className="flex-row bg-slate-800/60 border border-slate-700/50 rounded-2xl p-1 mb-4">
+        <View style={{ backgroundColor: colors.card + '60', borderColor: colors.border + '50' }} className="flex-row border rounded-2xl p-1 mb-4">
           {LEVELS.map(lv => {
             const active = activeLevel === lv.key;
             return (
               <TouchableOpacity
                 key={lv.key}
                 onPress={() => handleLevelChange(lv.key)}
-                className={`flex-1 items-center py-2 rounded-xl transition-all ${active ? 'bg-slate-700' : ''}`}
+                style={{ backgroundColor: active ? colors.borderLight : 'transparent' }}
+                className="flex-1 items-center py-2 rounded-xl"
               >
                 <Text className="text-lg mb-0.5">{lv.emoji}</Text>
-                <Text style={{ color: active ? lv.color : '#94a3b8' }} className="text-[10px] font-bold">
+                <Text style={{ color: active ? lv.color : colors.textMuted }} className="text-[10px] font-bold">
                   {lv.label}
                 </Text>
-                <Text className="text-[8px] text-slate-500 font-medium">{lv.labelOr}</Text>
+                <Text style={{ color: colors.textFaint, fontFamily: 'NotoSansOriya' }} className="text-[8px] font-medium">{lv.labelOr}</Text>
               </TouchableOpacity>
             );
           })}
@@ -194,16 +203,17 @@ export default function LeadersScreen() {
         {needsLocation && (
           <View>
             {locationsLoading ? (
-              <ActivityIndicator color="#3b82f6" size="small" className="py-2" />
+              <ActivityIndicator color={colors.primaryLight} size="small" className="py-2" />
             ) : locations.length > 0 ? (
               <TouchableOpacity
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowLocationModal(true); }}
-                className="mb-4 bg-slate-800 border border-slate-700 rounded-2xl p-4 flex-row justify-between items-center active:opacity-80"
+                style={{ backgroundColor: colors.card, borderColor: colors.border }}
+                className="mb-4 border rounded-2xl p-4 flex-row justify-between items-center active:opacity-80"
               >
-                <Text className="text-white text-sm font-semibold">
-                  {selectedLocation ? `Location: ${selectedLocation}` : `Select ${activeLevel}`}
+                <Text style={{ color: colors.text }} className="text-sm font-semibold">
+                  {selectedLocation ? `${t('leaders', 'locationPrefix')} ${selectedLocation}` : `${t('leaders', 'selectPrefix')} ${activeLevel}`}
                 </Text>
-                <Text className="text-blue-400 text-xs font-bold">Choose ▾</Text>
+                <Text style={{ color: colors.primaryLight }} className="text-xs font-bold">{t('leaders', 'choose')}</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -212,15 +222,15 @@ export default function LeadersScreen() {
         {/* Leaders Listing Grid */}
         {loading ? (
           <View className="flex-col items-center justify-center py-20 gap-3">
-            <ActivityIndicator size="large" color="#3b82f6" />
-            <Text className="text-slate-400 text-sm">Loading leaders…</Text>
+            <ActivityIndicator size="large" color={colors.primaryLight} />
+            <Text style={{ color: colors.textMuted }} className="text-sm">{t('leaders', 'loadingLeaders')}</Text>
           </View>
         ) : leaders.length === 0 ? (
-          <View className="items-center justify-center py-20 bg-slate-800/30 rounded-2xl border border-slate-700/50 px-6">
-            <Users size={40} color="#475569" className="mb-4" />
-            <Text className="text-slate-300 text-base font-bold text-center">No leaders found</Text>
-            <Text className="text-slate-500 text-xs text-center mt-1">
-              No leader cards have been registered under this tier.
+          <View style={{ backgroundColor: colors.card + '30', borderColor: colors.border + '50' }} className="items-center justify-center py-20 rounded-2xl border px-6">
+            <Users size={40} color={colors.borderLight} className="mb-4" />
+            <Text style={{ color: colors.text }} className="text-base font-bold text-center">{t('leaders', 'emptyTitle')}</Text>
+            <Text style={{ color: colors.textFaint }} className="text-xs text-center mt-1">
+              {t('leaders', 'emptySubtitle')}
             </Text>
           </View>
         ) : groupedByLocation ? (
@@ -234,8 +244,8 @@ export default function LeadersScreen() {
                   <Text style={{ color: levelMeta.color }} className="text-xs font-bold uppercase tracking-widest">
                     {loc}
                   </Text>
-                  <Text className="text-[10px] text-slate-500">({groupedByLocation[loc].length})</Text>
-                  <View className="flex-1 h-px bg-slate-700/60 ml-2" />
+                  <Text style={{ color: colors.textFaint }} className="text-[10px]">({groupedByLocation[loc].length})</Text>
+                  <View style={{ backgroundColor: colors.border + '60' }} className="flex-1 h-px ml-2" />
                 </View>
                 {/* Cards Grid */}
                 <View className="flex-row flex-wrap gap-2">
@@ -264,24 +274,30 @@ export default function LeadersScreen() {
         onRequestClose={() => setShowLocationModal(false)}
       >
         <Pressable className="flex-1 bg-black/60 justify-end" onPress={() => setShowLocationModal(false)}>
-          <View 
-            className="bg-slate-800 border-t border-slate-700 rounded-t-3xl p-6"
-            style={{ maxHeight: Dimensions.get('window').height * 0.7, paddingBottom: insets.bottom + 24 }}
+          <View
+            style={{ backgroundColor: colors.card, borderColor: colors.border, maxHeight: Dimensions.get('window').height * 0.7, paddingBottom: insets.bottom + 24 }}
+            className="border-t rounded-t-3xl p-6"
           >
             <View className="flex-row items-center justify-between mb-5">
-              <Text className="text-white font-bold text-lg">Select Location</Text>
+              <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-bold text-lg">
+                {t('leaders', 'selectLocationTitle')}
+              </Text>
               <TouchableOpacity onPress={() => setShowLocationModal(false)}>
-                <X size={20} color="#94a3b8" />
+                <X size={20} color={colors.textMuted} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} className="gap-2">
               <TouchableOpacity
                 onPress={() => handleLocationSelect('')}
-                className={`p-4 rounded-xl border mb-2 ${!selectedLocation ? 'bg-blue-600/10 border-blue-500/40' : 'bg-slate-900/40 border-slate-700'}`}
+                style={{
+                  backgroundColor: !selectedLocation ? colors.primary + '10' : colors.bg + '40',
+                  borderColor: !selectedLocation ? colors.primaryLight + '40' : colors.border,
+                }}
+                className="p-4 rounded-xl border mb-2"
               >
-                <Text className={`font-semibold text-sm ${!selectedLocation ? 'text-blue-400' : 'text-slate-355'}`} style={{ color: !selectedLocation ? '#3b82f6' : '#fff' }}>
-                  All {activeLevel}s
+                <Text style={{ color: !selectedLocation ? colors.primaryLight : colors.text }} className="font-semibold text-sm">
+                  {t('leaders', 'allPrefix')} {activeLevel}s
                 </Text>
               </TouchableOpacity>
 
@@ -289,9 +305,13 @@ export default function LeadersScreen() {
                 <TouchableOpacity
                   key={loc}
                   onPress={() => handleLocationSelect(loc)}
-                  className={`p-4 rounded-xl border mb-2 ${selectedLocation === loc ? 'bg-blue-600/10 border-blue-500/40' : 'bg-slate-900/40 border-slate-700'}`}
+                  style={{
+                    backgroundColor: selectedLocation === loc ? colors.primary + '10' : colors.bg + '40',
+                    borderColor: selectedLocation === loc ? colors.primaryLight + '40' : colors.border,
+                  }}
+                  className="p-4 rounded-xl border mb-2"
                 >
-                  <Text className={`font-semibold text-sm ${selectedLocation === loc ? 'text-blue-400' : 'text-white'}`} style={{ color: selectedLocation === loc ? '#3b82f6' : '#fff' }}>
+                  <Text style={{ color: selectedLocation === loc ? colors.primaryLight : colors.text }} className="font-semibold text-sm">
                     {loc}
                   </Text>
                 </TouchableOpacity>

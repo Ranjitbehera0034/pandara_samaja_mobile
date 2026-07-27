@@ -8,12 +8,18 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function OtpScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const insets = useSafeAreaInsets();
   const { verifyOtp, verifyFirebaseOtp } = useAuth();
+  const { colors } = useTheme();
+  const { lang, t } = useLanguage();
+  const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
+  const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
 
   const { membershipNo, mobile, useFirebase } = route.params as any;
 
@@ -81,7 +87,7 @@ export default function OtpScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', err.message || 'Invalid OTP. Please try again.');
+      Alert.alert(t('common', 'errorTitle'), err.message || t('auth', 'invalidOtpError'));
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +99,7 @@ export default function OtpScreen() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-slate-900"
+      style={{ flex: 1, backgroundColor: colors.bg }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -107,20 +113,24 @@ export default function OtpScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Back */}
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             navigation.goBack();
-          }} 
+          }}
           className="mb-8 self-start py-2"
           disabled={isLoading}
         >
-          <Text className="text-blue-400 text-base font-semibold">← Back</Text>
+          <Text className="text-base font-semibold" style={{ color: colors.primaryLight, fontFamily: fontBold }}>
+            {t('common', 'back')}
+          </Text>
         </TouchableOpacity>
 
-        <Text className="text-white font-bold text-2xl mb-2">Enter OTP</Text>
-        <Text className="text-slate-400 text-sm mb-8">
-          OTP sent to +91{mobile}
+        <Text className="font-bold text-2xl mb-2" style={{ color: colors.text, fontFamily: fontBold }}>
+          {t('auth', 'enterOtpTitle')}
+        </Text>
+        <Text className="text-sm mb-8" style={{ color: colors.textMuted, fontFamily: fontRegular }}>
+          {t('auth', 'otpSentTo')} +91{mobile}
         </Text>
 
         {/* 6-digit OTP boxes */}
@@ -129,9 +139,14 @@ export default function OtpScreen() {
             <TextInput
               key={i}
               ref={(r) => { inputs.current[i] = r; }}
-              style={{ minHeight: 56, minWidth: 44 }}
-              className={`w-12 h-14 border rounded-xl text-center text-white text-xl font-bold bg-slate-800
-                ${digit ? 'border-blue-500' : 'border-slate-700 focus:border-slate-500'}`}
+              style={{
+                minHeight: 56,
+                minWidth: 44,
+                backgroundColor: colors.card,
+                color: colors.text,
+                borderColor: digit ? colors.primary : colors.border,
+              }}
+              className="w-12 h-14 border rounded-xl text-center text-xl font-bold"
               value={digit}
               onChangeText={(v) => handleOtpChange(v, i)}
               onKeyPress={(e) => handleKeyPress(e, i)}
@@ -145,30 +160,37 @@ export default function OtpScreen() {
 
         {/* Verify Button */}
         <TouchableOpacity
-          className={`rounded-xl py-4 items-center mb-6 ${
-            isLoading || otp.some(d => d === '') ? 'bg-slate-700 opacity-60' : 'bg-blue-600 shadow-lg shadow-blue-500/20'
-          }`}
+          className="rounded-xl py-4 items-center mb-6"
+          style={{
+            backgroundColor: isLoading || otp.some(d => d === '') ? colors.border : colors.primary,
+            opacity: isLoading || otp.some(d => d === '') ? 0.6 : 1,
+          }}
           onPress={handleVerify}
           disabled={isLoading || otp.some(d => d === '')}
         >
           {isLoading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-white font-bold text-base">Verify & Login</Text>
+            <Text className="font-bold text-base" style={{ color: 'white', fontFamily: fontBold }}>
+              {t('auth', 'verifyButton')}
+            </Text>
           )}
         </TouchableOpacity>
 
         {/* Resend */}
-        <TouchableOpacity 
-          disabled={resendTimer > 0 || isLoading} 
+        <TouchableOpacity
+          disabled={resendTimer > 0 || isLoading}
           onPress={() => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
             navigation.goBack();
           }}
           className="py-2"
         >
-          <Text className={`text-center text-sm font-semibold ${resendTimer > 0 ? 'text-slate-500' : 'text-blue-400'}`}>
-            {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}
+          <Text
+            className="text-center text-sm font-semibold"
+            style={{ color: resendTimer > 0 ? colors.textFaint : colors.primaryLight, fontFamily: fontBold }}
+          >
+            {resendTimer > 0 ? `${t('auth', 'resendOtpIn')} ${resendTimer}s` : t('auth', 'resendOtp')}
           </Text>
         </TouchableOpacity>
       </ScrollView>

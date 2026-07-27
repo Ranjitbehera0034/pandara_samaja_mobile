@@ -8,6 +8,12 @@ import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { useSocket } from '../../hooks/useSocket';
+import * as notificationsApi from '../../api/notifications';
+import { NotificationRow } from '../../api/notifications';
+import { timeAgoShort } from '../../utils/feedUtils';
 import SkeletonBox from '../../components/common/SkeletonBox';
 import EmptyState from '../../components/common/EmptyState';
 
@@ -15,7 +21,7 @@ const { width: W } = Dimensions.get('window');
 
 interface Notification {
   id: string;
-  type: 'like' | 'comment' | 'follow' | 'system';
+  type: string;
   title: string;
   body: string;
   timestamp: string;
@@ -24,51 +30,24 @@ interface Notification {
   postId?: string;
 }
 
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: 'notif-1',
-    type: 'like',
-    title: 'Sasmita Das liked your post',
-    body: 'Annual Meetup Details',
-    timestamp: '2 hours ago',
-    read: false,
-    senderId: 'MEM101',
-    postId: '12',
-  },
-  {
-    id: 'notif-2',
-    type: 'comment',
-    title: 'Ranjit Behera commented on your post',
-    body: '"Looking forward to attending!"',
-    timestamp: '5 hours ago',
-    read: false,
-    senderId: 'MEM102',
-    postId: '12',
-  },
-  {
-    id: 'notif-3',
-    type: 'follow',
-    title: 'Priyabrata Samal followed you',
-    body: 'You are now connected.',
-    timestamp: '1 day ago',
-    read: true,
-    senderId: 'MEM103',
-  },
-  {
-    id: 'notif-4',
-    type: 'system',
-    title: 'Welcome to Pandara Samaja app!',
-    body: 'Explore resources, events, matrimony profiles, and connect with members.',
-    timestamp: '3 days ago',
-    read: true,
-  },
-];
+function mapNotification(row: NotificationRow): Notification {
+  return {
+    id: row.id.toString(),
+    type: row.type,
+    title: row.actor_name,
+    body: row.message,
+    timestamp: timeAgoShort(row.created_at),
+    read: row.read,
+    senderId: row.actor_id,
+    postId: row.post_id ?? undefined,
+  };
+}
 
-function NotifSkeleton() {
+function NotifSkeleton({ colors }: { colors: ReturnType<typeof useTheme>['colors'] }) {
   return (
     <View style={{ gap: 12, padding: 16 }}>
       {[1, 2, 3, 4, 5].map(i => (
-        <View key={i} style={{ flexDirection: 'row', gap: 12, padding: 12, backgroundColor: '#1e293b', borderRadius: 12 }}>
+        <View key={i} style={{ flexDirection: 'row', gap: 12, padding: 12, backgroundColor: colors.card, borderRadius: 12 }}>
           <SkeletonBox width={40} height={40} borderRadius={20} />
           <View style={{ flex: 1, gap: 8, justifyContent: 'center' }}>
             <SkeletonBox width="70%" height={12} />
@@ -83,6 +62,8 @@ function NotifSkeleton() {
 export default function NotificationsScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { colors: C } = useTheme();
+  const { t } = useLanguage();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -94,20 +75,29 @@ export default function NotificationsScreen() {
     else setLoading(true);
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setNotifications(MOCK_NOTIFICATIONS);
-    } catch {
-      Alert.alert('Error', 'Failed to load notifications');
+      const data = await notificationsApi.fetchNotifications();
+      if (data.success) {
+        setNotifications(data.notifications.map(mapNotification));
+      }
+    } catch (e) {
+      console.error('[NOTIFICATIONS] Failed to load:', e);
+      Alert.alert(t('common', 'errorTitle'), t('notifications', 'loadError'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadNotifications();
   }, [loadNotifications]);
+
+  // Live push: bump the badge/list when a new notification arrives while viewing
+  useSocket({
+    onNotificationCount: () => {
+      loadNotifications();
+    },
+  });
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -115,28 +105,42 @@ export default function NotificationsScreen() {
     await loadNotifications(true);
   };
 
-  const handleMarkAllRead = () => {
+  const handleMarkAllRead = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    try {
+      await notificationsApi.markAllRead();
+    } catch (e) {
+      console.error('[NOTIFICATIONS] Mark all read failed:', e);
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     setNotifications(prev => prev.filter(n => n.id !== id));
+    try {
+      await notificationsApi.deleteNotification(id);
+    } catch (e) {
+      console.error('[NOTIFICATIONS] Delete failed:', e);
+    }
   };
 
-  const handleNotificationTap = (notif: Notification) => {
+  const handleNotificationTap = async (notif: Notification) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Mark as read
     setNotifications(prev =>
       prev.map(n => n.id === notif.id ? { ...n, read: true } : n)
     );
+    if (!notif.read) {
+      notificationsApi.markRead(notif.id).catch(e => console.error('[NOTIFICATIONS] Mark read failed:', e));
+    }
 
     // Navigate based on type
     if ((notif.type === 'like' || notif.type === 'comment') && notif.postId) {
       navigation.navigate('FeedMain');
     } else if (notif.type === 'follow' && notif.senderId) {
       navigation.navigate('MemberProfile', { id: notif.senderId });
+    } else if (notif.type === 'message' && notif.senderId) {
+      navigation.navigate('Chat', { withId: notif.senderId, withName: notif.title });
     }
   };
 
@@ -144,8 +148,7 @@ export default function NotificationsScreen() {
     return (
       <TouchableOpacity
         onPress={() => handleDelete(id)}
-        className="bg-red-650 justify-center items-center w-20 h-full rounded-r-xl"
-        style={{ backgroundColor: '#ef4444' }}
+        style={{ backgroundColor: C.error, justifyContent: 'center', alignItems: 'center', width: 80, height: '100%', borderTopRightRadius: 12, borderBottomRightRadius: 12 }}
       >
         <Trash2 size={20} color="white" />
       </TouchableOpacity>
@@ -158,6 +161,7 @@ export default function NotificationsScreen() {
         case 'like': return '❤️';
         case 'comment': return '💬';
         case 'follow': return '👥';
+        case 'message': return '✉️';
         default: return '📢';
       }
     };
@@ -169,62 +173,71 @@ export default function NotificationsScreen() {
       >
         <TouchableOpacity
           onPress={() => handleNotificationTap(item)}
-          className={`flex-row items-center gap-3 p-4 bg-slate-800 border border-slate-700/50 rounded-xl ${
-            !item.read ? 'border-l-4 border-l-blue-500' : ''
-          }`}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            padding: 16,
+            backgroundColor: C.card,
+            borderWidth: 1,
+            borderColor: C.border,
+            borderRadius: 12,
+            borderLeftWidth: !item.read ? 4 : 1,
+            borderLeftColor: !item.read ? C.primary : C.border,
+          }}
         >
           {/* Emoji Icon Badge */}
-          <View className="w-10 h-10 rounded-full bg-slate-900 border border-slate-700 items-center justify-center">
-            <Text className="text-lg">{getIcon()}</Text>
+          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.bg, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 18 }}>{getIcon()}</Text>
           </View>
 
           {/* Texts */}
-          <View className="flex-1">
-            <Text className="text-white text-sm font-semibold" numberOfLines={1}>{item.title}</Text>
-            <Text className="text-slate-400 text-xs mt-0.5" numberOfLines={1}>{item.body}</Text>
-            <Text className="text-slate-500 text-[10px] mt-1">{item.timestamp}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: C.text, fontSize: 14, fontWeight: '600' }} numberOfLines={1}>{item.title}</Text>
+            <Text style={{ color: C.textMuted, fontSize: 12, marginTop: 2 }} numberOfLines={1}>{item.body}</Text>
+            <Text style={{ color: C.textFaint, fontSize: 10, marginTop: 4 }}>{item.timestamp}</Text>
           </View>
 
           {/* Unread indicator */}
           {!item.read && (
-            <View className="w-2.5 h-2.5 rounded-full bg-blue-500 ml-1 shrink-0" />
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.primary, marginLeft: 4 }} />
           )}
         </TouchableOpacity>
       </Swipeable>
     );
-  }, [notifications]);
+  }, [C]);
 
   const keyExtractor = useCallback((item: Notification) => item.id, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={{ flex: 1, backgroundColor: '#0f172a', paddingTop: insets.top }}>
+      <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top }}>
         {/* Top Header */}
-        <View className="px-4 py-3 border-b border-slate-800 flex-row items-center bg-slate-900 justify-between">
-          <View className="flex-row items-center gap-3">
-            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.goBack(); }} className="p-1 rounded-full bg-slate-800/50">
-              <ArrowLeft size={22} color="#ffffff" />
+        <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.border, flexDirection: 'row', alignItems: 'center', backgroundColor: C.bg, justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.goBack(); }} style={{ padding: 4, borderRadius: 999, backgroundColor: C.card }}>
+              <ArrowLeft size={22} color={C.text} />
             </TouchableOpacity>
-            <Text className="text-white font-bold text-xl tracking-wide">Notifications</Text>
+            <Text style={{ color: C.text, fontWeight: '700', fontSize: 20, letterSpacing: 0.3 }}>{t('notifications', 'title')}</Text>
           </View>
           {unreadCount > 0 && (
             <TouchableOpacity
               onPress={handleMarkAllRead}
-              className="flex-row items-center gap-1.5 px-3 py-1.5 bg-blue-600/10 rounded-full border border-blue-500/20"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: C.primary + '15', borderRadius: 999, borderWidth: 1, borderColor: C.primary + '30' }}
             >
-              <Check size={14} color="#3b82f6" />
-              <Text className="text-blue-400 text-xs font-bold">Mark all read</Text>
+              <Check size={14} color={C.primary} />
+              <Text style={{ color: C.primary, fontSize: 12, fontWeight: '700' }}>{t('notifications', 'markAllRead')}</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {loading && !refreshing ? (
-          <NotifSkeleton />
+          <NotifSkeleton colors={C} />
         ) : notifications.length === 0 ? (
           <EmptyState
             emoji="🔔"
-            title="All caught up"
-            subtitle="No new notifications"
+            title={t('notifications', 'allCaughtUpTitle')}
+            subtitle={t('notifications', 'allCaughtUpSubtitle')}
           />
         ) : (
           <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 12 }}>
@@ -238,9 +251,9 @@ export default function NotificationsScreen() {
                 <RefreshControl
                   refreshing={refreshing}
                   onRefresh={handleRefresh}
-                  tintColor="#2563eb"
-                  colors={['#2563eb']}
-                  progressBackgroundColor="#1e293b"
+                  tintColor={C.primary}
+                  colors={[C.primary]}
+                  progressBackgroundColor={C.card}
                 />
               }
             />

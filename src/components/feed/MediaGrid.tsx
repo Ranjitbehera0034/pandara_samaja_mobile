@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { Video, ResizeMode } from 'expo-av';
 import { MediaItem } from '../../types';
 import { cleanPhoto } from '../../utils/googleDriveUrl';
+import { useTheme } from '../../theme/ThemeContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const MEDIA_WIDTH = SCREEN_WIDTH - 32; // 16px padding each side
@@ -15,13 +16,14 @@ interface Props {
 }
 
 export default function MediaGrid({ media, onVideoPlay }: Props) {
+  const { colors } = useTheme();
   if (!media || media.length === 0) return null;
 
   // Single media
   if (media.length === 1) {
     const item = media[0];
     return (
-      <View className="mt-3 rounded-xl overflow-hidden bg-slate-900">
+      <View style={{ backgroundColor: colors.bg }} className="mt-3 rounded-xl overflow-hidden">
         {item.type === 'video' ? (
           <Video
             source={{ uri: cleanPhoto(item.url) || item.url }}
@@ -115,7 +117,7 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
               transition={200}
             />
             {i === 1 && media.length > 4 && (
-              <View className="absolute inset-0 bg-black/60 items-center justify-center">
+              <View style={{ backgroundColor: 'rgba(0,0,0,0.6)' }} className="absolute inset-0 items-center justify-center">
                 <Text className="text-white text-2xl font-bold">+{media.length - 4}</Text>
               </View>
             )}

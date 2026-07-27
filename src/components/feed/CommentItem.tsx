@@ -5,6 +5,8 @@ import { Send } from 'lucide-react-native';
 import { Comment } from '../../types';
 import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
 import { censorText, timeAgoShort } from '../../utils/feedUtils';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface Props {
   comment: Comment;
@@ -14,9 +16,12 @@ interface Props {
 }
 
 export default function CommentItem({ comment, depth = 0, onReply, onLikeComment }: Props) {
+  const { colors } = useTheme();
+  const { lang, t } = useLanguage();
   const [showReply, setShowReply] = useState(false);
   const [replyText, setReplyText] = useState('');
   const photo = cleanPhoto(comment.authorAvatar);
+  const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;
 
   const handleReply = () => {
     if (!replyText.trim()) return;
@@ -26,10 +31,10 @@ export default function CommentItem({ comment, depth = 0, onReply, onLikeComment
   };
 
   return (
-    <View className={depth > 0 ? 'ml-8 border-l-2 border-slate-700/30 pl-3' : ''}>
+    <View style={depth > 0 ? { marginLeft: 32, borderLeftWidth: 2, borderLeftColor: colors.border + '4d', paddingLeft: 12 } : undefined}>
       <View className="flex-row gap-2.5">
         {/* Avatar */}
-        <View className="w-7 h-7 rounded-full bg-slate-700 items-center justify-center overflow-hidden shrink-0">
+        <View style={{ backgroundColor: colors.primary }} className="w-7 h-7 rounded-full items-center justify-center overflow-hidden shrink-0">
           {photo ? (
             <Image source={{ uri: photo }} className="w-full h-full" resizeMode="cover" />
           ) : (
@@ -39,39 +44,40 @@ export default function CommentItem({ comment, depth = 0, onReply, onLikeComment
 
         <View className="flex-1">
           {/* Bubble */}
-          <View className="bg-slate-700/50 rounded-2xl px-3 py-2">
-            <Text className="text-slate-200 text-xs font-semibold mb-0.5">{comment.authorName}</Text>
-            <Text className="text-slate-300 text-sm">{censorText(comment.content)}</Text>
+          <View style={{ backgroundColor: colors.border + '80' }} className="rounded-2xl px-3 py-2">
+            <Text style={{ color: colors.text, fontFamily }} className="text-xs font-semibold mb-0.5">{comment.authorName}</Text>
+            <Text style={{ color: colors.textMuted, fontFamily }} className="text-sm">{censorText(comment.content)}</Text>
           </View>
 
           {/* Actions */}
           <View className="flex-row items-center gap-3 mt-1 ml-2">
             <TouchableOpacity onPress={() => onLikeComment(comment.id)}>
-              <Text className={`text-xs font-medium ${comment.isLiked ? 'text-blue-400' : 'text-slate-500'}`}>
-                {comment.isLiked ? 'Liked' : 'Like'}{comment.likes > 0 ? ` (${comment.likes})` : ''}
+              <Text style={{ color: comment.isLiked ? colors.primaryLight : colors.textFaint, fontFamily }} className="text-xs font-medium">
+                {comment.isLiked ? t('feedComponents', 'likedLabel') : t('feedComponents', 'likeLabel')}{comment.likes > 0 ? ` (${comment.likes})` : ''}
               </Text>
             </TouchableOpacity>
             {depth < 2 && (
               <TouchableOpacity onPress={() => setShowReply(!showReply)}>
-                <Text className="text-slate-500 text-xs font-medium">Reply</Text>
+                <Text style={{ color: colors.textFaint, fontFamily }} className="text-xs font-medium">{t('feedComponents', 'replyLabel')}</Text>
               </TouchableOpacity>
             )}
-            <Text className="text-slate-600 text-xs">{timeAgoShort(comment.timestamp)}</Text>
+            <Text style={{ color: colors.textFaint }} className="text-xs">{timeAgoShort(comment.timestamp)}</Text>
           </View>
 
           {/* Reply input */}
           {showReply && (
             <View className="flex-row items-center gap-2 mt-2">
               <TextInput
-                className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-full px-3 py-1.5 text-white text-xs"
-                placeholder="Write a reply..."
-                placeholderTextColor="#64748b"
+                style={{ backgroundColor: colors.card + '80', borderColor: colors.border + '80', color: colors.text, fontFamily }}
+                className="flex-1 rounded-full px-3 py-1.5 text-xs border"
+                placeholder={t('feedComponents', 'writeReplyPlaceholder')}
+                placeholderTextColor={colors.textFaint}
                 value={replyText}
                 onChangeText={setReplyText}
                 autoFocus
               />
               <TouchableOpacity onPress={handleReply} disabled={!replyText.trim()}>
-                <Send size={14} color={replyText.trim() ? '#3b82f6' : '#475569'} />
+                <Send size={14} color={replyText.trim() ? colors.primaryLight : colors.textFaint} />
               </TouchableOpacity>
             </View>
           )}

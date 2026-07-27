@@ -12,6 +12,7 @@ export const STORAGE_KEYS = {
   ADMIN_TOKEN: 'adminToken',
   SIDEBAR_COLLAPSED: 'sidebarCollapsed',
   LANGUAGE: 'appLanguage',
+  THEME: 'appTheme',
 };
 
 export const APP_NAME = 'Nikhila Odisha Pandara Samaja';

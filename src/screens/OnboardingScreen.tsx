@@ -5,43 +5,32 @@ import {
   ScrollView, Animated
 } from 'react-native';
 import { storage } from '../utils/secureStorage';
+import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const { width: W } = Dimensions.get('window');
 
-const SLIDES = [
-  {
-    emoji: '🏛️',
-    title: 'Welcome to Pandara Samaja',
-    titleOdia: 'ପଣ୍ଡାର ସମାଜ',
-    body: 'Connect with 10,000+ members of the Nikhila Odisha Pandara Samaja community across Odisha.',
-    accent: '#2563eb',
-  },
-  {
-    emoji: '👨👩👧👦',
-    title: 'Your Family, Connected',
-    titleOdia: 'ଆପଣଙ୍କ ପରିବାର',
-    body: 'Explore the community member directory. Follow, message, and stay connected with your people.',
-    accent: '#4f46e5',
-  },
-  {
-    emoji: '📢',
-    title: 'Stay Informed',
-    titleOdia: 'ଖବର ଓ ଘୋଷଣା',
-    body: 'Get community announcements, event updates, leader news, and matrimony listings — all in one place.',
-    accent: '#ec4899',
-  },
-  {
-    emoji: '🔒',
-    title: 'Members Only',
-    titleOdia: 'ସୁରକ୍ଷିତ ପ୍ରବେଶ',
-    body: 'Login with your registered mobile number. Your data is secure and only visible to community members.',
-    accent: '#22c55e',
-  },
+const SLIDE_META = [
+  { emoji: '🏛️', titleKey: 'slide1Title', bodyKey: 'slide1Body', accentKey: 'primary' as const },
+  { emoji: '👨👩👧👦', titleKey: 'slide2Title', bodyKey: 'slide2Body', accentKey: 'accent' as const },
+  { emoji: '📢', titleKey: 'slide3Title', bodyKey: 'slide3Body', accentKey: 'female' as const },
+  { emoji: '🔒', titleKey: 'slide4Title', bodyKey: 'slide4Body', accentKey: 'success' as const },
 ];
 
 export default function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
+  const { colors } = useTheme();
+  const { lang, t } = useLanguage();
+  const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
+  const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
+
+  const SLIDES = SLIDE_META.map((m) => ({
+    emoji: m.emoji,
+    title: t('onboarding', m.titleKey),
+    body: t('onboarding', m.bodyKey),
+    accent: colors[m.accentKey],
+  }));
 
   const goTo = (index: number) => {
     scrollRef.current?.scrollTo({ x: W * index, animated: true });
@@ -61,7 +50,7 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
   const slide = SLIDES[activeIndex];
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0f172a' }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -81,13 +70,10 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
             }}>
               <Text style={{ fontSize: 56 }}>{s.emoji}</Text>
             </View>
-            <Text style={{ color: '#f8fafc', fontSize: 24, fontWeight: '800', textAlign: 'center', marginBottom: 6 }}>
+            <Text style={{ color: colors.text, fontSize: 24, fontWeight: '800', textAlign: 'center', marginBottom: 6, fontFamily: fontBold }}>
               {s.title}
             </Text>
-            <Text style={{ color: s.accent, fontSize: 14, marginBottom: 16, opacity: 0.8 }}>
-              {s.titleOdia}
-            </Text>
-            <Text style={{ color: '#94a3b8', fontSize: 15, textAlign: 'center', lineHeight: 22 }}>
+            <Text style={{ color: colors.textMuted, fontSize: 15, textAlign: 'center', lineHeight: 22, fontFamily: fontRegular }}>
               {s.body}
             </Text>
           </View>
@@ -101,7 +87,7 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
             width: activeIndex === i ? 20 : 6,
             height: 6,
             borderRadius: 3,
-            backgroundColor: activeIndex === i ? slide.accent : '#334155',
+            backgroundColor: activeIndex === i ? slide.accent : colors.border,
           }} />
         ))}
       </View>
@@ -111,13 +97,17 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
         {activeIndex < SLIDES.length - 1 ? (
           <>
             <TouchableOpacity onPress={finish} style={{ flex: 1, paddingVertical: 14, alignItems: 'center' }}>
-              <Text style={{ color: '#64748b', fontSize: 15 }}>Skip</Text>
+              <Text style={{ color: colors.textFaint, fontSize: 15, fontFamily: fontRegular }}>
+                {t('onboarding', 'skip')}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => goTo(activeIndex + 1)}
               style={{ flex: 2, backgroundColor: slide.accent, paddingVertical: 14, borderRadius: 16, alignItems: 'center' }}
             >
-              <Text style={{ color: 'white', fontWeight: '700', fontSize: 15 }}>Next →</Text>
+              <Text style={{ color: 'white', fontWeight: '700', fontSize: 15, fontFamily: fontBold }}>
+                {t('onboarding', 'next')}
+              </Text>
             </TouchableOpacity>
           </>
         ) : (
@@ -125,7 +115,9 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
             onPress={finish}
             style={{ flex: 1, backgroundColor: slide.accent, paddingVertical: 14, borderRadius: 16, alignItems: 'center' }}
           >
-            <Text style={{ color: 'white', fontWeight: '700', fontSize: 16 }}>Get Started</Text>
+            <Text style={{ color: 'white', fontWeight: '700', fontSize: 16, fontFamily: fontBold }}>
+              {t('onboarding', 'getStarted')}
+            </Text>
           </TouchableOpacity>
         )}
       </View>

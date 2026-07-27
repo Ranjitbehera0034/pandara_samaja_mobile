@@ -10,6 +10,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { AuthStackParams } from '../../navigation/AuthStack';
 import { APP_NAME, APP_TAGLINE } from '../../config/constants';
 
@@ -19,6 +21,10 @@ export default function LoginScreen() {
   const navigation = useNavigation<Nav>();
   const { requestOtp } = useAuth();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const { lang, t } = useLanguage();
+  const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
+  const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
 
   const [membershipNo, setMembershipNo] = useState('');
   const [mobile, setMobile] = useState('');
@@ -39,12 +45,12 @@ export default function LoginScreen() {
   const handleSendOtp = async () => {
     if (!membershipNo.trim()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', 'Please enter your Membership Number');
+      Alert.alert(t('common', 'errorTitle'), t('auth', 'membershipRequiredError'));
       return;
     }
     if (!mobile.trim() || mobile.replace(/\D/g, '').length < 10) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', 'Please enter a valid 10-digit mobile number');
+      Alert.alert(t('common', 'errorTitle'), t('auth', 'mobileRequiredError'));
       return;
     }
 
@@ -61,7 +67,7 @@ export default function LoginScreen() {
       });
     } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', err.message || 'Failed to send OTP. Please try again.');
+      Alert.alert(t('common', 'errorTitle'), err.message || t('auth', 'sendOtpError'));
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +77,7 @@ export default function LoginScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const url = 'https://wa.me/918249339238?text=Hello%20Pandara%20Samaja%20Support%2C%20I%20do%20not%20have%20my%20Membership%20Number.%20Please%20help%20me%20find%20it.%20My%20name%20is%3A%20';
     Linking.openURL(url).catch(() => {
-      Alert.alert('Error', 'WhatsApp is not installed on your device');
+      Alert.alert(t('common', 'errorTitle'), t('auth', 'whatsappNotInstalled'));
     });
   };
 
@@ -79,13 +85,13 @@ export default function LoginScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const url = 'https://wa.me/918249339238?text=Hello%20Pandara%20Samaja%20Support%2C%20I%20need%20to%20update%20my%2520registered%2520mobile%2520number.%20My%20Membership%20No%20is%3A%20' + encodeURIComponent(membershipNo);
     Linking.openURL(url).catch(() => {
-      Alert.alert('Error', 'WhatsApp is not installed on your device');
+      Alert.alert(t('common', 'errorTitle'), t('auth', 'whatsappNotInstalled'));
     });
   };
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-slate-900"
+      style={{ flex: 1, backgroundColor: colors.bg }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -101,26 +107,34 @@ export default function LoginScreen() {
       >
         {/* Logo */}
         <View className="items-center mb-10">
-          <View className="w-24 h-24 rounded-3xl bg-slate-800 items-center justify-center mb-4 border border-slate-700 shadow-2xl overflow-hidden">
+          <View
+            className="w-24 h-24 rounded-3xl items-center justify-center mb-4 border shadow-2xl overflow-hidden"
+            style={{ backgroundColor: colors.card, borderColor: colors.border }}
+          >
             <Image
               source={require('../../../assets/logo.png')}
               style={{ width: '100%', height: '100%', resizeMode: 'cover' }}
             />
           </View>
-          <Text className="text-white font-bold text-2xl text-center">{APP_NAME}</Text>
-          <Text className="text-slate-400 text-xs tracking-widest mt-1">{APP_TAGLINE}</Text>
+          <Text className="font-bold text-2xl text-center" style={{ color: colors.text }}>{APP_NAME}</Text>
+          <Text className="text-xs tracking-widest mt-1" style={{ color: colors.textMuted }}>{APP_TAGLINE}</Text>
         </View>
 
         {/* Card */}
-        <View className="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl">
-          <Text className="text-white font-semibold text-lg mb-6">Member Login</Text>
+        <View className="rounded-2xl p-6 border shadow-xl" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
+          <Text className="font-semibold text-lg mb-6" style={{ color: colors.text, fontFamily: fontBold }}>
+            {t('auth', 'memberLoginTitle')}
+          </Text>
 
           {/* Membership No */}
-          <Text className="text-slate-400 text-sm mb-2">Membership Number</Text>
+          <Text className="text-sm mb-2" style={{ color: colors.textMuted, fontFamily: fontRegular }}>
+            {t('auth', 'membershipNumberLabel')}
+          </Text>
           <TextInput
-            className="bg-slate-900 border border-slate-700 focus:border-blue-500 rounded-xl px-4 py-3 text-white mb-4 text-base"
-            placeholder="e.g. MEM1234567"
-            placeholderTextColor="#64748b"
+            className="border rounded-xl px-4 py-3 mb-4 text-base"
+            style={{ backgroundColor: colors.bg, borderColor: colors.border, color: colors.text, fontFamily: fontRegular }}
+            placeholder={t('auth', 'membershipPlaceholder')}
+            placeholderTextColor={colors.textFaint}
             value={membershipNo}
             onChangeText={(text) => {
               setMembershipNo(text);
@@ -132,13 +146,19 @@ export default function LoginScreen() {
           />
 
           {/* Mobile */}
-          <Text className="text-slate-400 text-sm mb-2">Mobile Number</Text>
-          <View className="flex-row items-center bg-slate-900 border border-slate-700 focus:border-blue-500 rounded-xl px-4 py-3 mb-6">
-            <Text className="text-slate-400 mr-2 font-medium">+91</Text>
+          <Text className="text-sm mb-2" style={{ color: colors.textMuted, fontFamily: fontRegular }}>
+            {t('auth', 'mobileNumberLabel')}
+          </Text>
+          <View
+            className="flex-row items-center border rounded-xl px-4 py-3 mb-6"
+            style={{ backgroundColor: colors.bg, borderColor: colors.border }}
+          >
+            <Text className="mr-2 font-medium" style={{ color: colors.textMuted }}>+91</Text>
             <TextInput
-              className="flex-1 text-white text-base"
-              placeholder="10-digit mobile number"
-              placeholderTextColor="#64748b"
+              className="flex-1 text-base"
+              style={{ color: colors.text, fontFamily: fontRegular }}
+              placeholder={t('auth', 'mobilePlaceholder')}
+              placeholderTextColor={colors.textFaint}
               value={mobile}
               onChangeText={handleMobileChange}
               keyboardType="phone-pad"
@@ -149,34 +169,41 @@ export default function LoginScreen() {
 
           {/* Send OTP Button */}
           <TouchableOpacity
-            className={`rounded-xl py-4 items-center transition-all ${
-              !isValid || isLoading ? 'bg-slate-700 opacity-60' : 'bg-blue-600 shadow-lg shadow-blue-500/20'
-            }`}
+            className="rounded-xl py-4 items-center"
+            style={{
+              backgroundColor: !isValid || isLoading ? colors.border : colors.primary,
+              opacity: !isValid || isLoading ? 0.6 : 1,
+            }}
             onPress={handleSendOtp}
             disabled={!isValid || isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text className="text-white font-bold text-base">Send OTP</Text>
+              <Text className="font-bold text-base" style={{ color: 'white', fontFamily: fontBold }}>
+                {t('auth', 'sendOtpButton')}
+              </Text>
             )}
           </TouchableOpacity>
         </View>
 
         {/* WhatsApp Help & Support Card */}
-        <View className="mt-6 bg-slate-800/40 border border-slate-700/40 rounded-2xl p-5">
-          <Text className="text-white font-bold text-sm mb-3">Help & Support</Text>
-          
+        <View className="mt-6 rounded-2xl p-5 border" style={{ backgroundColor: colors.card + '40', borderColor: colors.border + '40' }}>
+          <Text className="font-bold text-sm mb-3" style={{ color: colors.text, fontFamily: fontBold }}>
+            {t('auth', 'helpSupportTitle')}
+          </Text>
+
           {/* Find Membership No */}
           <TouchableOpacity
             onPress={handleGetMembershipNo}
-            className="flex-row items-center justify-between py-3 border-b border-slate-800"
+            className="flex-row items-center justify-between py-3 border-b"
+            style={{ borderBottomColor: colors.border }}
           >
-            <Text className="text-slate-300 text-xs font-semibold">
-              Don't have a Membership No.?
+            <Text className="text-xs font-semibold" style={{ color: colors.textMuted, fontFamily: fontRegular }}>
+              {t('auth', 'noMembershipNo')}
             </Text>
-            <Text className="text-blue-400 text-xs font-bold">
-              Get it on WhatsApp →
+            <Text className="text-xs font-bold" style={{ color: colors.primaryLight, fontFamily: fontBold }}>
+              {t('auth', 'getOnWhatsapp')}
             </Text>
           </TouchableOpacity>
 
@@ -185,18 +212,18 @@ export default function LoginScreen() {
             onPress={handleUpdateMobile}
             className="flex-row items-center justify-between py-3"
           >
-            <Text className="text-slate-300 text-xs font-semibold">
-              Need to register/update Mobile No.?
+            <Text className="text-xs font-semibold" style={{ color: colors.textMuted, fontFamily: fontRegular }}>
+              {t('auth', 'updateMobileNo')}
             </Text>
-            <Text className="text-blue-400 text-xs font-bold">
-              Update on WhatsApp →
+            <Text className="text-xs font-bold" style={{ color: colors.primaryLight, fontFamily: fontBold }}>
+              {t('auth', 'updateOnWhatsapp')}
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Footer */}
-        <Text className="text-slate-500 text-xs text-center mt-6">
-          By logging in, you agree to our Terms & Privacy Policy
+        <Text className="text-xs text-center mt-6" style={{ color: colors.textFaint, fontFamily: fontRegular }}>
+          {t('auth', 'termsFooter')}
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

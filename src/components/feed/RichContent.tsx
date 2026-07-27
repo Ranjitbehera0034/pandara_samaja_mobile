@@ -2,28 +2,30 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { censorText } from '../../utils/feedUtils';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface Props {
   text: string;
 }
 
 export default function RichContent({ text }: Props) {
+  const { colors } = useTheme();
   const censored = censorText(text);
   const parts = censored.split(/(#\w+|@\w+)/g);
 
   return (
-    <Text className="text-slate-200 text-sm leading-relaxed">
+    <Text style={{ color: colors.text }} className="text-sm leading-relaxed">
       {parts.map((part, i) => {
         if (part.startsWith('#')) {
           return (
-            <Text key={i} className="text-blue-400 font-medium">
+            <Text key={i} style={{ color: colors.primaryLight }} className="font-medium">
               {part}
             </Text>
           );
         }
         if (part.startsWith('@')) {
           return (
-            <Text key={i} className="text-purple-400 font-medium">
+            <Text key={i} style={{ color: colors.accent }} className="font-medium">
               {part}
             </Text>
           );

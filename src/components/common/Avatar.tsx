@@ -3,6 +3,7 @@
 import React from 'react';
 import { View, Text, Image } from 'react-native';
 import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface AvatarProps {
   name?: string | null;
@@ -15,14 +16,16 @@ interface AvatarProps {
 export default function Avatar({
   name, photoUrl, gender, size = 40, showOnlineDot = false
 }: AvatarProps) {
+  const { colors } = useTheme();
   const isFemale = ['female', 'f'].includes((gender || '').toLowerCase());
   const cleanUrl = cleanPhoto(photoUrl);
   const initial = getInitial(name);
+  const accentColor = isFemale ? colors.female : colors.male;
 
   return (
     <View
-      style={{ width: size, height: size }}
-      className={`rounded-full overflow-hidden border-2 ${isFemale ? 'border-pink-500' : 'border-blue-500'} relative`}
+      style={{ width: size, height: size, borderColor: accentColor }}
+      className="rounded-full overflow-hidden border-2 relative"
     >
       {cleanUrl ? (
         <Image
@@ -33,8 +36,8 @@ export default function Avatar({
         />
       ) : (
         <View
-          style={{ width: size, height: size }}
-          className={`items-center justify-center ${isFemale ? 'bg-pink-500' : 'bg-blue-600'}`}
+          style={{ width: size, height: size, backgroundColor: accentColor }}
+          className="items-center justify-center"
         >
           <Text className="text-white font-bold" style={{ fontSize: size * 0.4 }}>
             {initial}
@@ -42,7 +45,10 @@ export default function Avatar({
         </View>
       )}
       {showOnlineDot && (
-        <View className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-400 border border-slate-800" />
+        <View
+          style={{ backgroundColor: colors.success, borderColor: colors.card }}
+          className="absolute bottom-0 right-0 w-3 h-3 rounded-full border"
+        />
       )}
     </View>
   );

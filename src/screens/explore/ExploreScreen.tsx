@@ -4,10 +4,14 @@ import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, SafeAreaVi
 import { Compass, TrendingUp, Users, Hash } from 'lucide-react-native';
 import { fetchExploreStats } from '../../api/explore';
 import GlobalSearch from '../../components/common/GlobalSearch';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 type Tab = 'trending' | 'popular' | 'tags';
 
 export default function ExploreScreen() {
+  const { colors: C } = useTheme();
+  const { lang, t } = useLanguage();
   const [activeTab, setActiveTab] = useState<Tab>('trending');
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -20,17 +24,19 @@ export default function ExploreScreen() {
   }, []);
 
   const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: 'trending', label: 'Trending', icon: <TrendingUp size={16} /> },
-    { key: 'popular', label: 'Members', icon: <Users size={16} /> },
-    { key: 'tags', label: 'Hashtags', icon: <Hash size={16} /> },
+    { key: 'trending', label: t('explore', 'tabTrending'), icon: <TrendingUp size={16} /> },
+    { key: 'popular', label: t('explore', 'tabMembers'), icon: <Users size={16} /> },
+    { key: 'tags', label: t('explore', 'tabHashtags'), icon: <Hash size={16} /> },
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-900">
+    <SafeAreaView style={{ backgroundColor: C.bg }} className="flex-1">
       {/* Header Title */}
       <View className="flex-row items-center gap-3 px-4 pt-4 pb-2">
-        <Compass size={26} color="#3b82f6" />
-        <Text className="text-white text-2xl font-bold">Explore</Text>
+        <Compass size={26} color={C.primaryLight} />
+        <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="text-2xl font-bold">
+          {t('explore', 'title')}
+        </Text>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 80 }} showsVerticalScrollIndicator={false}>
@@ -38,22 +44,20 @@ export default function ExploreScreen() {
         <GlobalSearch />
 
         {/* Tab Selector Bar */}
-        <View className="flex-row border-b border-slate-700/50 mb-6">
+        <View style={{ borderColor: C.border + '80' }} className="flex-row border-b mb-6">
           {TABS.map(tab => (
             <TouchableOpacity
               key={tab.key}
               onPress={() => setActiveTab(tab.key)}
-              className={`flex-1 flex-row items-center justify-center gap-2 py-3 border-b-2 ${activeTab === tab.key
-                ? 'border-blue-500'
-                : 'border-transparent'
-              }`}
+              style={{ borderBottomColor: activeTab === tab.key ? C.primaryLight : 'transparent' }}
+              className="flex-1 flex-row items-center justify-center gap-2 py-3 border-b-2"
             >
               <View style={{ opacity: activeTab === tab.key ? 1 : 0.5 }}>
                 {React.cloneElement(tab.icon as any, {
-                  color: activeTab === tab.key ? '#3b82f6' : '#94a3b8'
+                  color: activeTab === tab.key ? C.primaryLight : C.textMuted
                 })}
               </View>
-              <Text className={`text-sm font-semibold ${activeTab === tab.key ? 'text-blue-400' : 'text-slate-400'}`}>
+              <Text style={{ color: activeTab === tab.key ? C.primaryLight : C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-sm font-semibold">
                 {tab.label}
               </Text>
             </TouchableOpacity>
@@ -64,11 +68,13 @@ export default function ExploreScreen() {
         <View>
           {/* Trending Tab Content */}
           {activeTab === 'trending' && (
-            <View className="bg-slate-800/50 rounded-2xl p-8 items-center border border-slate-700/50">
-              <TrendingUp size={48} color="#475569" className="mb-4" />
-              <Text className="text-white text-lg font-bold mb-2">Trending Posts</Text>
-              <Text className="text-slate-400 text-sm text-center">
-                Posts with the most engagement across the community. (Coming Soon)
+            <View style={{ backgroundColor: C.card + '80', borderColor: C.border + '80' }} className="rounded-2xl p-8 items-center border">
+              <TrendingUp size={48} color={C.textFaint} className="mb-4" />
+              <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="text-lg font-bold mb-2">
+                {t('explore', 'trendingPostsTitle')}
+              </Text>
+              <Text style={{ color: C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-sm text-center">
+                {t('explore', 'trendingPostsSubtitle')}
               </Text>
             </View>
           )}
@@ -77,19 +83,23 @@ export default function ExploreScreen() {
           {activeTab === 'popular' && (
             <View>
               {loading ? (
-                <ActivityIndicator color="#3b82f6" size="large" className="py-10" />
+                <ActivityIndicator color={C.primaryLight} size="large" className="py-10" />
               ) : stats?.active_members ? (
-                <View className="bg-slate-800/80 p-6 rounded-2xl border border-slate-700/50 items-center gap-4">
-                  <Users size={40} color="#3b82f6" />
+                <View style={{ backgroundColor: C.card + '80', borderColor: C.border + '80' }} className="p-6 rounded-2xl border items-center gap-4">
+                  <Users size={40} color={C.primaryLight} />
                   <View className="items-center">
-                    <Text className="text-white text-4xl font-bold">{stats.active_members}</Text>
-                    <Text className="text-slate-400 text-sm mt-1">Total Members Active Today</Text>
+                    <Text style={{ color: C.text }} className="text-4xl font-bold">{stats.active_members}</Text>
+                    <Text style={{ color: C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-sm mt-1">
+                      {t('explore', 'activeMembersLabel')}
+                    </Text>
                   </View>
                 </View>
               ) : (
-                <View className="bg-slate-800/50 rounded-2xl p-8 items-center border border-slate-700/50">
-                  <Users size={40} color="#475569" className="mb-4" />
-                  <Text className="text-slate-400 text-center">No popular members data available.</Text>
+                <View style={{ backgroundColor: C.card + '80', borderColor: C.border + '80' }} className="rounded-2xl p-8 items-center border">
+                  <Users size={40} color={C.textFaint} className="mb-4" />
+                  <Text style={{ color: C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-center">
+                    {t('explore', 'noPopularMembers')}
+                  </Text>
                 </View>
               )}
             </View>
@@ -99,24 +109,27 @@ export default function ExploreScreen() {
           {activeTab === 'tags' && (
             <View>
               {loading ? (
-                <ActivityIndicator color="#3b82f6" size="large" className="py-10" />
+                <ActivityIndicator color={C.primaryLight} size="large" className="py-10" />
               ) : stats?.trending_tags?.length > 0 ? (
                 <View className="flex-row flex-wrap gap-3">
                   {stats.trending_tags.map((tag: any) => (
                     <TouchableOpacity
                       key={tag.name}
-                      className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl"
+                      style={{ backgroundColor: C.card, borderColor: C.border }}
+                      className="px-4 py-2 border rounded-xl"
                     >
-                      <Text className="text-blue-400 font-medium">
-                        {tag.name} <Text className="text-slate-500 text-xs">({tag.count})</Text>
+                      <Text style={{ color: C.primaryLight }} className="font-medium">
+                        {tag.name} <Text style={{ color: C.textFaint }} className="text-xs">({tag.count})</Text>
                       </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               ) : (
-                <View className="bg-slate-800/50 rounded-2xl p-8 items-center border border-slate-700/50">
-                  <Hash size={40} color="#475569" className="mb-4" />
-                  <Text className="text-slate-400 text-center">No tags available at the moment.</Text>
+                <View style={{ backgroundColor: C.card + '80', borderColor: C.border + '80' }} className="rounded-2xl p-8 items-center border">
+                  <Hash size={40} color={C.textFaint} className="mb-4" />
+                  <Text style={{ color: C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-center">
+                    {t('explore', 'noTags')}
+                  </Text>
                 </View>
               )}
             </View>

@@ -6,9 +6,14 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Search, Hash, User, MessageSquare, X } from 'lucide-react-native';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function GlobalSearch() {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
+  const { lang, t } = useLanguage();
+  const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -47,12 +52,16 @@ export default function GlobalSearch() {
   return (
     <View className="z-50 relative w-full mb-4">
       {/* Search Input Container */}
-      <View className="relative flex-row items-center bg-slate-800 border border-slate-700 rounded-xl px-3 gap-2">
-        <Search size={16} color="#94a3b8" />
+      <View
+        style={{ backgroundColor: colors.card, borderColor: colors.border }}
+        className="relative flex-row items-center border rounded-xl px-3 gap-2"
+      >
+        <Search size={16} color={colors.textMuted} />
         <TextInput
-          className="flex-1 text-white text-sm py-2.5"
-          placeholder="Search members, posts, tags…"
-          placeholderTextColor="#64748b"
+          style={{ color: colors.text, fontFamily }}
+          className="flex-1 text-sm py-2.5"
+          placeholder={t('common', 'globalSearchPlaceholder')}
+          placeholderTextColor={colors.textFaint}
           value={query}
           onChangeText={(text) => {
             setQuery(text);
@@ -65,38 +74,50 @@ export default function GlobalSearch() {
         />
         {query ? (
           <TouchableOpacity onPress={() => { setQuery(''); setIsOpen(false); }}>
-            <X size={16} color="#94a3b8" />
+            <X size={16} color={colors.textMuted} />
           </TouchableOpacity>
         ) : null}
       </View>
 
       {/* Floating Dropdown Result Area */}
       {isOpen && query.trim() ? (
-        <View className="absolute top-12 left-0 right-0 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50">
+        <View
+          style={{ backgroundColor: colors.card, borderColor: colors.border }}
+          className="absolute top-12 left-0 right-0 border rounded-xl shadow-2xl overflow-hidden z-50"
+        >
           {isSearching ? (
             <View className="flex-row items-center justify-center p-6 gap-2">
-              <ActivityIndicator size="small" color="#3b82f6" />
-              <Text className="text-slate-400 text-sm">Searching…</Text>
+              <ActivityIndicator size="small" color={colors.primaryLight} />
+              <Text style={{ color: colors.textMuted, fontFamily }} className="text-sm">{t('common', 'searching')}</Text>
             </View>
           ) : (
             <ScrollView className="max-h-60" keyboardShouldPersistTaps="handled">
-              <View className="px-3 py-2 bg-slate-900/40 flex-row justify-between items-center border-b border-slate-700/50">
-                <Text className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Top Results</Text>
+              <View
+                style={{ backgroundColor: colors.bg + '66', borderBottomColor: colors.border + '80' }}
+                className="px-3 py-2 flex-row justify-between items-center border-b"
+              >
+                <Text style={{ color: colors.textFaint, fontFamily }} className="text-xs font-semibold uppercase tracking-wider">
+                  {t('common', 'topResults')}
+                </Text>
               </View>
               {results.map((item, idx) => (
                 <TouchableOpacity
                   key={idx}
                   onPress={() => handleSelect(item)}
-                  className="flex-row items-center gap-3 px-4 py-3 border-b border-slate-700/30 last:border-0"
+                  style={{ borderBottomColor: colors.border + '4d' }}
+                  className="flex-row items-center gap-3 px-4 py-3 border-b last:border-0"
                 >
-                  <View className="w-8 h-8 rounded-full bg-slate-950/60 border border-slate-700 flex items-center justify-center shrink-0">
+                  <View
+                    style={{ backgroundColor: colors.bg + '99', borderColor: colors.border }}
+                    className="w-8 h-8 rounded-full border flex items-center justify-center shrink-0"
+                  >
                     {item.icon}
                   </View>
                   <View className="flex-1 min-w-0">
-                    <Text className="font-semibold text-sm text-white" numberOfLines={1}>
+                    <Text style={{ color: colors.text, fontFamily }} className="font-semibold text-sm" numberOfLines={1}>
                       {item.name}
                     </Text>
-                    <Text className="text-slate-400 text-xs mt-0.5" numberOfLines={1}>
+                    <Text style={{ color: colors.textMuted, fontFamily }} className="text-xs mt-0.5" numberOfLines={1}>
                       {item.match}
                     </Text>
                   </View>

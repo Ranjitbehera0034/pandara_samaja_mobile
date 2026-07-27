@@ -13,6 +13,8 @@ import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
 import { containsBannedContent } from '../../utils/feedUtils';
 import { useAuth } from '../../context/AuthContext';
 import PollCreator from './PollCreator';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface Props {
   onPostCreate: (content: string, media?: MediaItem[], files?: any[], poll?: Poll, location?: string) => void;
@@ -20,6 +22,8 @@ interface Props {
 
 export default function CreatePost({ onPostCreate }: Props) {
   const { member, user } = useAuth();
+  const { colors } = useTheme();
+  const { lang, t } = useLanguage();
   const [content, setContent] = useState('');
   const [previews, setPreviews] = useState<{ uri: string; type: 'image' | 'video' }[]>([]);
   const [showPollCreator, setShowPollCreator] = useState(false);
@@ -28,6 +32,7 @@ export default function CreatePost({ onPostCreate }: Props) {
   const [showLocationInput, setShowLocationInput] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
+  const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;
   const displayName = user?.name || member?.name || 'Me';
   const photo = cleanPhoto(user?.profile_photo_url);
 
@@ -60,12 +65,12 @@ export default function CreatePost({ onPostCreate }: Props) {
 
   const handlePost = () => {
     if (!content.trim() && previews.length === 0 && !poll) {
-      Alert.alert('Error', 'Please enter some text or add media/poll.');
+      Alert.alert(t('feedComponents', 'genericErrorTitle'), t('feedComponents', 'postValidationErrorMessage'));
       return;
     }
 
     if (containsBannedContent(content)) {
-      Alert.alert('Inappropriate Content', 'Your post contains banned words.');
+      Alert.alert(t('feedComponents', 'inappropriateContentTitle'), t('feedComponents', 'inappropriateContentMessage'));
       return;
     }
 
@@ -87,7 +92,7 @@ export default function CreatePost({ onPostCreate }: Props) {
     }));
 
     onPostCreate(content, mediaItems, files, poll, location || undefined);
-    
+
     // Reset form
     setContent('');
     setPreviews([]);
@@ -100,8 +105,8 @@ export default function CreatePost({ onPostCreate }: Props) {
   return (
     <View className="mb-4">
       {/* Trigger Box */}
-      <View className="bg-slate-800 rounded-2xl border border-slate-700/50 p-4 flex-row items-center gap-3">
-        <View className="w-10 h-10 rounded-full bg-slate-900 border border-slate-700 overflow-hidden items-center justify-center">
+      <View style={{ backgroundColor: colors.card, borderColor: colors.border + '80' }} className="rounded-2xl border p-4 flex-row items-center gap-3">
+        <View style={{ backgroundColor: colors.primary }} className="w-10 h-10 rounded-full overflow-hidden items-center justify-center">
           {photo ? (
             <Image source={{ uri: photo }} className="w-full h-full" resizeMode="cover" />
           ) : (
@@ -110,34 +115,36 @@ export default function CreatePost({ onPostCreate }: Props) {
         </View>
         <TouchableOpacity
           onPress={() => setShowModal(true)}
-          className="flex-1 bg-slate-900/50 border border-slate-700 rounded-full px-4 py-2.5"
+          style={{ backgroundColor: colors.bg + '80', borderColor: colors.border }}
+          className="flex-1 border rounded-full px-4 py-2.5"
         >
-          <Text className="text-slate-400 text-sm">Share something with the community...</Text>
+          <Text style={{ color: colors.textMuted, fontFamily }} className="text-sm">{t('feedComponents', 'shareSomethingPlaceholder')}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Editor Modal */}
       <Modal visible={showModal} animationType="slide" transparent>
-        <View className="flex-1 bg-slate-950/80">
-          <View className="flex-1 bg-slate-900 mt-16 rounded-t-3xl border-t border-slate-800 p-4 flex-col justify-between">
+        <View style={{ backgroundColor: '#00000080' }} className="flex-1">
+          <View style={{ backgroundColor: colors.bg, borderColor: colors.card }} className="flex-1 mt-16 rounded-t-3xl border-t p-4 flex-col justify-between">
             {/* Header */}
-            <View className="flex-row items-center justify-between border-b border-slate-800 pb-3 mb-3">
+            <View style={{ borderColor: colors.card }} className="flex-row items-center justify-between border-b pb-3 mb-3">
               <TouchableOpacity onPress={() => setShowModal(false)}>
-                <Text className="text-slate-400 text-sm">Cancel</Text>
+                <Text style={{ color: colors.textMuted, fontFamily }} className="text-sm">{t('feedComponents', 'cancelButtonLabel')}</Text>
               </TouchableOpacity>
-              <Text className="text-white font-bold text-base">Create Post</Text>
+              <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-bold text-base">{t('feedComponents', 'createPostTitle')}</Text>
               <TouchableOpacity
                 onPress={handlePost}
-                className="bg-blue-600 px-4 py-1.5 rounded-full"
+                style={{ backgroundColor: colors.primary }}
+                className="px-4 py-1.5 rounded-full"
               >
-                <Text className="text-white font-semibold text-xs">Post</Text>
+                <Text style={{ fontFamily }} className="text-white font-semibold text-xs">{t('feedComponents', 'postButtonLabel')}</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
               {/* Profile Card */}
               <View className="flex-row items-center gap-3 mb-4">
-                <View className="w-10 h-10 rounded-full bg-slate-800 overflow-hidden items-center justify-center border border-slate-700">
+                <View style={{ backgroundColor: colors.card, borderColor: colors.border }} className="w-10 h-10 rounded-full overflow-hidden items-center justify-center border">
                   {photo ? (
                     <Image source={{ uri: photo }} className="w-full h-full" resizeMode="cover" />
                   ) : (
@@ -145,20 +152,21 @@ export default function CreatePost({ onPostCreate }: Props) {
                   )}
                 </View>
                 <View>
-                  <Text className="text-white font-semibold text-sm">{displayName}</Text>
+                  <Text style={{ color: colors.text, fontFamily }} className="font-semibold text-sm">{displayName}</Text>
                   {location ? (
-                    <Text className="text-blue-400 text-xs font-medium">📍 {location}</Text>
+                    <Text style={{ color: colors.primaryLight, fontFamily }} className="text-xs font-medium">📍 {location}</Text>
                   ) : (
-                    <Text className="text-slate-500 text-xs">Posting to Member Portal</Text>
+                    <Text style={{ color: colors.textFaint, fontFamily }} className="text-xs">{t('feedComponents', 'postingToMemberPortal')}</Text>
                   )}
                 </View>
               </View>
 
               {/* Text Input */}
               <TextInput
-                className="text-white text-base min-h-[120px] mb-4"
-                placeholder="What's on your mind? (Use #tags or @mentions)"
-                placeholderTextColor="#64748b"
+                style={{ color: colors.text, fontFamily }}
+                className="text-base min-h-[120px] mb-4"
+                placeholder={t('feedComponents', 'whatsOnYourMindPlaceholder')}
+                placeholderTextColor={colors.textFaint}
                 value={content}
                 onChangeText={setContent}
                 multiline
@@ -167,34 +175,36 @@ export default function CreatePost({ onPostCreate }: Props) {
 
               {/* Location Input Row */}
               {showLocationInput && (
-                <View className="flex-row items-center bg-slate-950 border border-slate-800 rounded-xl px-3 py-1 mb-4">
-                  <MapPin size={16} color="#3b82f6" />
+                <View style={{ backgroundColor: colors.bg, borderColor: colors.card }} className="flex-row items-center border rounded-xl px-3 py-1 mb-4">
+                  <MapPin size={16} color={colors.primaryLight} />
                   <TextInput
-                    className="flex-1 text-white text-sm px-2 py-2"
-                    placeholder="Enter location tag..."
-                    placeholderTextColor="#64748b"
+                    style={{ color: colors.text, fontFamily }}
+                    className="flex-1 text-sm px-2 py-2"
+                    placeholder={t('feedComponents', 'enterLocationPlaceholder')}
+                    placeholderTextColor={colors.textFaint}
                     value={location}
                     onChangeText={setLocation}
                   />
                   <TouchableOpacity onPress={() => { setLocation(''); setShowLocationInput(false); }}>
-                    <X size={16} color="#64748b" />
+                    <X size={16} color={colors.textFaint} />
                   </TouchableOpacity>
                 </View>
               )}
 
               {/* Poll Display in Editor */}
               {poll && (
-                <View className="bg-slate-950 border border-slate-800 rounded-xl p-3 mb-4 relative">
+                <View style={{ backgroundColor: colors.bg, borderColor: colors.card }} className="border rounded-xl p-3 mb-4 relative">
                   <TouchableOpacity
                     onPress={() => setPoll(undefined)}
-                    className="absolute top-2 right-2 bg-slate-800 p-1 rounded-full z-10"
+                    style={{ backgroundColor: colors.card }}
+                    className="absolute top-2 right-2 p-1 rounded-full z-10"
                   >
-                    <X size={14} color="#f87171" />
+                    <X size={14} color={colors.error} />
                   </TouchableOpacity>
-                  <Text className="text-white font-semibold text-sm mb-2">📊 {poll.question}</Text>
+                  <Text style={{ color: colors.text, fontFamily }} className="font-semibold text-sm mb-2">📊 {poll.question}</Text>
                   {poll.options.map((opt, i) => (
-                    <View key={i} className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 mb-1.5">
-                      <Text className="text-slate-400 text-xs">{opt.text}</Text>
+                    <View key={i} style={{ backgroundColor: colors.card, borderColor: colors.bg }} className="border rounded-lg px-3 py-2 mb-1.5">
+                      <Text style={{ color: colors.textMuted, fontFamily }} className="text-xs">{opt.text}</Text>
                     </View>
                   ))}
                 </View>
@@ -204,16 +214,17 @@ export default function CreatePost({ onPostCreate }: Props) {
               {previews.length > 0 && (
                 <View className="flex-row flex-wrap gap-2 mb-4">
                   {previews.map((p, idx) => (
-                    <View key={idx} className="w-20 h-20 rounded-xl overflow-hidden relative border border-slate-800 bg-slate-950">
+                    <View key={idx} style={{ borderColor: colors.card, backgroundColor: colors.bg }} className="w-20 h-20 rounded-xl overflow-hidden relative border">
                       <Image source={{ uri: p.uri }} className="w-full h-full" resizeMode="cover" />
                       <TouchableOpacity
                         onPress={() => removePreview(idx)}
-                        className="absolute top-1 right-1 bg-black/60 p-1 rounded-full"
+                        style={{ backgroundColor: '#00000099' }}
+                        className="absolute top-1 right-1 p-1 rounded-full"
                       >
                         <X size={12} color="white" />
                       </TouchableOpacity>
                       {p.type === 'video' && (
-                        <View className="absolute inset-0 items-center justify-center bg-black/30">
+                        <View style={{ backgroundColor: '#0000004d' }} className="absolute inset-0 items-center justify-center">
                           <Text className="text-white text-xs font-bold">▶</Text>
                         </View>
                       )}
@@ -224,32 +235,33 @@ export default function CreatePost({ onPostCreate }: Props) {
             </ScrollView>
 
             {/* Bottom Actions bar */}
-            <View className="border-t border-slate-800 pt-3 flex-row items-center justify-between">
+            <View style={{ borderColor: colors.card }} className="border-t pt-3 flex-row items-center justify-between">
               <View className="flex-row items-center gap-3">
                 {/* Images */}
-                <TouchableOpacity onPress={pickImage} className="p-2 bg-slate-800 rounded-xl">
-                  <ImageIcon size={20} color="#3b82f6" />
+                <TouchableOpacity onPress={pickImage} style={{ backgroundColor: colors.card }} className="p-2 rounded-xl">
+                  <ImageIcon size={20} color={colors.primaryLight} />
                 </TouchableOpacity>
 
                 {/* Videos */}
-                <TouchableOpacity onPress={pickVideo} className="p-2 bg-slate-800 rounded-xl">
-                  <Video size={20} color="#ec4899" />
+                <TouchableOpacity onPress={pickVideo} style={{ backgroundColor: colors.card }} className="p-2 rounded-xl">
+                  <Video size={20} color={colors.female} />
                 </TouchableOpacity>
 
                 {/* Poll */}
-                <TouchableOpacity onPress={() => setShowPollCreator(true)} className="p-2 bg-slate-800 rounded-xl">
-                  <BarChart size={20} color="#eab308" />
+                <TouchableOpacity onPress={() => setShowPollCreator(true)} style={{ backgroundColor: colors.card }} className="p-2 rounded-xl">
+                  <BarChart size={20} color={colors.amber} />
                 </TouchableOpacity>
 
                 {/* Location */}
-                <TouchableOpacity onPress={() => setShowLocationInput(true)} className="p-2 bg-slate-800 rounded-xl">
-                  <MapPin size={20} color="#22c55e" />
+                <TouchableOpacity onPress={() => setShowLocationInput(true)} style={{ backgroundColor: colors.card }} className="p-2 rounded-xl">
+                  <MapPin size={20} color={colors.success} />
                 </TouchableOpacity>
               </View>
 
               <TouchableOpacity
                 onPress={handlePost}
-                className="w-10 h-10 rounded-full bg-blue-600 items-center justify-center"
+                style={{ backgroundColor: colors.primary }}
+                className="w-10 h-10 rounded-full items-center justify-center"
               >
                 <Send size={16} color="white" />
               </TouchableOpacity>
@@ -260,7 +272,7 @@ export default function CreatePost({ onPostCreate }: Props) {
 
       {/* Nested Poll Creator Modal */}
       <Modal visible={showPollCreator} animationType="fade" transparent>
-        <View className="flex-1 bg-black/80 items-center justify-center p-4">
+        <View style={{ backgroundColor: '#000000cc' }} className="flex-1 items-center justify-center p-4">
           <View className="w-full">
             <PollCreator
               onSave={(newPoll) => { setPoll(newPoll); setShowPollCreator(false); }}

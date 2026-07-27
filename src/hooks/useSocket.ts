@@ -16,6 +16,8 @@ interface SocketHandlers {
   onUserOnline?: (data: { userId: string }) => void;
   onUserOffline?: (data: { userId: string }) => void;
   onReceiveMessage?: (message: any) => void;
+  onMessageSent?: (message: any) => void;
+  onMessageError?: (data: { error: string }) => void;
   onTypingStart?: (data: { senderId: string }) => void;
   onTypingStop?: (data: { senderId: string }) => void;
   onMessagesRead?: (data: { readerId: string }) => void;
@@ -68,6 +70,8 @@ export const useSocket = (handlers: SocketHandlers) => {
 
       // Chat events
       if (handlers.onReceiveMessage) socket.on('receive_message', handlers.onReceiveMessage);
+      if (handlers.onMessageSent) socket.on('message_sent', handlers.onMessageSent);
+      if (handlers.onMessageError) socket.on('message_error', handlers.onMessageError);
       if (handlers.onTypingStart) socket.on('typing_start', handlers.onTypingStart);
       if (handlers.onTypingStop) socket.on('typing_stop', handlers.onTypingStop);
       if (handlers.onMessagesRead) socket.on('messages_read', handlers.onMessagesRead);
@@ -78,7 +82,7 @@ export const useSocket = (handlers: SocketHandlers) => {
     return () => {
       if (socket) socket.disconnect();
     };
-  }, [handlers.onNewPost, handlers.onLikeUpdated, handlers.onNewComment, handlers.onCommentLikeUpdated, handlers.onNotificationCount, handlers.onUserOnline, handlers.onUserOffline, handlers.onReceiveMessage, handlers.onTypingStart, handlers.onTypingStop, handlers.onMessagesRead]);
+  }, [handlers.onNewPost, handlers.onLikeUpdated, handlers.onNewComment, handlers.onCommentLikeUpdated, handlers.onNotificationCount, handlers.onUserOnline, handlers.onUserOffline, handlers.onReceiveMessage, handlers.onMessageSent, handlers.onMessageError, handlers.onTypingStart, handlers.onTypingStop, handlers.onMessagesRead]);
 
   const emit = (event: string, data?: any) => {
     socketRef.current?.emit(event, data);
@@ -88,5 +92,21 @@ export const useSocket = (handlers: SocketHandlers) => {
     socketRef.current?.emit('join_chat', { userId });
   };
 
-  return { emit, joinChat, socket: socketRef.current };
+  const sendMessage = (receiverId: string, content: string, type = 'text') => {
+    socketRef.current?.emit('send_message', { receiverId, content, type });
+  };
+
+  const typingStart = (receiverId: string) => {
+    socketRef.current?.emit('typing_start', { receiverId });
+  };
+
+  const typingStop = (receiverId: string) => {
+    socketRef.current?.emit('typing_stop', { receiverId });
+  };
+
+  const markRead = (senderId: string) => {
+    socketRef.current?.emit('mark_read', { senderId });
+  };
+
+  return { emit, joinChat, sendMessage, typingStart, typingStop, markRead, socket: socketRef.current };
 };

@@ -9,10 +9,57 @@ import * as SplashScreen from 'expo-splash-screen';
 import Toast from 'react-native-toast-message';
 import { AuthProvider } from './src/context/AuthContext';
 import { LanguageProvider } from './src/context/LanguageContext';
+import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+function AppContent() {
+  const { scheme, colors } = useTheme();
+
+  const toastConfig = {
+    success: ({ text1, text2 }: any) => (
+      <View style={{
+        backgroundColor: colors.card,
+        borderLeftWidth: 4, borderLeftColor: colors.success,
+        paddingHorizontal: 16, paddingVertical: 12,
+        borderRadius: 12, marginHorizontal: 16,
+        width: '90%',
+        shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 4,
+      }}>
+        <Text style={{ color: colors.text, fontWeight: '600', fontSize: 14 }}>{text1}</Text>
+        {text2 ? <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>{text2}</Text> : null}
+      </View>
+    ),
+    error: ({ text1, text2 }: any) => (
+      <View style={{
+        backgroundColor: colors.card,
+        borderLeftWidth: 4, borderLeftColor: colors.error,
+        paddingHorizontal: 16, paddingVertical: 12,
+        borderRadius: 12, marginHorizontal: 16,
+        width: '90%',
+        shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 4,
+      }}>
+        <Text style={{ color: colors.text, fontWeight: '600', fontSize: 14 }}>{text1}</Text>
+        {text2 ? <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>{text2}</Text> : null}
+      </View>
+    ),
+  };
+
+  return (
+    <>
+      {/* @ts-ignore */}
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} backgroundColor={colors.bg} />
+      <RootNavigator />
+      <Toast config={toastConfig} />
+    </>
+  );
+}
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
@@ -30,50 +77,15 @@ export default function App() {
     return null;
   }
 
-  // Custom Toast configurations matching slate theme
-  const toastConfig = {
-    success: ({ text1, text2 }: any) => (
-      <View style={{
-        backgroundColor: '#1e293b',
-        borderLeftWidth: 4, borderLeftColor: '#22c55e',
-        paddingHorizontal: 16, paddingVertical: 12,
-        borderRadius: 12, marginHorizontal: 16,
-        width: '90%',
-        shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 4,
-      }}>
-        <Text style={{ color: '#f8fafc', fontWeight: '600', fontSize: 14 }}>{text1}</Text>
-        {text2 ? <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>{text2}</Text> : null}
-      </View>
-    ),
-    error: ({ text1, text2 }: any) => (
-      <View style={{
-        backgroundColor: '#1e293b',
-        borderLeftWidth: 4, borderLeftColor: '#ef4444',
-        paddingHorizontal: 16, paddingVertical: 12,
-        borderRadius: 12, marginHorizontal: 16,
-        width: '90%',
-        shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 4,
-      }}>
-        <Text style={{ color: '#f8fafc', fontWeight: '600', fontSize: 14 }}>{text1}</Text>
-        {text2 ? <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>{text2}</Text> : null}
-      </View>
-    ),
-  };
-
   return (
     <SafeAreaProvider>
-      {/* @ts-ignore */}
-      <StatusBar style="light" backgroundColor="#0f172a" />
       <AuthProvider>
-        <LanguageProvider>
-          <RootNavigator />
-        </LanguageProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <AppContent />
+          </LanguageProvider>
+        </ThemeProvider>
       </AuthProvider>
-      <Toast config={toastConfig} />
     </SafeAreaProvider>
   );
 }

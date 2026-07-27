@@ -6,6 +6,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { Story } from '../../types';
 import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface Props {
   stories: Story[];
@@ -15,6 +17,8 @@ interface Props {
 
 export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
   const { member, user } = useAuth();
+  const { colors } = useTheme();
+  const { lang, t } = useLanguage();
   const displayName = user?.name || member?.name || 'Me';
   const photo = cleanPhoto(user?.profile_photo_url);
 
@@ -50,18 +54,24 @@ export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
         <View className="items-center mr-4">
           <TouchableOpacity
             onPress={handlePickStory}
-            className="w-14 h-14 rounded-full bg-slate-800 border-2 border-slate-700 items-center justify-center relative overflow-hidden"
+            style={{ backgroundColor: colors.card, borderColor: colors.border }}
+            className="w-14 h-14 rounded-full border-2 items-center justify-center relative overflow-hidden"
           >
             {photo ? (
               <Image source={{ uri: photo }} className="w-full h-full opacity-60" resizeMode="cover" />
             ) : (
-              <Text className="text-slate-500 font-bold text-xs">{getInitial(displayName)}</Text>
+              <Text style={{ color: colors.textFaint }} className="font-bold text-xs">{getInitial(displayName)}</Text>
             )}
-            <View className="absolute bg-blue-600 p-1 rounded-full">
+            <View style={{ backgroundColor: colors.primary }} className="absolute p-1 rounded-full">
               <Plus size={12} color="white" />
             </View>
           </TouchableOpacity>
-          <Text className="text-slate-400 text-[10px] mt-1 text-center font-medium">Add Story</Text>
+          <Text
+            style={{ color: colors.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}
+            className="text-[10px] mt-1 text-center font-medium"
+          >
+            {t('feedComponents', 'addStoryLabel')}
+          </Text>
         </View>
 
         {/* Story Circles */}
@@ -77,11 +87,10 @@ export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
               className="items-center mr-4"
             >
               <View
-                className={`w-14 h-14 rounded-full items-center justify-center p-[2.5px] border-2 ${
-                  hasUnviewed ? 'border-blue-600' : 'border-slate-700'
-                }`}
+                style={{ borderColor: hasUnviewed ? colors.primary : colors.border }}
+                className="w-14 h-14 rounded-full items-center justify-center p-[2.5px] border-2"
               >
-                <View className="w-full h-full rounded-full bg-slate-900 overflow-hidden items-center justify-center">
+                <View style={{ backgroundColor: colors.primary }} className="w-full h-full rounded-full overflow-hidden items-center justify-center">
                   {authorPhoto ? (
                     <Image source={{ uri: authorPhoto }} className="w-full h-full" resizeMode="cover" />
                   ) : (
@@ -92,9 +101,9 @@ export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
                 </View>
               </View>
               <Text
-                className="text-slate-300 text-[10px] mt-1 text-center font-medium"
+                style={{ color: colors.text, width: 64 }}
+                className="text-[10px] mt-1 text-center font-medium"
                 numberOfLines={1}
-                style={{ width: 64 }}
               >
                 {firstStory.authorName.split(' ')[0]}
               </Text>

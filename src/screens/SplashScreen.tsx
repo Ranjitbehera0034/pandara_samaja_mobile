@@ -1,13 +1,19 @@
-// src/screens/SplashScreen.tsx
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Animated, Dimensions } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
+import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 SplashScreen.preventAutoHideAsync();
 
 const { width } = Dimensions.get('window');
 
 export default function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
+  const { colors } = useTheme();
+  const { lang, t } = useLanguage();
+  const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
+  const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
+
   const logoScale = useRef(new Animated.Value(0.7)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const taglineOpacity = useRef(new Animated.Value(0)).current;
@@ -55,7 +61,7 @@ export default function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
   }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0f172a', alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
       {/* Glow effect */}
       <Animated.View
         style={{
@@ -63,10 +69,10 @@ export default function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
           width: 200,
           height: 200,
           borderRadius: 100,
-          backgroundColor: '#2563eb',
+          backgroundColor: colors.primary,
           opacity: glowOpacity.interpolate({ inputRange: [0, 1], outputRange: [0, 0.15] }),
           // blur via shadow on iOS
-          shadowColor: '#2563eb',
+          shadowColor: colors.primary,
           shadowOffset: { width: 0, height: 0 },
           shadowRadius: 60,
           shadowOpacity: 0.6,
@@ -83,20 +89,20 @@ export default function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
         {/* P logo — replace with actual Image if asset exists */}
         <View style={{
           width: 96, height: 96, borderRadius: 24,
-          backgroundColor: '#1e293b',
-          borderWidth: 1, borderColor: '#334155',
+          backgroundColor: colors.card,
+          borderWidth: 1, borderColor: colors.border,
           alignItems: 'center', justifyContent: 'center',
-          shadowColor: '#2563eb', shadowOffset: { width: 0, height: 4 },
+          shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 },
           shadowRadius: 20, shadowOpacity: 0.4,
         }}>
-          <Text style={{ fontSize: 48, fontWeight: '900', color: '#2563eb' }}>P</Text>
+          <Text style={{ fontSize: 48, fontWeight: '900', color: colors.primary }}>P</Text>
         </View>
 
-        <Text style={{ color: '#f8fafc', fontSize: 22, fontWeight: '700', marginTop: 20, letterSpacing: 0.5 }}>
-          Pandara Samaja
+        <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700', marginTop: 20, letterSpacing: 0.5, fontFamily: fontBold }}>
+          {t('common', 'appName')}
         </Text>
-        <Animated.Text style={{ color: '#94a3b8', fontSize: 13, marginTop: 6, opacity: taglineOpacity }}>
-          ନିଖିଳ ଓଡ଼ିଶା ପଣ୍ଡାର ସମାଜ
+        <Animated.Text style={{ color: colors.textMuted, fontSize: 13, marginTop: 6, opacity: taglineOpacity, fontFamily: fontRegular }}>
+          {t('settings', 'footerName')}
         </Animated.Text>
       </Animated.View>
     </View>

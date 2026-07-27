@@ -1,6 +1,7 @@
 // src/components/common/SkeletonBox.tsx
 import React, { useRef, useEffect } from 'react';
 import { Animated, ViewStyle } from 'react-native';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface Props {
   width?: number | string;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function SkeletonBox({ width = '100%', height = 16, borderRadius = 8, style }: Props) {
+  const { colors } = useTheme();
   const opacity = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export default function SkeletonBox({ width = '100%', height = 16, borderRadius 
           width: width as any,
           height,
           borderRadius,
-          backgroundColor: '#334155', // slate-700
+          backgroundColor: colors.border,
           opacity,
         },
         style,

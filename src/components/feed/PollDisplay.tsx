@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Poll } from '../../types';
+import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface Props {
   poll: Poll;
@@ -9,6 +11,8 @@ interface Props {
 }
 
 export default function PollDisplay({ poll, onVote }: Props) {
+  const { colors } = useTheme();
+  const { lang, t } = useLanguage();
   const [voted, setVoted] = useState(!!poll.myVote);
   const [myVote, setMyVote] = useState(poll.myVote);
   const [localPoll, setLocalPoll] = useState(poll);
@@ -29,12 +33,14 @@ export default function PollDisplay({ poll, onVote }: Props) {
     onVote(optionId);
   };
 
+  const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;
+
   return (
-    <View className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-4 mt-3">
+    <View style={{ backgroundColor: colors.bg, borderColor: colors.border }} className="border rounded-xl p-4 mt-3">
       {/* Question */}
       <View className="flex-row items-center gap-2 mb-3">
-        <Text className="text-blue-400 text-base">📊</Text>
-        <Text className="text-white font-semibold text-sm flex-1">{localPoll.question}</Text>
+        <Text style={{ color: colors.primaryLight }} className="text-base">📊</Text>
+        <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-semibold text-sm flex-1">{localPoll.question}</Text>
       </View>
 
       {/* Options */}
@@ -50,24 +56,26 @@ export default function PollDisplay({ poll, onVote }: Props) {
               key={option.id}
               onPress={() => handleVote(option.id)}
               disabled={voted}
-              className={`rounded-xl overflow-hidden border ${isMyVote
-                ? 'border-blue-500/50'
-                : 'border-slate-700/50'
-              } relative`}
+              style={{ borderColor: isMyVote ? colors.primaryLight : colors.border }}
+              className="rounded-xl overflow-hidden border relative"
             >
               {/* Progress bar background */}
               {voted && (
                 <View
-                  className={`absolute inset-y-0 left-0 ${isMyVote ? 'bg-blue-500/20' : 'bg-slate-700/30'}`}
-                  style={{ width: `${percentage}%` }}
+                  style={{ backgroundColor: isMyVote ? colors.primary + '33' : colors.border + '4d', width: `${percentage}%` }}
+                  className="absolute inset-y-0 left-0"
+                  pointerEvents="none"
                 />
               )}
               <View className="flex-row items-center justify-between px-4 py-3">
-                <Text className={`text-sm ${isMyVote ? 'text-blue-300 font-semibold' : 'text-slate-300'}`}>
+                <Text
+                  style={{ color: isMyVote ? colors.primaryLight : colors.text, fontFamily }}
+                  className={`text-sm ${isMyVote ? 'font-semibold' : ''}`}
+                >
                   {isMyVote ? '✓ ' : ''}{option.text}
                 </Text>
                 {voted && (
-                  <Text className={`text-sm font-semibold ${isMyVote ? 'text-blue-400' : 'text-slate-500'}`}>
+                  <Text style={{ color: isMyVote ? colors.primaryLight : colors.textFaint }} className="text-sm font-semibold">
                     {percentage}%
                   </Text>
                 )}
@@ -78,9 +86,9 @@ export default function PollDisplay({ poll, onVote }: Props) {
       </View>
 
       {/* Total votes */}
-      <Text className="text-slate-500 text-xs mt-3">
-        {localPoll.totalVotes} {localPoll.totalVotes === 1 ? 'vote' : 'votes'}
-        {localPoll.endsAt ? ` · Ends ${new Date(localPoll.endsAt).toLocaleDateString()}` : ''}
+      <Text style={{ color: colors.textFaint, fontFamily }} className="text-xs mt-3">
+        {localPoll.totalVotes} {localPoll.totalVotes === 1 ? t('feedComponents', 'voteWord') : t('feedComponents', 'votesWordPlural')}
+        {localPoll.endsAt ? ` · ${t('feedComponents', 'pollEndsPrefix')} ${new Date(localPoll.endsAt).toLocaleDateString()}` : ''}
       </Text>
     </View>
   );

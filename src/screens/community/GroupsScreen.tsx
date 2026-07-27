@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import Toast from 'react-native-toast-message';
 import { Search, ArrowLeft, Users, Check, Plus, ShieldCheck, X } from 'lucide-react-native';
-import { C } from '../../theme/colors';
+import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import SkeletonBox from '../../components/common/SkeletonBox';
 import EmptyState from '../../components/common/EmptyState';
@@ -116,7 +116,7 @@ const MOCK_GROUPS: Group[] = [
   }
 ];
 
-function GroupSkeleton() {
+function GroupSkeleton({ colors: C }: { colors: ReturnType<typeof useTheme>['colors'] }) {
   return (
     <View style={{ padding: 16, gap: 16 }}>
       {[1, 2, 3].map(i => (
@@ -143,7 +143,8 @@ function GroupSkeleton() {
 export default function GroupsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
+  const { colors: C } = useTheme();
 
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -161,7 +162,7 @@ export default function GroupsScreen() {
       setGroups(MOCK_GROUPS);
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Failed to fetch groups');
+      Alert.alert(t('common', 'errorTitle'), t('groups', 'loadError'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -183,14 +184,13 @@ export default function GroupsScreen() {
       prev.map(g => {
         if (g.id === groupId) {
           const nextJoined = !g.isJoined;
+          const displayName = lang === 'od' ? g.nameOdia : groupName;
           Toast.show({
             type: 'success',
-            text1: nextJoined
-              ? (lang === 'od' ? 'ଗ୍ରୁପ୍‌ରେ ଯୋଗ ଦେଲେ!' : 'Joined Group!')
-              : (lang === 'od' ? 'ଗ୍ରୁପ୍ ଛାଡିଲେ!' : 'Left Group!'),
+            text1: nextJoined ? t('groups', 'joinedTitle') : t('groups', 'leftTitle'),
             text2: nextJoined
-              ? (lang === 'od' ? `ଆପଣ ${g.nameOdia} ରେ ଯୋଗ ଦେଇଛନ୍ତି` : `You are now a member of ${groupName}`)
-              : (lang === 'od' ? `ଆପଣ ${g.nameOdia} ରୁ ବାହାରି ଯାଇଛନ୍ତି` : `You left ${groupName}`),
+              ? `${t('groups', 'joinedMessagePrefix')} ${displayName} ${t('groups', 'joinedMessageSuffix')}`.trim()
+              : `${t('groups', 'leftMessagePrefix')} ${displayName} ${t('groups', 'leftMessageSuffix')}`.trim(),
             visibilityTime: 3000,
           });
           return {
@@ -210,13 +210,13 @@ export default function GroupsScreen() {
   };
 
   const categories = useMemo(() => [
-    { id: 'all', label: 'All Groups', labelOdia: 'ସମସ୍ତ ଗ୍ରୁପ୍' },
-    { id: 'regional', label: 'Regional', labelOdia: 'ଆଞ୍ଚଳିକ' },
-    { id: 'matrimony', label: 'Matrimony', labelOdia: 'ବିବାହ' },
-    { id: 'youth', label: 'Youth', labelOdia: 'ଯୁବକ' },
-    { id: 'social', label: 'Social', labelOdia: 'ସାମାଜିକ' },
-    { id: 'professional', label: 'Professional', labelOdia: 'ପେଶାଦାର' }
-  ], []);
+    { id: 'all', label: t('groups', 'categoryAll') },
+    { id: 'regional', label: t('groups', 'categoryRegional') },
+    { id: 'matrimony', label: t('groups', 'categoryMatrimony') },
+    { id: 'youth', label: t('groups', 'categoryYouth') },
+    { id: 'social', label: t('groups', 'categorySocial') },
+    { id: 'professional', label: t('groups', 'categoryProfessional') }
+  ], [lang]);
 
   const filteredGroups = useMemo(() => {
     return groups.filter(g => {
@@ -283,7 +283,7 @@ export default function GroupsScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <ShieldCheck size={16} color={C.success} />
               <Text style={{ color: C.success, fontSize: 12, fontWeight: '600' }}>
-                {lang === 'od' ? 'ଯୋଗ୍ୟ ସଦସ୍ୟ' : 'Verified Group'}
+                {t('groups', 'verifiedGroup')}
               </Text>
             </View>
 
@@ -304,7 +304,7 @@ export default function GroupsScreen() {
               >
                 <Check size={16} color={C.success} />
                 <Text style={{ color: C.success, fontSize: 13, fontWeight: '700' }}>
-                  {lang === 'od' ? 'ଯୋଗଦେଇଛନ୍ତି ✓' : 'Joined ✓'}
+                  {t('groups', 'joined')}
                 </Text>
               </TouchableOpacity>
             ) : (
@@ -322,7 +322,7 @@ export default function GroupsScreen() {
               >
                 <Plus size={16} color="white" />
                 <Text style={{ color: 'white', fontSize: 13, fontWeight: '700' }}>
-                  {lang === 'od' ? 'ଯୋଗ ଦିଅନ୍ତୁ' : 'Join Group'}
+                  {t('groups', 'joinGroup')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -354,7 +354,7 @@ export default function GroupsScreen() {
           <ArrowLeft size={20} color={C.text} />
         </TouchableOpacity>
         <Text style={{ color: C.text, fontSize: 18, fontWeight: '700', fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }}>
-          {lang === 'od' ? 'ସମାଜ ଗ୍ରୁପ୍ ଗୁଡିକ' : 'Community Groups'}
+          {t('groups', 'title')}
         </Text>
       </View>
 
@@ -372,7 +372,7 @@ export default function GroupsScreen() {
         }}>
           <Search size={18} color={C.textMuted} style={{ marginRight: 8 }} />
           <TextInput
-            placeholder={lang === 'od' ? 'ଗ୍ରୁପ୍ ଖୋଜନ୍ତୁ...' : 'Search groups...'}
+            placeholder={t('groups', 'searchPlaceholder')}
             placeholderTextColor={C.textFaint}
             value={search}
             onChangeText={(text) => setSearch(text)}
@@ -423,7 +423,7 @@ export default function GroupsScreen() {
                   fontWeight: '600',
                   fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined
                 }}>
-                  {lang === 'od' ? item.labelOdia : item.label}
+                  {item.label}
                 </Text>
               </TouchableOpacity>
             );
@@ -433,14 +433,14 @@ export default function GroupsScreen() {
 
       {/* Main List */}
       {loading ? (
-        <GroupSkeleton />
+        <GroupSkeleton colors={C} />
       ) : filteredGroups.length === 0 ? (
         <EmptyState
           emoji="👥"
-          title={lang === 'od' ? 'କୌଣସି ଗ୍ରୁପ୍ ମିଳିଲା ନାହିଁ' : 'No Groups Found'}
-          subtitle={lang === 'od' ? 'ଅନ୍ୟ ସନ୍ଧାନ ସର୍ତ୍ତ ଚେଷ୍ଟା କରନ୍ତୁ' : 'Try adjusting your search query or categories.'}
+          title={t('groups', 'emptyTitle')}
+          subtitle={t('groups', 'emptySubtitle')}
           action={{
-            label: lang === 'od' ? 'ସମସ୍ତ ଗ୍ରୁପ୍ ଦେଖନ୍ତୁ' : 'Show All Groups',
+            label: t('groups', 'showAllGroups'),
             onPress: () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setSearch('');
