@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Animated, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import { useTheme } from '../theme/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -86,16 +87,17 @@ export default function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
           alignItems: 'center',
         }}
       >
-        {/* P logo — replace with actual Image if asset exists */}
         <View style={{
-          width: 96, height: 96, borderRadius: 24,
-          backgroundColor: colors.card,
-          borderWidth: 1, borderColor: colors.border,
+          width: 112, height: 112, borderRadius: 56,
           alignItems: 'center', justifyContent: 'center',
           shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 },
           shadowRadius: 20, shadowOpacity: 0.4,
         }}>
-          <Text style={{ fontSize: 48, fontWeight: '900', color: colors.primary }}>P</Text>
+          <Image
+            source={require('../../assets/logo.png')}
+            style={{ width: 112, height: 112, borderRadius: 56 }}
+            contentFit="cover"
+          />
         </View>
 
         <Text style={{ color: colors.text, fontSize: 22, fontWeight: '700', marginTop: 20, letterSpacing: 0.5, fontFamily: fontBold }}>

@@ -4,6 +4,7 @@ import { View, Text, ActivityIndicator, Alert, TouchableOpacity, RefreshControl 
 import { useNavigation } from '@react-navigation/native';
 import { Megaphone, Bell } from 'lucide-react-native';
 import { FlashList } from '@shopify/flash-list';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
@@ -351,10 +352,11 @@ export default function FeedScreen() {
       {/* Polished Top Header */}
       <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.bg }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          {/* Logo representation */}
-          <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.primaryLight }}>
-            <Text style={{ color: colors.text, fontWeight: '800', fontSize: 18, lineHeight: 18 }}>P</Text>
-          </View>
+          <Image
+            source={require('../../../assets/logo.png')}
+            style={{ width: 32, height: 32, borderRadius: 16 }}
+            contentFit="cover"
+          />
           <Text style={{ color: colors.text, fontWeight: '800', fontSize: 18, letterSpacing: 0.3 }}>{t('common', 'appName')}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
