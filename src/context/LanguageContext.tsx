@@ -83,6 +83,7 @@ const translations = {
       helpSupportTitle: 'Help & Support',
       noMembershipNo: "Don't have a Membership No.?", getOnWhatsapp: 'Get it on WhatsApp →',
       updateMobileNo: 'Need to register/update Mobile No.?', updateOnWhatsapp: 'Update on WhatsApp →',
+      notAMemberYet: 'New here? Not a member yet?', contactToRegister: 'Contact us on WhatsApp to register →',
       termsFooter: 'By logging in, you agree to our Terms & Privacy Policy',
       enterOtpTitle: 'Enter OTP', otpSentTo: 'OTP sent to',
       verifyButton: 'Verify & Login',
@@ -150,6 +151,8 @@ const translations = {
       loadingLeaders: 'Loading leaders…',
       emptyTitle: 'No leaders found', emptySubtitle: 'No leader cards have been registered under this tier.',
       selectLocationTitle: 'Select Location', allPrefix: 'All',
+      searchPlaceholder: 'Search by name, role, or location…',
+      noSearchResultsTitle: 'No matching leaders', noSearchResultsSubtitle: 'Try a different name, role, or location.',
     },
     matrimony: {
       title: 'Matrimony Services',
@@ -382,6 +385,7 @@ const translations = {
       helpSupportTitle: 'ସହାୟତା',
       noMembershipNo: 'ସଦସ୍ୟତା ନମ୍ବର ନାହିଁ?', getOnWhatsapp: 'ହ୍ଵାଟସ୍‌ଆପ୍‌ରେ ପାଆନ୍ତୁ →',
       updateMobileNo: 'ମୋବାଇଲ ନମ୍ବର ପଞ୍ଜିକରଣ/ଅପଡେଟ୍ କରିବାକୁ ଚାହୁଁଛନ୍ତି?', updateOnWhatsapp: 'ହ୍ଵାଟସ୍‌ଆପ୍‌ରେ ଅପଡେଟ୍ କରନ୍ତୁ →',
+      notAMemberYet: 'ନୂଆ ଆସିଛନ୍ତି? ଏପର୍ଯ୍ୟନ୍ତ ସଦସ୍ୟ ନୁହଁନ୍ତି?', contactToRegister: 'ପଞ୍ଜିକରଣ ପାଇଁ ହ୍ଵାଟସ୍‌ଆପ୍‌ରେ ଯୋଗାଯୋଗ କରନ୍ତୁ →',
       termsFooter: 'ଲଗଇନ କରି, ଆପଣ ଆମର ସର୍ତ୍ତାବଳୀ ଓ ଗୋପନୀୟତା ନୀତିରେ ସହମତ ହେଉଛନ୍ତି',
       enterOtpTitle: 'OTP ପ୍ରବେଶ କରନ୍ତୁ', otpSentTo: 'ଏଠାକୁ OTP ପଠାଗଲା',
       verifyButton: 'ଯାଞ୍ଚ କରନ୍ତୁ ଓ ଲଗଇନ କରନ୍ତୁ',
@@ -449,6 +453,8 @@ const translations = {
       loadingLeaders: 'ନେତାମାନଙ୍କୁ ଲୋଡ୍ କରାଯାଉଛି…',
       emptyTitle: 'କୌଣସି ନେତା ମିଳିଲେ ନାହିଁ', emptySubtitle: 'ଏହି ସ୍ତରରେ କୌଣସି ନେତା କାର୍ଡ ପଞ୍ଜିକୃତ ହୋଇନାହିଁ।',
       selectLocationTitle: 'ସ୍ଥାନ ମନୋନୀତ କରନ୍ତୁ', allPrefix: 'ସମସ୍ତ',
+      searchPlaceholder: 'ନାମ, ପଦବୀ, କିମ୍ବା ସ୍ଥାନ ଅନୁସାରେ ଖୋଜନ୍ତୁ…',
+      noSearchResultsTitle: 'କୌଣସି ମେଳ ମିଳିଲା ନାହିଁ', noSearchResultsSubtitle: 'ଅନ୍ୟ ନାମ, ପଦବୀ, କିମ୍ବା ସ୍ଥାନ ଚେଷ୍ଟା କରନ୍ତୁ।',
     },
     matrimony: {
       title: 'ବୈବାହିକ ପ୍ରସ୍ତାବ',

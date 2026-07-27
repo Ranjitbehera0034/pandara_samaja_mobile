@@ -1,16 +1,17 @@
 // src/screens/community/LeadersScreen.tsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView,
+  View, Text, TextInput, TouchableOpacity, ScrollView,
   ActivityIndicator, SafeAreaView, Dimensions, Modal, Pressable
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Crown, MapPin, Users, X } from 'lucide-react-native';
+import { ArrowLeft, Crown, MapPin, Search, Users, X } from 'lucide-react-native';
 import * as leadersApi from '../../api/leaders';
 import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
+import { useDebounce } from '../../hooks/useDebounce';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -38,6 +39,8 @@ export default function LeadersScreen() {
   const { lang, t } = useLanguage();
   const [activeLevel, setActiveLevel] = useState<LevelKey>('State');
   const [selectedLocation, setSelectedLocation] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 400);
   const [leaders, setLeaders] = useState<Leader[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,14 +72,14 @@ export default function LeadersScreen() {
       .finally(() => setLocationsLoading(false));
   }, [activeLevel, needsLocation]);
 
-  // Fetch leaders
+  // Fetch leaders — search combines with the level/location filters, it doesn't replace them
   useEffect(() => {
     setLoading(true);
-    leadersApi.fetchLeaders(activeLevel, selectedLocation || undefined)
+    leadersApi.fetchLeaders(activeLevel, selectedLocation || undefined, debouncedSearch.trim() || undefined)
       .then(r => { if (r.success) setLeaders(r.data || []); })
       .catch(() => setLeaders([]))
       .finally(() => setLoading(false));
-  }, [activeLevel, selectedLocation]);
+  }, [activeLevel, selectedLocation, debouncedSearch]);
 
   const handleLevelChange = (level: LevelKey) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -178,6 +181,36 @@ export default function LeadersScreen() {
           </View>
         </View>
 
+        {/* Search bar */}
+        <View
+          style={{ backgroundColor: colors.card, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, gap: spacing.sm, marginBottom: spacing.lg }}
+          className="flex-row items-center border"
+        >
+          <Search size={16} color={colors.textMuted} />
+          <TextInput
+            style={{
+              flex: 1,
+              color: colors.text,
+              fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined,
+              fontSize: typography.body.fontSize,
+              lineHeight: typography.body.lineHeight,
+              paddingVertical: spacing.sm,
+            }}
+            placeholder={t('leaders', 'searchPlaceholder')}
+            placeholderTextColor={colors.textFaint}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+          {searchQuery ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <X size={16} color={colors.textFaint} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
         {/* Level Selector Tabs */}
         <View style={{ backgroundColor: colors.card + '60', borderColor: colors.border + '50', borderRadius: radius.xl, padding: spacing.xs, marginBottom: spacing.lg }} className="flex-row border">
           {LEVELS.map(lv => {
@@ -228,9 +261,11 @@ export default function LeadersScreen() {
         ) : leaders.length === 0 ? (
           <View style={{ backgroundColor: colors.card + '30', borderColor: colors.border + '50', paddingVertical: spacing.xxl + spacing.xxl, borderRadius: radius.xl, paddingHorizontal: spacing.xl }} className="items-center justify-center border">
             <Users size={40} color={colors.borderLight} style={{ marginBottom: spacing.lg }} />
-            <Text style={{ color: colors.text, textAlign: 'center', ...typography.label }}>{t('leaders', 'emptyTitle')}</Text>
+            <Text style={{ color: colors.text, textAlign: 'center', ...typography.label }}>
+              {debouncedSearch.trim() ? t('leaders', 'noSearchResultsTitle') : t('leaders', 'emptyTitle')}
+            </Text>
             <Text style={{ color: colors.textFaint, textAlign: 'center', marginTop: spacing.xs, ...typography.caption }}>
-              {t('leaders', 'emptySubtitle')}
+              {debouncedSearch.trim() ? t('leaders', 'noSearchResultsSubtitle') : t('leaders', 'emptySubtitle')}
             </Text>
           </View>
         ) : groupedByLocation ? (
