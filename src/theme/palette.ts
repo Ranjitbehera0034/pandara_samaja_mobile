@@ -55,6 +55,54 @@ export const lightColors: ThemeColors = {
 
 export const palettes = { light: lightColors, dark: darkColors };
 
-// Legacy standalone constants — kept alongside colors, unrelated to theme
 export const MIN_TOUCH = 44;
-export const PADDING = { xs: 8, sm: 12, md: 16, lg: 20, xl: 24 };
+
+// Spacing scale — matches the 4/8/12/16/24/32 grid already dominant across
+// the app's inline styles; use instead of ad hoc padding/margin/gap values.
+export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
+
+// Corner-radius scale — sm/md map to the two most common existing radii
+// (rounded-xl=12, rounded-2xl/inline-16=16).
+export const radius = { sm: 8, md: 12, lg: 16, xl: 20, full: 9999 };
+
+export type FontWeight = '400' | '500' | '600' | '700' | '800';
+export interface TypographyRole {
+  fontSize: number;
+  lineHeight: number;
+  fontWeight: FontWeight;
+}
+
+// Named type roles, each pairing a font size with a matched line-height —
+// most text in the app today sets no line-height at all, which is why body
+// copy outside post captions tends to read cramped.
+export const typography: Record<
+  'caption' | 'body' | 'bodyEmphasis' | 'label' | 'title' | 'heading' | 'display',
+  TypographyRole
+> = {
+  caption: { fontSize: 12, lineHeight: 16, fontWeight: '500' },
+  body: { fontSize: 14, lineHeight: 20, fontWeight: '400' },
+  bodyEmphasis: { fontSize: 14, lineHeight: 20, fontWeight: '600' },
+  label: { fontSize: 15, lineHeight: 20, fontWeight: '600' },
+  title: { fontSize: 18, lineHeight: 24, fontWeight: '700' },
+  heading: { fontSize: 20, lineHeight: 26, fontWeight: '700' },
+  display: { fontSize: 24, lineHeight: 32, fontWeight: '800' },
+};
+
+// Elevation presets — formalizes the NativeWind `shadow-lg` most cards
+// already lean on informally, with a matched Android `elevation`.
+export const shadow = {
+  card: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  raised: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+} as const;

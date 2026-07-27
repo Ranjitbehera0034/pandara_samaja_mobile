@@ -3,7 +3,10 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useColorScheme as useNativeWindColorScheme } from 'nativewind';
 import { storage } from '../utils/secureStorage';
 import { STORAGE_KEYS } from '../config/constants';
-import { palettes, ThemeColors, MIN_TOUCH, PADDING } from './palette';
+import {
+  palettes, ThemeColors, MIN_TOUCH,
+  spacing, radius, typography, shadow,
+} from './palette';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 type ResolvedScheme = 'light' | 'dark';
@@ -12,6 +15,10 @@ interface ThemeContextType {
   mode: ThemeMode;
   scheme: ResolvedScheme;
   colors: ThemeColors;
+  spacing: typeof spacing;
+  radius: typeof radius;
+  typography: typeof typography;
+  shadow: typeof shadow;
   setMode: (m: ThemeMode) => void;
 }
 
@@ -41,7 +48,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const colors = palettes[scheme];
 
   return (
-    <ThemeContext.Provider value={{ mode, scheme, colors, setMode }}>
+    <ThemeContext.Provider value={{ mode, scheme, colors, spacing, radius, typography, shadow, setMode }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -53,4 +60,4 @@ export const useTheme = () => {
   return ctx;
 };
 
-export { MIN_TOUCH, PADDING };
+export { MIN_TOUCH };

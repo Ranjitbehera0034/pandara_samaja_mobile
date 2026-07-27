@@ -79,13 +79,13 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <ThemeProvider>
-          <LanguageProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <AuthProvider>
             <AppContent />
-          </LanguageProvider>
-        </ThemeProvider>
-      </AuthProvider>
+          </AuthProvider>
+        </LanguageProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
