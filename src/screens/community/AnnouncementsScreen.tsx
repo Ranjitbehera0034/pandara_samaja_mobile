@@ -20,7 +20,7 @@ import { useLanguage } from '../../context/LanguageContext';
 
 export default function AnnouncementsScreen() {
   const navigation = useNavigation<any>();
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,36 +74,36 @@ export default function AnnouncementsScreen() {
     });
 
     return (
-      <View style={{ backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 20, marginBottom: 16 }}>
+      <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, marginBottom: spacing.lg }}>
         {/* Card Header */}
-        <View className="flex-row items-center gap-3 mb-4">
-          <View style={{ backgroundColor: colors.primary + '10', borderColor: colors.primaryLight + '20' }} className="w-10 h-10 rounded-full items-center justify-center border">
-            <Megaphone size={18} color={colors.primaryLight} />
+        <View style={{ gap: spacing.md, marginBottom: spacing.lg }} className="flex-row items-center">
+          <View style={{ backgroundColor: colors.primary + '10', borderColor: colors.primaryLight + '20', borderRadius: radius.full }} className="w-10 h-10 items-center justify-center border">
+            <Megaphone size={16} color={colors.primaryLight} />
           </View>
           <View>
-            <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-bold text-sm">
+            <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, ...typography.bodyEmphasis }}>
               {t('announcements', 'officialUpdate')}
             </Text>
-            <View className="flex-row items-center gap-1 mt-0.5">
+            <View style={{ gap: spacing.xs, marginTop: 2 }} className="flex-row items-center">
               <Calendar size={12} color={colors.textMuted} />
-              <Text style={{ color: colors.textMuted }} className="text-xs">{formattedDate}</Text>
+              <Text style={{ color: colors.textMuted, ...typography.caption }}>{formattedDate}</Text>
             </View>
           </View>
         </View>
 
         {/* Title */}
-        <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-bold text-lg mb-3 leading-snug">
+        <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, marginBottom: spacing.md, ...typography.title }}>
           {item.title}
         </Text>
 
         {/* Content */}
-        <View className="mb-4">
+        <View style={{ marginBottom: spacing.lg }}>
           <RichContent text={item.rawContent} />
         </View>
 
         {/* Media Grid */}
         {item.media && item.media.length > 0 && (
-          <View style={{ borderTopColor: colors.border + '30' }} className="mt-2 border-t pt-3">
+          <View style={{ borderTopColor: colors.border + '30', marginTop: spacing.sm, paddingTop: spacing.md }} className="border-t">
             <MediaGrid media={item.media} />
           </View>
         )}
@@ -114,11 +114,11 @@ export default function AnnouncementsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} className="flex-1">
       {/* Top Header */}
-      <View style={{ borderBottomColor: colors.border, backgroundColor: colors.bg }} className="px-4 py-3 border-b flex-row items-center gap-3">
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ backgroundColor: colors.card + '80' }} className="p-1 rounded-full">
-          <ArrowLeft size={22} color={colors.text} />
+      <View style={{ borderBottomColor: colors.border, backgroundColor: colors.bg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.md }} className="border-b flex-row items-center">
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ backgroundColor: colors.card + '80', padding: spacing.xs, borderRadius: radius.full }}>
+          <ArrowLeft size={20} color={colors.text} />
         </TouchableOpacity>
-        <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-bold text-xl tracking-wide">
+        <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, letterSpacing: 0.3, ...typography.heading }}>
           {t('announcements', 'title')}
         </Text>
       </View>
@@ -132,17 +132,17 @@ export default function AnnouncementsScreen() {
           data={announcements}
           keyExtractor={(item) => item.id}
           renderItem={renderAnnouncementCard}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: spacing.lg }}
           showsVerticalScrollIndicator={false}
           refreshing={isRefreshing}
           onRefresh={() => fetchAnnouncementsData(true)}
           ListEmptyComponent={
-            <View style={{ backgroundColor: colors.card + '30', borderColor: colors.border + '50' }} className="items-center justify-center py-20 rounded-2xl border px-6">
-              <AlertCircle size={48} color={colors.textFaint} className="mb-4" />
-              <Text style={{ color: colors.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="text-lg font-medium text-center">
+            <View style={{ backgroundColor: colors.card + '30', borderColor: colors.border + '50', paddingVertical: spacing.xxl + spacing.xxl, borderRadius: radius.xl, paddingHorizontal: spacing.xl }} className="items-center justify-center border">
+              <AlertCircle size={48} color={colors.textFaint} style={{ marginBottom: spacing.lg }} />
+              <Text style={{ color: colors.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, textAlign: 'center', ...typography.title }}>
                 {t('announcements', 'emptyTitle')}
               </Text>
-              <Text style={{ color: colors.textFaint, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-sm text-center mt-1">
+              <Text style={{ color: colors.textFaint, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, textAlign: 'center', marginTop: spacing.xs, ...typography.body }}>
                 {t('announcements', 'emptySubtitle')}
               </Text>
             </View>

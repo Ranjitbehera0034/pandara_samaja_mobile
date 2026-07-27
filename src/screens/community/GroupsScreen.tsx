@@ -116,22 +116,22 @@ const MOCK_GROUPS: Group[] = [
   }
 ];
 
-function GroupSkeleton({ colors: C }: { colors: ReturnType<typeof useTheme>['colors'] }) {
+function GroupSkeleton({ colors: C, spacing, radius }: { colors: ReturnType<typeof useTheme>['colors']; spacing: ReturnType<typeof useTheme>['spacing']; radius: ReturnType<typeof useTheme>['radius'] }) {
   return (
-    <View style={{ padding: 16, gap: 16 }}>
+    <View style={{ padding: spacing.lg, gap: spacing.lg }}>
       {[1, 2, 3].map(i => (
-        <View key={i} style={{ backgroundColor: C.card, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: C.border }}>
+        <View key={i} style={{ backgroundColor: C.card, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: C.border }}>
           <SkeletonBox width="100%" height={120} borderRadius={0} />
-          <View style={{ padding: 16, gap: 10 }}>
+          <View style={{ padding: spacing.lg, gap: spacing.sm + 2 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <SkeletonBox width="60%" height={16} />
               <SkeletonBox width="20%" height={12} />
             </View>
             <SkeletonBox width="100%" height={12} />
             <SkeletonBox width="80%" height={12} />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-              <SkeletonBox width={100} height={20} borderRadius={10} />
-              <SkeletonBox width={80} height={36} borderRadius={18} />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm }}>
+              <SkeletonBox width={100} height={20} borderRadius={radius.sm + 2} />
+              <SkeletonBox width={80} height={36} borderRadius={radius.full} />
             </View>
           </View>
         </View>
@@ -144,7 +144,7 @@ export default function GroupsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { lang, t } = useLanguage();
-  const { colors: C } = useTheme();
+  const { colors: C, spacing, radius, typography } = useTheme();
 
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -231,9 +231,9 @@ export default function GroupsScreen() {
     return (
       <View style={{
         backgroundColor: C.card,
-        borderRadius: 16,
+        borderRadius: radius.lg,
         overflow: 'hidden',
-        marginBottom: 16,
+        marginBottom: spacing.lg,
         borderWidth: 1,
         borderColor: C.border,
       }}>
@@ -246,43 +246,43 @@ export default function GroupsScreen() {
           />
           <View style={{
             position: 'absolute',
-            top: 12,
-            right: 12,
+            top: spacing.md,
+            right: spacing.md,
             backgroundColor: 'rgba(15, 23, 42, 0.75)',
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            borderRadius: 8,
+            paddingHorizontal: spacing.sm + 2,
+            paddingVertical: spacing.xs,
+            borderRadius: radius.sm,
             borderWidth: 1,
             borderColor: C.border,
           }}>
-            <Text style={{ color: C.text, fontSize: 11, fontWeight: '700' }}>
+            <Text style={{ color: C.text, ...typography.caption, fontWeight: '700' }}>
               {lang === 'od' ? item.categoryLabelOdia : item.categoryLabel}
             </Text>
           </View>
         </View>
 
         {/* Content */}
-        <View style={{ padding: 16 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <Text style={{ color: C.text, fontSize: 17, fontWeight: '700', flex: 1, marginRight: 8, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }}>
+        <View style={{ padding: spacing.lg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs + 2 }}>
+            <Text style={{ color: C.text, flex: 1, marginRight: spacing.sm, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, ...typography.title, fontSize: 17 }}>
               {lang === 'od' ? item.nameOdia : item.name}
             </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Users size={14} color={C.textMuted} />
-              <Text style={{ color: C.textMuted, fontSize: 12, fontWeight: '600' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <Users size={16} color={C.textMuted} />
+              <Text style={{ color: C.textMuted, ...typography.caption }}>
                 {item.memberCount}
               </Text>
             </View>
           </View>
 
-          <Text style={{ color: C.textMuted, fontSize: 13, lineHeight: 18, marginBottom: 16, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
+          <Text style={{ color: C.textMuted, marginBottom: spacing.lg, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.body }}>
             {lang === 'od' ? item.descriptionOdia : item.description}
           </Text>
 
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
               <ShieldCheck size={16} color={C.success} />
-              <Text style={{ color: C.success, fontSize: 12, fontWeight: '600' }}>
+              <Text style={{ color: C.success, ...typography.caption }}>
                 {t('groups', 'verifiedGroup')}
               </Text>
             </View>
@@ -296,14 +296,14 @@ export default function GroupsScreen() {
                   backgroundColor: 'transparent',
                   borderWidth: 1.5,
                   borderColor: C.success,
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                  gap: 4,
+                  paddingHorizontal: spacing.lg,
+                  paddingVertical: spacing.sm,
+                  borderRadius: radius.full,
+                  gap: spacing.xs,
                 }}
               >
                 <Check size={16} color={C.success} />
-                <Text style={{ color: C.success, fontSize: 13, fontWeight: '700' }}>
+                <Text style={{ color: C.success, ...typography.bodyEmphasis, fontSize: 13 }}>
                   {t('groups', 'joined')}
                 </Text>
               </TouchableOpacity>
@@ -314,14 +314,14 @@ export default function GroupsScreen() {
                   flexDirection: 'row',
                   alignItems: 'center',
                   backgroundColor: C.primary,
-                  paddingHorizontal: 18,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                  gap: 4,
+                  paddingHorizontal: spacing.lg + 2,
+                  paddingVertical: spacing.sm,
+                  borderRadius: radius.full,
+                  gap: spacing.xs,
                 }}
               >
                 <Plus size={16} color="white" />
-                <Text style={{ color: 'white', fontSize: 13, fontWeight: '700' }}>
+                <Text style={{ color: 'white', ...typography.bodyEmphasis, fontSize: 13 }}>
                   {t('groups', 'joinGroup')}
                 </Text>
               </TouchableOpacity>
@@ -338,8 +338,8 @@ export default function GroupsScreen() {
       <View style={{
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 14,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md + 2,
         backgroundColor: C.card,
         borderBottomWidth: 1,
         borderBottomColor: C.border,
@@ -349,28 +349,28 @@ export default function GroupsScreen() {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             navigation.goBack();
           }}
-          style={{ marginRight: 16, padding: 4 }}
+          style={{ marginRight: spacing.lg, padding: spacing.xs }}
         >
           <ArrowLeft size={20} color={C.text} />
         </TouchableOpacity>
-        <Text style={{ color: C.text, fontSize: 18, fontWeight: '700', fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }}>
+        <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, ...typography.title }}>
           {t('groups', 'title')}
         </Text>
       </View>
 
       {/* Inline Search Bar */}
-      <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 }}>
+      <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xs }}>
         <View style={{
           flexDirection: 'row',
           alignItems: 'center',
           backgroundColor: C.card,
-          borderRadius: 12,
-          paddingHorizontal: 12,
+          borderRadius: radius.md,
+          paddingHorizontal: spacing.md,
           height: 44,
           borderWidth: 1,
           borderColor: C.border,
         }}>
-          <Search size={18} color={C.textMuted} style={{ marginRight: 8 }} />
+          <Search size={20} color={C.textMuted} style={{ marginRight: spacing.sm }} />
           <TextInput
             placeholder={t('groups', 'searchPlaceholder')}
             placeholderTextColor={C.textFaint}
@@ -379,8 +379,8 @@ export default function GroupsScreen() {
             style={{
               flex: 1,
               color: C.text,
-              fontSize: 14,
               fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined,
+              ...typography.body,
             }}
           />
           {search.length > 0 && (
@@ -395,13 +395,13 @@ export default function GroupsScreen() {
       </View>
 
       {/* Horizontal Category Chips */}
-      <View style={{ paddingVertical: 10 }}>
+      <View style={{ paddingVertical: spacing.sm + 2 }}>
         <FlashList
           horizontal
           showsHorizontalScrollIndicator={false}
           data={categories}
           keyExtractor={item => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16 }}
+          contentContainerStyle={{ paddingHorizontal: spacing.lg }}
           renderItem={({ item }) => {
             const isActive = activeCategory === item.id;
             return (
@@ -409,19 +409,19 @@ export default function GroupsScreen() {
                 onPress={() => handleCategoryPress(item.id)}
                 style={{
                   backgroundColor: isActive ? C.primary : C.card,
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                  marginRight: 8,
+                  paddingHorizontal: spacing.lg,
+                  paddingVertical: spacing.sm,
+                  borderRadius: radius.full,
+                  marginRight: spacing.sm,
                   borderWidth: 1,
                   borderColor: isActive ? C.primary : C.border,
                 }}
               >
                 <Text style={{
                   color: isActive ? 'white' : C.textMuted,
+                  fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined,
+                  ...typography.bodyEmphasis,
                   fontSize: 13,
-                  fontWeight: '600',
-                  fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined
                 }}>
                   {item.label}
                 </Text>
@@ -433,7 +433,7 @@ export default function GroupsScreen() {
 
       {/* Main List */}
       {loading ? (
-        <GroupSkeleton colors={C} />
+        <GroupSkeleton colors={C} spacing={spacing} radius={radius} />
       ) : filteredGroups.length === 0 ? (
         <EmptyState
           emoji="👥"
@@ -453,7 +453,7 @@ export default function GroupsScreen() {
           data={filteredGroups}
           keyExtractor={item => item.id}
           renderItem={renderGroupItem}
-          contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 20 }}
+          contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.xl }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

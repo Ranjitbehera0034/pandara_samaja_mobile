@@ -5,22 +5,22 @@ import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function ErrorState({ onRetry }: { onRetry: () => void }) {
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const { t } = useLanguage();
   return (
-    <View style={{ alignItems: 'center', paddingVertical: 60 }}>
-      <Text style={{ fontSize: 48, marginBottom: 16 }}>⚠️</Text>
-      <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginBottom: 8 }}>
+    <View style={{ alignItems: 'center', paddingVertical: spacing.xxl + spacing.xxl - spacing.xs }}>
+      <Text style={{ fontSize: 48, marginBottom: spacing.lg }}>⚠️</Text>
+      <Text style={{ color: colors.text, marginBottom: spacing.sm, ...typography.title }}>
         {t('common', 'error')}
       </Text>
-      <Text style={{ color: colors.textFaint, fontSize: 14, marginBottom: 24, textAlign: 'center', paddingHorizontal: 32 }}>
+      <Text style={{ color: colors.textFaint, marginBottom: spacing.xl, textAlign: 'center', paddingHorizontal: spacing.xxl, ...typography.body }}>
         {t('common', 'loadErrorMessage')}
       </Text>
       <TouchableOpacity
         onPress={onRetry}
-        style={{ backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12 }}
+        style={{ backgroundColor: colors.primary, paddingHorizontal: spacing.xl, paddingVertical: spacing.sm + 2, borderRadius: radius.md }}
       >
-        <Text style={{ color: 'white', fontWeight: '600' }}>{t('common', 'retry')}</Text>
+        <Text style={{ color: 'white', ...typography.bodyEmphasis }}>{t('common', 'retry')}</Text>
       </TouchableOpacity>
     </View>
   );

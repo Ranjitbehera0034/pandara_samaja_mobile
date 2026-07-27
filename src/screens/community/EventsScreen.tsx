@@ -18,19 +18,19 @@ import { useLanguage } from '../../context/LanguageContext';
 
 type EventTab = 'upcoming' | 'past' | 'rsvped';
 
-function EventsSkeleton({ colors }: { colors: ReturnType<typeof useTheme>['colors'] }) {
+function EventsSkeleton({ colors, spacing, radius }: { colors: ReturnType<typeof useTheme>['colors']; spacing: ReturnType<typeof useTheme>['spacing']; radius: ReturnType<typeof useTheme>['radius'] }) {
   return (
-    <View style={{ gap: 16 }}>
+    <View style={{ gap: spacing.lg }}>
       {[1, 2].map(i => (
-        <View key={i} style={{ backgroundColor: colors.card, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: colors.border + '80' }}>
+        <View key={i} style={{ backgroundColor: colors.card, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: colors.border + '80' }}>
           <SkeletonBox width="100%" height={160} borderRadius={0} />
-          <View style={{ gap: 12, padding: 16 }}>
+          <View style={{ gap: spacing.md, padding: spacing.lg }}>
             <SkeletonBox width="80%" height={18} />
-            <View style={{ gap: 8, marginVertical: 4 }}>
+            <View style={{ gap: spacing.sm, marginVertical: spacing.xs }}>
               <SkeletonBox width="60%" height={11} />
               <SkeletonBox width="45%" height={11} />
             </View>
-            <SkeletonBox width="100%" height={40} borderRadius={10} />
+            <SkeletonBox width="100%" height={40} borderRadius={radius.sm} />
           </View>
         </View>
       ))}
@@ -41,7 +41,7 @@ function EventsSkeleton({ colors }: { colors: ReturnType<typeof useTheme>['color
 export default function EventsScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography, shadow } = useTheme();
   const { lang, t } = useLanguage();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,44 +134,47 @@ export default function EventsScreen() {
     return (
       <View
         key={event.id}
-        style={{ backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border + '80', overflow: 'hidden', marginBottom: 16 }}
+        style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border + '80', overflow: 'hidden', marginBottom: spacing.lg }}
       >
         {/* Banner Image */}
         <View style={{ backgroundColor: colors.bg }} className="h-40 w-full overflow-hidden relative">
           <Image source={{ uri: photoUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} />
           {/* Calendar Badge overlay */}
-          <View className="absolute top-4 left-4 bg-black/75 px-3 py-1.5 rounded-xl border border-white/10 items-center justify-center">
-            <Text style={{ color: colors.primaryLight }} className="text-[10px] font-bold uppercase tracking-widest leading-none mb-0.5">
+          <View
+            style={{ backgroundColor: 'rgba(0,0,0,0.75)', paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: radius.md, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+            className="absolute top-4 left-4 items-center justify-center"
+          >
+            <Text style={{ color: colors.primaryLight, letterSpacing: 1, marginBottom: 2, ...typography.caption, fontSize: 10, lineHeight: 14 }} className="uppercase">
               {displayMonth}
             </Text>
-            <Text className="text-xl font-extrabold text-white leading-none">
+            <Text style={{ color: 'white', ...typography.title, lineHeight: 22 }}>
               {displayDate}
             </Text>
           </View>
         </View>
 
         {/* Info */}
-        <View className="p-5">
-          <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="text-xl font-bold mb-3 leading-tight">
+        <View style={{ padding: spacing.lg }}>
+          <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, marginBottom: spacing.md, ...typography.title }}>
             {event.title}
           </Text>
 
-          <View className="gap-2.5 mb-6">
-            <View className="flex-row items-center gap-2">
-              <Clock size={15} color={colors.textMuted} />
-              <Text style={{ color: colors.textMuted }} className="text-xs">
+          <View style={{ gap: spacing.sm + 2, marginBottom: spacing.xl }}>
+            <View style={{ gap: spacing.sm }} className="flex-row items-center">
+              <Clock size={16} color={colors.textMuted} />
+              <Text style={{ color: colors.textMuted, ...typography.caption }}>
                 {formattedDateString}
               </Text>
             </View>
-            <View className="flex-row items-center gap-2">
-              <MapPin size={15} color={colors.textMuted} />
-              <Text style={{ color: colors.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-xs" numberOfLines={1}>
+            <View style={{ gap: spacing.sm }} className="flex-row items-center">
+              <MapPin size={16} color={colors.textMuted} />
+              <Text style={{ color: colors.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.caption }} numberOfLines={1}>
                 {event.location || t('events', 'locationTBA')}
               </Text>
             </View>
-            <View className="flex-row items-center gap-2">
-              <Users size={15} color={colors.textMuted} />
-              <Text style={{ color: colors.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-xs">
+            <View style={{ gap: spacing.sm }} className="flex-row items-center">
+              <Users size={16} color={colors.textMuted} />
+              <Text style={{ color: colors.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.caption }}>
                 {event.attendees_count || 0} {t('events', 'attending')}
               </Text>
             </View>
@@ -181,13 +184,13 @@ export default function EventsScreen() {
           <TouchableOpacity
             disabled={isRegistered || rsvpingId === event.id}
             onPress={() => handleRSVP(event.id)}
-            style={{ backgroundColor: isRegistered ? colors.border : colors.primary }}
-            className="w-full py-3 rounded-xl flex-row items-center justify-center shadow-lg"
+            style={{ backgroundColor: isRegistered ? colors.border : colors.primary, paddingVertical: spacing.md, borderRadius: radius.md, ...shadow.raised }}
+            className="w-full flex-row items-center justify-center"
           >
             {rsvpingId === event.id ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={{ fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="text-white font-bold text-sm">
+              <Text style={{ color: 'white', fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, ...typography.bodyEmphasis, fontWeight: '700' }}>
                 {isRegistered ? t('events', 'registered') : t('events', 'rsvpNow')}
               </Text>
             )}
@@ -200,26 +203,26 @@ export default function EventsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
       {/* Top Header */}
-      <View style={{ borderBottomColor: colors.border, backgroundColor: colors.bg }} className="px-4 py-3 border-b flex-row items-center justify-between">
-        <View className="flex-row items-center gap-3">
-          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.goBack(); }} style={{ backgroundColor: colors.card + '80' }} className="p-1 rounded-full">
-            <ArrowLeft size={22} color={colors.text} />
+      <View style={{ borderBottomColor: colors.border, backgroundColor: colors.bg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md }} className="border-b flex-row items-center justify-between">
+        <View style={{ gap: spacing.md }} className="flex-row items-center">
+          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.goBack(); }} style={{ backgroundColor: colors.card + '80', padding: spacing.xs, borderRadius: radius.full }}>
+            <ArrowLeft size={20} color={colors.text} />
           </TouchableOpacity>
-          <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-bold text-xl tracking-wide">
+          <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, letterSpacing: 0.3, ...typography.heading }}>
             {t('events', 'title')}
           </Text>
         </View>
         <TouchableOpacity
           onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-          style={{ backgroundColor: colors.primary + '10', borderColor: colors.primaryLight + '20' }}
-          className="p-2 rounded-full border"
+          style={{ backgroundColor: colors.primary + '10', borderColor: colors.primaryLight + '20', padding: spacing.sm, borderRadius: radius.full }}
+          className="border"
         >
           <Plus size={16} color={colors.primaryLight} />
         </TouchableOpacity>
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 80 }}
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + 80 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -232,20 +235,20 @@ export default function EventsScreen() {
         }
       >
         {/* Intro */}
-        <View className="flex-row items-center gap-3 mb-4">
-          <View style={{ backgroundColor: colors.primaryLight + '10', borderColor: colors.primaryLight + '20' }} className="w-10 h-10 rounded-xl border items-center justify-center">
+        <View style={{ gap: spacing.md, marginBottom: spacing.lg }} className="flex-row items-center">
+          <View style={{ backgroundColor: colors.primaryLight + '10', borderColor: colors.primaryLight + '20', borderRadius: radius.md }} className="w-10 h-10 border items-center justify-center">
             <CalendarIcon size={20} color={colors.primary} />
           </View>
           <View>
-            <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-bold text-lg">
+            <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, ...typography.title }}>
               {t('events', 'communityEvents')}
             </Text>
-            <Text style={{ color: colors.textMuted }} className="text-xs font-medium">{t('events', 'calendarSubtitle')}</Text>
+            <Text style={{ color: colors.textMuted, ...typography.caption }}>{t('events', 'calendarSubtitle')}</Text>
           </View>
         </View>
 
         {/* Tab Filters */}
-        <View style={{ borderBottomColor: colors.border + '80' }} className="flex-row border-b mb-5">
+        <View style={{ borderBottomColor: colors.border + '80', marginBottom: spacing.xl - 4 }} className="flex-row border-b">
           {[
             { key: 'upcoming' as const, label: t('events', 'tabUpcoming') },
             { key: 'past' as const, label: t('events', 'tabPast') },
@@ -256,10 +259,10 @@ export default function EventsScreen() {
               <TouchableOpacity
                 key={tab.key}
                 onPress={() => handleTabPress(tab.key)}
-                style={{ borderBottomColor: active ? colors.primary : 'transparent' }}
-                className="flex-1 items-center py-3 border-b-2"
+                style={{ borderBottomColor: active ? colors.primary : 'transparent', paddingVertical: spacing.md }}
+                className="flex-1 items-center border-b-2"
               >
-                <Text style={{ color: active ? colors.primary : colors.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="text-xs font-bold">
+                <Text style={{ color: active ? colors.primary : colors.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, ...typography.caption, fontWeight: '700' }}>
                   {tab.label}
                 </Text>
               </TouchableOpacity>
@@ -269,7 +272,7 @@ export default function EventsScreen() {
 
         {/* Listing */}
         {loading && !refreshing ? (
-          <EventsSkeleton colors={colors} />
+          <EventsSkeleton colors={colors} spacing={spacing} radius={radius} />
         ) : filteredEvents.length === 0 ? (
           <EmptyState
             emoji="📅"

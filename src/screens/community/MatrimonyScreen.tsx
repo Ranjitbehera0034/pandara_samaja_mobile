@@ -133,13 +133,13 @@ const MOCK_CANDIDATES: Candidate[] = [
   }
 ];
 
-function MatrimonySkeleton({ colors: C }: { colors: ReturnType<typeof useTheme>['colors'] }) {
+function MatrimonySkeleton({ colors: C, spacing, radius }: { colors: ReturnType<typeof useTheme>['colors']; spacing: ReturnType<typeof useTheme>['spacing']; radius: ReturnType<typeof useTheme>['radius'] }) {
   return (
-    <View style={{ padding: 16, gap: 16 }}>
+    <View style={{ padding: spacing.lg, gap: spacing.lg }}>
       {[1, 2].map(i => (
-        <View key={i} style={{ backgroundColor: C.card, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: C.border }}>
+        <View key={i} style={{ backgroundColor: C.card, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: C.border }}>
           <SkeletonBox width="100%" height={200} borderRadius={0} />
-          <View style={{ padding: 16, gap: 10 }}>
+          <View style={{ padding: spacing.lg, gap: spacing.sm + 2 }}>
             <SkeletonBox width="50%" height={16} />
             <SkeletonBox width="35%" height={12} />
             <SkeletonBox width="80%" height={12} />
@@ -155,7 +155,7 @@ export default function MatrimonyScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { lang, t } = useLanguage();
-  const { colors: C } = useTheme();
+  const { colors: C, spacing, radius, typography } = useTheme();
 
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -255,9 +255,9 @@ export default function MatrimonyScreen() {
         }}
         style={{
           backgroundColor: C.card,
-          borderRadius: 16,
+          borderRadius: radius.lg,
           overflow: 'hidden',
-          marginBottom: 16,
+          marginBottom: spacing.lg,
           borderWidth: 1,
           borderColor: C.border,
         }}
@@ -274,12 +274,12 @@ export default function MatrimonyScreen() {
             onPress={(e) => handleShortlistToggle(item.id, item.name, e)}
             style={{
               position: 'absolute',
-              top: 14,
-              right: 14,
+              top: spacing.md + 2,
+              right: spacing.md + 2,
               backgroundColor: 'rgba(15, 23, 42, 0.6)',
               width: 38,
               height: 38,
-              borderRadius: 19,
+              borderRadius: radius.full,
               alignItems: 'center',
               justifyContent: 'center',
               borderWidth: 1,
@@ -287,7 +287,7 @@ export default function MatrimonyScreen() {
             }}
           >
             <Heart
-              size={18}
+              size={16}
               color={item.isShortlisted ? C.female : 'white'}
               fill={item.isShortlisted ? C.female : 'transparent'}
             />
@@ -296,47 +296,47 @@ export default function MatrimonyScreen() {
           {/* Gender Label Tag */}
           <View style={{
             position: 'absolute',
-            bottom: 12,
-            left: 12,
+            bottom: spacing.md,
+            left: spacing.md,
             backgroundColor: item.gender === 'male' ? C.male : C.female,
-            paddingHorizontal: 12,
-            paddingVertical: 4,
-            borderRadius: 8,
+            paddingHorizontal: spacing.md,
+            paddingVertical: spacing.xs,
+            borderRadius: radius.sm,
           }}>
-            <Text style={{ color: 'white', fontSize: 11, fontWeight: '700' }}>
+            <Text style={{ color: 'white', ...typography.caption, fontWeight: '700' }}>
               {item.gender === 'male' ? t('matrimony', 'groomTag') : t('matrimony', 'brideTag')}
             </Text>
           </View>
         </View>
 
         {/* Info Below */}
-        <View style={{ padding: 16 }}>
-          <Text style={{ color: C.text, fontSize: 18, fontWeight: '700', fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }}>
+        <View style={{ padding: spacing.lg }}>
+          <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, ...typography.title }}>
             {lang === 'od' ? item.nameOdia : item.name}, {item.age}
           </Text>
 
-          <Text style={{ color: C.primaryLight, fontSize: 13, fontWeight: '600', marginTop: 4, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
+          <Text style={{ color: C.primaryLight, marginTop: spacing.xs, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.bodyEmphasis }}>
             {t('matrimony', 'gotraLabel')} {lang === 'od' ? item.gotraOdia : item.gotra}
           </Text>
 
-          <View style={{ marginTop: 12, gap: 6 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <GraduationCap size={15} color={C.textMuted} />
-              <Text style={{ color: C.textMuted, fontSize: 13, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
+          <View style={{ marginTop: spacing.md, gap: spacing.xs + 2 }}>
+            <View style={{ gap: spacing.xs + 2 }} className="flex-row items-center">
+              <GraduationCap size={16} color={C.textMuted} />
+              <Text style={{ color: C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.body, fontSize: 13 }}>
                 {lang === 'od' ? item.educationOdia : item.education}
               </Text>
             </View>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Briefcase size={15} color={C.textMuted} />
-              <Text style={{ color: C.textMuted, fontSize: 13, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
+            <View style={{ gap: spacing.xs + 2 }} className="flex-row items-center">
+              <Briefcase size={16} color={C.textMuted} />
+              <Text style={{ color: C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.body, fontSize: 13 }}>
                 {lang === 'od' ? item.occupationOdia : item.occupation}
               </Text>
             </View>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <MapPin size={15} color={C.textMuted} />
-              <Text style={{ color: C.textMuted, fontSize: 13, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
+            <View style={{ gap: spacing.xs + 2 }} className="flex-row items-center">
+              <MapPin size={16} color={C.textMuted} />
+              <Text style={{ color: C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.body, fontSize: 13 }}>
                 {lang === 'od' ? item.locationOdia : item.location}
               </Text>
             </View>
@@ -346,16 +346,16 @@ export default function MatrimonyScreen() {
             <View style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 6,
+              gap: spacing.xs + 2,
               backgroundColor: C.success + '15',
-              padding: 8,
-              borderRadius: 8,
-              marginTop: 14,
+              padding: spacing.sm,
+              borderRadius: radius.sm,
+              marginTop: spacing.md + 2,
               borderWidth: 1,
               borderColor: C.success + '30',
             }}>
-              <UserCheck size={14} color={C.success} />
-              <Text style={{ color: C.success, fontSize: 12, fontWeight: '600' }}>
+              <UserCheck size={16} color={C.success} />
+              <Text style={{ color: C.success, ...typography.caption, fontWeight: '600' }}>
                 {t('matrimony', 'interestExpressedCard')}
               </Text>
             </View>
@@ -372,14 +372,14 @@ export default function MatrimonyScreen() {
         backgroundColor: C.accent + '20',
         borderBottomWidth: 1,
         borderColor: C.accent + '40',
-        paddingVertical: 8,
-        paddingHorizontal: 16,
+        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.lg,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-        <UserCheck size={14} color={C.accent} style={{ marginRight: 6 }} />
-        <Text style={{ color: C.text, fontSize: 12, fontWeight: '600', textAlign: 'center' }}>
+        <UserCheck size={16} color={C.accent} style={{ marginRight: spacing.xs + 2 }} />
+        <Text style={{ color: C.text, textAlign: 'center', ...typography.caption, fontWeight: '600' }}>
           {t('matrimony', 'verifiedBanner')}
         </Text>
       </View>
@@ -388,8 +388,8 @@ export default function MatrimonyScreen() {
       <View style={{
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 14,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md + 2,
         backgroundColor: C.card,
         borderBottomWidth: 1,
         borderBottomColor: C.border,
@@ -399,22 +399,22 @@ export default function MatrimonyScreen() {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             navigation.goBack();
           }}
-          style={{ marginRight: 16, padding: 4 }}
+          style={{ marginRight: spacing.lg, padding: spacing.xs }}
         >
           <ArrowLeft size={20} color={C.text} />
         </TouchableOpacity>
-        <Text style={{ color: C.text, fontSize: 18, fontWeight: '700', fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }}>
+        <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, ...typography.title }}>
           {t('matrimony', 'title')}
         </Text>
       </View>
 
       {/* Gender Segmented Control */}
-      <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+      <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.md }}>
         <View style={{
           flexDirection: 'row',
           backgroundColor: C.card,
-          padding: 4,
-          borderRadius: 12,
+          padding: spacing.xs,
+          borderRadius: radius.md,
           borderWidth: 1,
           borderColor: C.border,
         }}>
@@ -423,16 +423,16 @@ export default function MatrimonyScreen() {
             style={{
               flex: 1,
               backgroundColor: genderFilter === 'all' ? C.primary : 'transparent',
-              paddingVertical: 8,
-              borderRadius: 8,
+              paddingVertical: spacing.sm,
+              borderRadius: radius.sm,
               alignItems: 'center',
             }}
           >
             <Text style={{
               color: genderFilter === 'all' ? 'white' : C.textMuted,
-              fontWeight: '700',
+              fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined,
+              ...typography.bodyEmphasis,
               fontSize: 13,
-              fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined
             }}>
               {t('matrimony', 'filterAll')}
             </Text>
@@ -443,16 +443,16 @@ export default function MatrimonyScreen() {
             style={{
               flex: 1,
               backgroundColor: genderFilter === 'female' ? C.female : 'transparent',
-              paddingVertical: 8,
-              borderRadius: 8,
+              paddingVertical: spacing.sm,
+              borderRadius: radius.sm,
               alignItems: 'center',
             }}
           >
             <Text style={{
               color: genderFilter === 'female' ? 'white' : C.textMuted,
-              fontWeight: '700',
+              fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined,
+              ...typography.bodyEmphasis,
               fontSize: 13,
-              fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined
             }}>
               {t('matrimony', 'filterBrides')}
             </Text>
@@ -463,16 +463,16 @@ export default function MatrimonyScreen() {
             style={{
               flex: 1,
               backgroundColor: genderFilter === 'male' ? C.male : 'transparent',
-              paddingVertical: 8,
-              borderRadius: 8,
+              paddingVertical: spacing.sm,
+              borderRadius: radius.sm,
               alignItems: 'center',
             }}
           >
             <Text style={{
               color: genderFilter === 'male' ? 'white' : C.textMuted,
-              fontWeight: '700',
+              fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined,
+              ...typography.bodyEmphasis,
               fontSize: 13,
-              fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined
             }}>
               {t('matrimony', 'filterGrooms')}
             </Text>
@@ -482,7 +482,7 @@ export default function MatrimonyScreen() {
 
       {/* Candidates List */}
       {loading ? (
-        <MatrimonySkeleton colors={C} />
+        <MatrimonySkeleton colors={C} spacing={spacing} radius={radius} />
       ) : filteredCandidates.length === 0 ? (
         <EmptyState
           emoji="💍"
@@ -501,7 +501,7 @@ export default function MatrimonyScreen() {
           data={filteredCandidates}
           keyExtractor={item => item.id}
           renderItem={renderCandidateItem}
-          contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 20 }}
+          contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.xl }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -537,12 +537,12 @@ export default function MatrimonyScreen() {
                 }}
                 style={{
                   position: 'absolute',
-                  top: 20,
-                  right: 20,
+                  top: spacing.lg + 4,
+                  right: spacing.lg + 4,
                   backgroundColor: 'rgba(15, 23, 42, 0.7)',
                   width: 36,
                   height: 36,
-                  borderRadius: 18,
+                  borderRadius: radius.full,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -551,63 +551,63 @@ export default function MatrimonyScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+            <ScrollView contentContainerStyle={{ padding: spacing.xl - 4, paddingBottom: spacing.xxl + spacing.xxl - spacing.xs }}>
               {/* Profile Main info */}
-              <View style={{ borderBottomWidth: 1, borderBottomColor: C.border, paddingBottom: 16 }}>
+              <View style={{ borderBottomWidth: 1, borderBottomColor: C.border, paddingBottom: spacing.lg }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={{ color: C.text, fontSize: 24, fontWeight: '800', fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }}>
+                  <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, ...typography.display }}>
                     {lang === 'od' ? selectedCandidate.nameOdia : selectedCandidate.name}
                   </Text>
-                  <Text style={{ color: C.text, fontSize: 20, fontWeight: '700' }}>
+                  <Text style={{ color: C.text, ...typography.heading }}>
                     {selectedCandidate.age} {t('matrimony', 'yearsAbbrev')}
                   </Text>
                 </View>
-                <Text style={{ color: C.primaryLight, fontSize: 15, fontWeight: '600', marginTop: 4, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
+                <Text style={{ color: C.primaryLight, marginTop: spacing.xs, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.label }}>
                   {t('matrimony', 'gotraLabel')} {lang === 'od' ? selectedCandidate.gotraOdia : selectedCandidate.gotra}
                 </Text>
               </View>
 
               {/* Personal Details */}
-              <View style={{ marginTop: 20 }}>
-                <Text style={{ color: C.textMuted, fontSize: 13, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 12 }}>
+              <View style={{ marginTop: spacing.xl }}>
+                <Text style={{ color: C.textMuted, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: spacing.md, ...typography.caption, fontWeight: '700' }}>
                   {t('matrimony', 'profileDetailsHeader')}
                 </Text>
 
-                <View style={{ gap: 12 }}>
+                <View style={{ gap: spacing.md }}>
                   {/* Height */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
-                    <Text style={{ color: C.textMuted, fontSize: 14 }}>{t('matrimony', 'heightLabel')}</Text>
-                    <Text style={{ color: C.text, fontSize: 14, fontWeight: '600' }}>{selectedCandidate.height}</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
+                    <Text style={{ color: C.textMuted, ...typography.body }}>{t('matrimony', 'heightLabel')}</Text>
+                    <Text style={{ color: C.text, ...typography.bodyEmphasis }}>{selectedCandidate.height}</Text>
                   </View>
 
                   {/* Education */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
-                    <Text style={{ color: C.textMuted, fontSize: 14 }}>{t('matrimony', 'educationLabel')}</Text>
-                    <Text style={{ color: C.text, fontSize: 14, fontWeight: '600', textAlign: 'right', flex: 1, marginLeft: 20, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
+                    <Text style={{ color: C.textMuted, ...typography.body }}>{t('matrimony', 'educationLabel')}</Text>
+                    <Text style={{ color: C.text, textAlign: 'right', flex: 1, marginLeft: spacing.xl - 4, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.bodyEmphasis }}>
                       {lang === 'od' ? selectedCandidate.educationOdia : selectedCandidate.education}
                     </Text>
                   </View>
 
                   {/* Occupation */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
-                    <Text style={{ color: C.textMuted, fontSize: 14 }}>{t('matrimony', 'occupationLabel')}</Text>
-                    <Text style={{ color: C.text, fontSize: 14, fontWeight: '600', textAlign: 'right', flex: 1, marginLeft: 20, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
+                    <Text style={{ color: C.textMuted, ...typography.body }}>{t('matrimony', 'occupationLabel')}</Text>
+                    <Text style={{ color: C.text, textAlign: 'right', flex: 1, marginLeft: spacing.xl - 4, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.bodyEmphasis }}>
                       {lang === 'od' ? selectedCandidate.occupationOdia : selectedCandidate.occupation}
                     </Text>
                   </View>
 
                   {/* Parents */}
-                  <View style={{ flexDirection: 'column', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: C.border, gap: 4 }}>
-                    <Text style={{ color: C.textMuted, fontSize: 14 }}>{t('matrimony', 'parentsLabel')}</Text>
-                    <Text style={{ color: C.text, fontSize: 14, fontWeight: '600', lineHeight: 20, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
+                  <View style={{ flexDirection: 'column', paddingVertical: spacing.sm, borderBottomWidth: 0.5, borderBottomColor: C.border, gap: spacing.xs }}>
+                    <Text style={{ color: C.textMuted, ...typography.body }}>{t('matrimony', 'parentsLabel')}</Text>
+                    <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.bodyEmphasis, lineHeight: 20 }}>
                       {lang === 'od' ? selectedCandidate.parentsOdia : selectedCandidate.parents}
                     </Text>
                   </View>
 
                   {/* Location */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 }}>
-                    <Text style={{ color: C.textMuted, fontSize: 14 }}>{t('matrimony', 'locationLabel')}</Text>
-                    <Text style={{ color: C.text, fontSize: 14, fontWeight: '600', fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm }}>
+                    <Text style={{ color: C.textMuted, ...typography.body }}>{t('matrimony', 'locationLabel')}</Text>
+                    <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.bodyEmphasis }}>
                       {lang === 'od' ? selectedCandidate.locationOdia : selectedCandidate.location}
                     </Text>
                   </View>
@@ -615,13 +615,13 @@ export default function MatrimonyScreen() {
               </View>
 
               {/* Actions inside Modal */}
-              <View style={{ flexDirection: 'row', gap: 12, marginTop: 32 }}>
+              <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.xxl }}>
                 <TouchableOpacity
                   onPress={(e) => handleShortlistToggle(selectedCandidate.id, selectedCandidate.name, e)}
                   style={{
                     width: 50,
                     height: 50,
-                    borderRadius: 25,
+                    borderRadius: radius.full,
                     borderWidth: 1.5,
                     borderColor: C.border,
                     alignItems: 'center',
@@ -630,7 +630,7 @@ export default function MatrimonyScreen() {
                   }}
                 >
                   <Heart
-                    size={22}
+                    size={20}
                     color={selectedCandidate.isShortlisted ? C.female : C.textMuted}
                     fill={selectedCandidate.isShortlisted ? C.female : 'transparent'}
                   />
@@ -643,7 +643,7 @@ export default function MatrimonyScreen() {
                     backgroundColor: selectedCandidate.isInterestSent ? 'transparent' : C.primary,
                     borderWidth: selectedCandidate.isInterestSent ? 1.5 : 0,
                     borderColor: C.success,
-                    borderRadius: 25,
+                    borderRadius: radius.full,
                     height: 50,
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -651,6 +651,7 @@ export default function MatrimonyScreen() {
                 >
                   <Text style={{
                     color: selectedCandidate.isInterestSent ? C.success : 'white',
+                    ...typography.label,
                     fontWeight: '700',
                     fontSize: 16,
                   }}>

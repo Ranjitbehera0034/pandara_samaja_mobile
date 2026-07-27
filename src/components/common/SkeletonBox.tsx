@@ -10,8 +10,9 @@ interface Props {
   style?: any;
 }
 
-export default function SkeletonBox({ width = '100%', height = 16, borderRadius = 8, style }: Props) {
-  const { colors } = useTheme();
+export default function SkeletonBox({ width = '100%', height = 16, borderRadius, style }: Props) {
+  const { colors, radius } = useTheme();
+  const resolvedBorderRadius = borderRadius ?? radius.sm;
   const opacity = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
@@ -31,7 +32,7 @@ export default function SkeletonBox({ width = '100%', height = 16, borderRadius 
         {
           width: width as any,
           height,
-          borderRadius,
+          borderRadius: resolvedBorderRadius,
           backgroundColor: colors.border,
           opacity,
         },

@@ -11,24 +11,24 @@ interface Props {
 }
 
 export default function EmptyState({ emoji, title, subtitle, action }: Props) {
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   return (
-    <View style={{ alignItems: 'center', paddingVertical: 60, paddingHorizontal: 32 }}>
-      <Text style={{ fontSize: 56, marginBottom: 16 }}>{emoji}</Text>
-      <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>
+    <View style={{ alignItems: 'center', paddingVertical: spacing.xxl + spacing.xxl - spacing.xs, paddingHorizontal: spacing.xxl }}>
+      <Text style={{ fontSize: 56, marginBottom: spacing.lg }}>{emoji}</Text>
+      <Text style={{ color: colors.text, textAlign: 'center', marginBottom: spacing.sm, ...typography.title }}>
         {title}
       </Text>
       {subtitle && (
-        <Text style={{ color: colors.textFaint, fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
+        <Text style={{ color: colors.textFaint, textAlign: 'center', ...typography.body }}>
           {subtitle}
         </Text>
       )}
       {action && (
         <TouchableOpacity
           onPress={action.onPress}
-          style={{ marginTop: 20, backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12 }}
+          style={{ marginTop: spacing.xl - 4, backgroundColor: colors.primary, paddingHorizontal: spacing.xl, paddingVertical: spacing.sm + 2, borderRadius: radius.md }}
         >
-          <Text style={{ color: 'white', fontWeight: '600' }}>{action.label}</Text>
+          <Text style={{ color: 'white', ...typography.bodyEmphasis }}>{action.label}</Text>
         </TouchableOpacity>
       )}
     </View>
