@@ -11,7 +11,7 @@ interface Props {
 }
 
 export default function PollDisplay({ poll, onVote }: Props) {
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
   const [voted, setVoted] = useState(!!poll.myVote);
   const [myVote, setMyVote] = useState(poll.myVote);
@@ -36,15 +36,15 @@ export default function PollDisplay({ poll, onVote }: Props) {
   const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;
 
   return (
-    <View style={{ backgroundColor: colors.bg, borderColor: colors.border }} className="border rounded-xl p-4 mt-3">
+    <View style={{ backgroundColor: colors.bg, borderColor: colors.border, borderWidth: 1, borderRadius: radius.md, padding: spacing.lg, marginTop: spacing.md }}>
       {/* Question */}
-      <View className="flex-row items-center gap-2 mb-3">
-        <Text style={{ color: colors.primaryLight }} className="text-base">📊</Text>
-        <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-semibold text-sm flex-1">{localPoll.question}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
+        <Text style={{ color: colors.primaryLight, fontSize: 16 }}>📊</Text>
+        <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, flex: 1, ...typography.bodyEmphasis }}>{localPoll.question}</Text>
       </View>
 
       {/* Options */}
-      <View className="gap-2">
+      <View style={{ gap: spacing.sm }}>
         {localPoll.options.map(option => {
           const percentage = localPoll.totalVotes > 0
             ? Math.round((option.votes / localPoll.totalVotes) * 100)
@@ -56,26 +56,27 @@ export default function PollDisplay({ poll, onVote }: Props) {
               key={option.id}
               onPress={() => handleVote(option.id)}
               disabled={voted}
-              style={{ borderColor: isMyVote ? colors.primaryLight : colors.border }}
-              className="rounded-xl overflow-hidden border relative"
+              style={{ borderColor: isMyVote ? colors.primaryLight : colors.border, borderRadius: radius.md, overflow: 'hidden', borderWidth: 1, position: 'relative' }}
             >
               {/* Progress bar background */}
               {voted && (
                 <View
-                  style={{ backgroundColor: isMyVote ? colors.primary + '33' : colors.border + '4d', width: `${percentage}%` }}
-                  className="absolute inset-y-0 left-0"
+                  style={{ backgroundColor: isMyVote ? colors.primary + '33' : colors.border + '4d', width: `${percentage}%`, position: 'absolute', top: 0, bottom: 0, left: 0 }}
                   pointerEvents="none"
                 />
               )}
-              <View className="flex-row items-center justify-between px-4 py-3">
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md }}>
                 <Text
-                  style={{ color: isMyVote ? colors.primaryLight : colors.text, fontFamily }}
-                  className={`text-sm ${isMyVote ? 'font-semibold' : ''}`}
+                  style={{
+                    color: isMyVote ? colors.primaryLight : colors.text,
+                    fontFamily,
+                    ...(isMyVote ? typography.bodyEmphasis : typography.body),
+                  }}
                 >
                   {isMyVote ? '✓ ' : ''}{option.text}
                 </Text>
                 {voted && (
-                  <Text style={{ color: isMyVote ? colors.primaryLight : colors.textFaint }} className="text-sm font-semibold">
+                  <Text style={{ color: isMyVote ? colors.primaryLight : colors.textFaint, ...typography.bodyEmphasis }}>
                     {percentage}%
                   </Text>
                 )}
@@ -86,7 +87,7 @@ export default function PollDisplay({ poll, onVote }: Props) {
       </View>
 
       {/* Total votes */}
-      <Text style={{ color: colors.textFaint, fontFamily }} className="text-xs mt-3">
+      <Text style={{ color: colors.textFaint, fontFamily, marginTop: spacing.md, ...typography.caption }}>
         {localPoll.totalVotes} {localPoll.totalVotes === 1 ? t('feedComponents', 'voteWord') : t('feedComponents', 'votesWordPlural')}
         {localPoll.endsAt ? ` · ${t('feedComponents', 'pollEndsPrefix')} ${new Date(localPoll.endsAt).toLocaleDateString()}` : ''}
       </Text>

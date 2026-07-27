@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Story } from '../../types';
 import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
 import { useAuth } from '../../context/AuthContext';
+import Avatar from '../common/Avatar';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -17,7 +18,7 @@ interface Props {
 
 export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
   const { member, user } = useAuth();
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
   const displayName = user?.name || member?.name || 'Me';
   const photo = cleanPhoto(user?.profile_photo_url);
@@ -44,31 +45,40 @@ export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
   };
 
   return (
-    <View className="mb-4">
+    <View style={{ marginBottom: spacing.lg }}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 4 }}
+        contentContainerStyle={{ paddingHorizontal: spacing.xs }}
       >
         {/* Add Story Circle */}
-        <View className="items-center mr-4">
+        <View style={{ alignItems: 'center', marginRight: spacing.lg }}>
           <TouchableOpacity
             onPress={handlePickStory}
-            style={{ backgroundColor: colors.card, borderColor: colors.border }}
-            className="w-14 h-14 rounded-full border-2 items-center justify-center relative overflow-hidden"
+            style={{
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              width: 56,
+              height: 56,
+              borderRadius: radius.full,
+              borderWidth: 2,
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
           >
             {photo ? (
-              <Image source={{ uri: photo }} className="w-full h-full opacity-60" resizeMode="cover" />
+              <Image source={{ uri: photo }} style={{ width: '100%', height: '100%', opacity: 0.6 }} resizeMode="cover" />
             ) : (
-              <Text style={{ color: colors.textFaint }} className="font-bold text-xs">{getInitial(displayName)}</Text>
+              <Text style={{ color: colors.textFaint, ...typography.caption }}>{getInitial(displayName)}</Text>
             )}
-            <View style={{ backgroundColor: colors.primary }} className="absolute p-1 rounded-full">
-              <Plus size={12} color="white" />
+            <View style={{ backgroundColor: colors.primary, position: 'absolute', padding: spacing.xs, borderRadius: radius.full }}>
+              <Plus size={16} color="white" />
             </View>
           </TouchableOpacity>
           <Text
-            style={{ color: colors.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}
-            className="text-[10px] mt-1 text-center font-medium"
+            style={{ color: colors.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, width: 64, marginTop: spacing.xs, textAlign: 'center', ...typography.caption, fontSize: 10, lineHeight: 13 }}
           >
             {t('feedComponents', 'addStoryLabel')}
           </Text>
@@ -78,31 +88,29 @@ export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
         {Object.entries(groupedStories).map(([authorId, authorStories]) => {
           const firstStory = authorStories[0];
           const hasUnviewed = authorStories.some(s => !s.viewed);
-          const authorPhoto = cleanPhoto(firstStory.authorAvatar);
 
           return (
             <TouchableOpacity
               key={authorId}
               onPress={() => onViewStory(authorId)}
-              className="items-center mr-4"
+              style={{ alignItems: 'center', marginRight: spacing.lg }}
             >
               <View
-                style={{ borderColor: hasUnviewed ? colors.primary : colors.border }}
-                className="w-14 h-14 rounded-full items-center justify-center p-[2.5px] border-2"
+                style={{
+                  borderColor: hasUnviewed ? colors.primary : colors.border,
+                  width: 56,
+                  height: 56,
+                  borderRadius: radius.full,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 2.5,
+                  borderWidth: 2,
+                }}
               >
-                <View style={{ backgroundColor: colors.primary }} className="w-full h-full rounded-full overflow-hidden items-center justify-center">
-                  {authorPhoto ? (
-                    <Image source={{ uri: authorPhoto }} className="w-full h-full" resizeMode="cover" />
-                  ) : (
-                    <Text className="text-white font-bold text-xs">
-                      {getInitial(firstStory.authorName)}
-                    </Text>
-                  )}
-                </View>
+                <Avatar name={firstStory.authorName} photoUrl={firstStory.authorAvatar} size={47} />
               </View>
               <Text
-                style={{ color: colors.text, width: 64 }}
-                className="text-[10px] mt-1 text-center font-medium"
+                style={{ color: colors.text, width: 64, marginTop: spacing.xs, textAlign: 'center', ...typography.caption, fontSize: 10, lineHeight: 13 }}
                 numberOfLines={1}
               >
                 {firstStory.authorName.split(' ')[0]}

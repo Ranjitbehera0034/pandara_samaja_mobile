@@ -16,14 +16,14 @@ interface Props {
 }
 
 export default function MediaGrid({ media, onVideoPlay }: Props) {
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   if (!media || media.length === 0) return null;
 
   // Single media
   if (media.length === 1) {
     const item = media[0];
     return (
-      <View style={{ backgroundColor: colors.bg }} className="mt-3 rounded-xl overflow-hidden">
+      <View style={{ backgroundColor: colors.bg, marginTop: spacing.md, borderRadius: radius.md, overflow: 'hidden' }}>
         {item.type === 'video' ? (
           <Video
             source={{ uri: cleanPhoto(item.url) || item.url }}
@@ -52,7 +52,7 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
   if (media.length === 2) {
     const half = (MEDIA_WIDTH - 2) / 2;
     return (
-      <View className="mt-3 flex-row gap-0.5 rounded-xl overflow-hidden">
+      <View style={{ marginTop: spacing.md, flexDirection: 'row', gap: 2, borderRadius: radius.md, overflow: 'hidden' }}>
         {media.map((item, i) => (
           <Image
             key={i}
@@ -70,14 +70,14 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
   if (media.length === 3) {
     const half = (MEDIA_WIDTH - 2) / 2;
     return (
-      <View className="mt-3 rounded-xl overflow-hidden gap-0.5">
+      <View style={{ marginTop: spacing.md, borderRadius: radius.md, overflow: 'hidden', gap: 2 }}>
         <Image
           source={{ uri: cleanPhoto(media[0].url) || media[0].url }}
           style={{ width: MEDIA_WIDTH, height: MEDIA_WIDTH * 0.5 }}
           contentFit="cover"
           transition={200}
         />
-        <View className="flex-row gap-0.5">
+        <View style={{ flexDirection: 'row', gap: 2 }}>
           {media.slice(1, 3).map((item, i) => (
             <Image
               key={i}
@@ -95,8 +95,8 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
   // 4+ images: 2x2 grid, last one shows +N overlay
   const quarter = (MEDIA_WIDTH - 2) / 2;
   return (
-    <View className="mt-3 rounded-xl overflow-hidden">
-      <View className="flex-row gap-0.5 mb-0.5">
+    <View style={{ marginTop: spacing.md, borderRadius: radius.md, overflow: 'hidden' }}>
+      <View style={{ flexDirection: 'row', gap: 2, marginBottom: 2 }}>
         {media.slice(0, 2).map((item, i) => (
           <Image
             key={i}
@@ -107,7 +107,7 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
           />
         ))}
       </View>
-      <View className="flex-row gap-0.5">
+      <View style={{ flexDirection: 'row', gap: 2 }}>
         {media.slice(2, 4).map((item, i) => (
           <View key={i} style={{ width: quarter, height: quarter * 0.8 }}>
             <Image
@@ -117,8 +117,8 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
               transition={200}
             />
             {i === 1 && media.length > 4 && (
-              <View style={{ backgroundColor: 'rgba(0,0,0,0.6)' }} className="absolute inset-0 items-center justify-center">
-                <Text className="text-white text-2xl font-bold">+{media.length - 4}</Text>
+              <View style={{ backgroundColor: 'rgba(0,0,0,0.6)', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: '#fff', ...typography.display }}>+{media.length - 4}</Text>
               </View>
             )}
           </View>

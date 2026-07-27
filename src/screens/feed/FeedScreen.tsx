@@ -23,22 +23,22 @@ import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 // Feed skeleton list loader
-function FeedSkeleton({ colors }: { colors: ReturnType<typeof useTheme>['colors'] }) {
+function FeedSkeleton({ colors, spacing, radius }: { colors: ReturnType<typeof useTheme>['colors']; spacing: ReturnType<typeof useTheme>['spacing']; radius: ReturnType<typeof useTheme>['radius'] }) {
   return (
-    <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 16 }}>
+    <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.lg }}>
       {[1, 2, 3].map(i => (
-        <View key={i} style={{ backgroundColor: colors.card, borderRadius: 16, padding: 16, gap: 12, borderWidth: 1, borderColor: colors.border }}>
-          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+        <View key={i} style={{ backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md, borderWidth: 1, borderColor: colors.border }}>
+          <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
             <SkeletonBox width={40} height={40} borderRadius={20} />
-            <View style={{ gap: 6, flex: 1 }}>
+            <View style={{ gap: spacing.xs, flex: 1 }}>
               <SkeletonBox width="65%" height={12} />
               <SkeletonBox width="45%" height={10} />
             </View>
           </View>
           <SkeletonBox width="100%" height={12} />
           <SkeletonBox width="85%" height={12} />
-          <SkeletonBox width="100%" height={160} borderRadius={12} />
-          <View style={{ flexDirection: 'row', gap: 16, marginTop: 4 }}>
+          <SkeletonBox width="100%" height={160} borderRadius={radius.md} />
+          <View style={{ flexDirection: 'row', gap: spacing.lg, marginTop: spacing.xs }}>
             <SkeletonBox width={60} height={28} borderRadius={14} />
             <SkeletonBox width={60} height={28} borderRadius={14} />
           </View>
@@ -52,7 +52,7 @@ export default function FeedScreen() {
   const navigation = useNavigation<any>();
   const { member } = useAuth();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const { t } = useLanguage();
   const [posts, setPosts] = useState<Post[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
@@ -350,24 +350,24 @@ export default function FeedScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
       {/* Polished Top Header */}
-      <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.bg }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.bg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
           <Image
             source={require('../../../assets/logo.png')}
-            style={{ width: 32, height: 32, borderRadius: 16 }}
+            style={{ width: 32, height: 32, borderRadius: radius.lg }}
             contentFit="cover"
           />
-          <Text style={{ color: colors.text, fontWeight: '800', fontSize: 18, letterSpacing: 0.3 }}>{t('common', 'appName')}</Text>
+          <Text style={{ color: colors.text, letterSpacing: 0.3, ...typography.title }}>{t('common', 'appName')}</Text>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
           <TouchableOpacity
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               navigation.navigate('Announcements');
             }}
-            style={{ padding: 10, backgroundColor: colors.card, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
+            style={{ padding: spacing.md, backgroundColor: colors.card, borderRadius: radius.full, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
           >
-            <Megaphone size={18} color={colors.primaryLight} />
+            <Megaphone size={20} color={colors.primaryLight} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
@@ -375,11 +375,11 @@ export default function FeedScreen() {
               navigation.navigate('Notifications');
               setUnreadCount(0); // clear count
             }}
-            style={{ padding: 10, backgroundColor: colors.card, borderRadius: 999, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
+            style={{ padding: spacing.md, backgroundColor: colors.card, borderRadius: radius.full, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
           >
-            <Bell size={18} color={colors.text} />
+            <Bell size={20} color={colors.text} />
             {unreadCount > 0 && (
-              <View style={{ position: 'absolute', top: -6, right: -6, backgroundColor: colors.error, borderRadius: 999, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 1, borderColor: colors.bg }}>
+              <View style={{ position: 'absolute', top: -6, right: -6, backgroundColor: colors.error, borderRadius: radius.full, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xs, borderWidth: 1, borderColor: colors.bg }}>
                 <Text style={{ color: '#ffffff', fontSize: 9, fontWeight: '700', lineHeight: 9 }}>
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </Text>
@@ -390,19 +390,19 @@ export default function FeedScreen() {
       </View>
 
       {/* Global Search Component inside the header flow */}
-      <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, backgroundColor: colors.bg }}>
+      <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xs, backgroundColor: colors.bg }}>
         <GlobalSearch />
       </View>
 
       {isLoading && !isRefreshing ? (
-        <FeedSkeleton colors={colors} />
+        <FeedSkeleton colors={colors} spacing={spacing} radius={radius} />
       ) : (
         <View style={{ flex: 1 }}>
           <FlashList
             data={posts}
             keyExtractor={keyExtractor}
             renderItem={renderPost}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: insets.bottom + 80 }}
+            contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: insets.bottom + 80 }}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl

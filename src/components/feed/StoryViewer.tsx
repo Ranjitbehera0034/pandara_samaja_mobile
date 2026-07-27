@@ -7,8 +7,9 @@ import {
 import { Video, ResizeMode } from 'expo-av';
 import { X } from 'lucide-react-native';
 import { Story } from '../../types';
-import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
+import { cleanPhoto } from '../../utils/googleDriveUrl';
 import { timeAgoShort } from '../../utils/feedUtils';
+import Avatar from '../common/Avatar';
 import { useTheme } from '../../theme/ThemeContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -22,7 +23,7 @@ interface Props {
 }
 
 export default function StoryViewer({ visible, stories, onClose, onStoryViewed }: Props) {
-  const { colors } = useTheme();
+  const { spacing, radius, typography } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -115,7 +116,6 @@ export default function StoryViewer({ visible, stories, onClose, onStoryViewed }
 
   if (!visible || !activeStory) return null;
 
-  const photo = cleanPhoto(activeStory.authorAvatar);
   const mediaUrl = cleanPhoto(activeStory.mediaUrl) || activeStory.mediaUrl;
 
   return (
@@ -155,16 +155,16 @@ export default function StoryViewer({ visible, stories, onClose, onStoryViewed }
         </View>
 
         {/* Top Overlay Controls */}
-        <View className="z-30 p-4 pt-10 bg-gradient-to-b from-black/60 to-transparent">
+        <View className="z-30 bg-gradient-to-b from-black/60 to-transparent" style={{ padding: spacing.lg, paddingTop: 40 }}>
           {/* Progress Indicators */}
-          <View className="flex-row gap-1 mb-4">
+          <View className="flex-row" style={{ gap: spacing.xs, marginBottom: spacing.lg }}>
             {stories.map((story, i) => {
               let widthPercent: any = '0%';
               if (i < currentIndex) widthPercent = '100%';
               else if (i === currentIndex) {
                 // Map anim to style
                 return (
-                  <View key={story.id} className="flex-1 h-[2px] bg-white/30 rounded-full overflow-hidden">
+                  <View key={story.id} className="flex-1 bg-white/30 overflow-hidden" style={{ height: 2, borderRadius: radius.full }}>
                     <Animated.View
                       className="h-full bg-white"
                       style={{
@@ -178,7 +178,7 @@ export default function StoryViewer({ visible, stories, onClose, onStoryViewed }
                 );
               }
               return (
-                <View key={story.id} className="flex-1 h-[2px] bg-white/30 rounded-full overflow-hidden">
+                <View key={story.id} className="flex-1 bg-white/30 overflow-hidden" style={{ height: 2, borderRadius: radius.full }}>
                   <View className="h-full bg-white" style={{ width: widthPercent }} />
                 </View>
               );
@@ -187,23 +187,17 @@ export default function StoryViewer({ visible, stories, onClose, onStoryViewed }
 
           {/* Author Header */}
           <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center gap-3">
-              <View style={{ backgroundColor: colors.primary }} className="w-9 h-9 rounded-full border border-white/20 overflow-hidden items-center justify-center">
-                {photo ? (
-                  <Image source={{ uri: photo }} className="w-full h-full" />
-                ) : (
-                  <Text className="text-white font-bold text-xs">
-                    {getInitial(activeStory.authorName)}
-                  </Text>
-                )}
+            <View className="flex-row items-center" style={{ gap: spacing.md }}>
+              <View className="border border-white/20 overflow-hidden items-center justify-center" style={{ borderRadius: radius.full }}>
+                <Avatar name={activeStory.authorName} photoUrl={activeStory.authorAvatar} size={36} />
               </View>
               <View>
-                <Text className="text-white font-bold text-sm">{activeStory.authorName}</Text>
-                <Text className="text-white/60 text-xs">{timeAgoShort(activeStory.timestamp)}</Text>
+                <Text className="text-white" style={{ ...typography.label }}>{activeStory.authorName}</Text>
+                <Text className="text-white/60" style={{ ...typography.caption }}>{timeAgoShort(activeStory.timestamp)}</Text>
               </View>
             </View>
 
-            <TouchableOpacity onPress={onClose} className="p-2 z-40">
+            <TouchableOpacity onPress={onClose} className="z-40" style={{ padding: spacing.sm }}>
               <X size={20} color="white" />
             </TouchableOpacity>
           </View>
@@ -212,14 +206,16 @@ export default function StoryViewer({ visible, stories, onClose, onStoryViewed }
         {/* Story Text Overlay */}
         {activeStory.textOverlay ? (
           <View
-            className="absolute left-6 right-6 z-20 items-center"
+            className="absolute z-20 items-center"
             style={{
+              left: spacing.xxl,
+              right: spacing.xxl,
               bottom: activeStory.textPosition === 'bottom' ? 80 : activeStory.textPosition === 'top' ? 180 : SCREEN_HEIGHT / 2 - 40,
             }}
           >
             <Text
-              style={{ color: activeStory.textColor || 'white' }}
-              className="text-lg font-bold text-center bg-black/40 px-4 py-2 rounded-xl"
+              className="text-center bg-black/40"
+              style={{ color: activeStory.textColor || 'white', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.md, ...typography.title }}
             >
               {activeStory.textOverlay}
             </Text>

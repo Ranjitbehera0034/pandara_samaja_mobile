@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function PollCreator({ onSave, onCancel }: Props) {
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography, shadow } = useTheme();
   const { lang, t } = useLanguage();
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState<string[]>(['', '']);
@@ -67,21 +67,31 @@ export default function PollCreator({ onSave, onCancel }: Props) {
   };
 
   return (
-    <View style={{ backgroundColor: colors.card, borderColor: colors.border }} className="rounded-2xl p-4 border">
-      <View className="flex-row items-center justify-between mb-4">
-        <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-bold text-base">
+    <View style={{ backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, ...shadow.raised }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
+        <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, ...typography.title }}>
           {t('feedComponents', 'createPollTitle')}
         </Text>
         <TouchableOpacity onPress={onCancel}>
-          <X size={18} color={colors.textMuted} />
+          <X size={20} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
 
       {/* Question */}
-      <Text style={{ color: colors.textMuted, fontFamily }} className="text-xs mb-1.5 font-medium">{t('feedComponents', 'pollQuestionLabel')}</Text>
+      <Text style={{ color: colors.textMuted, fontFamily, marginBottom: spacing.xs, ...typography.bodyEmphasis }}>{t('feedComponents', 'pollQuestionLabel')}</Text>
       <TextInput
-        style={{ backgroundColor: colors.bg, borderColor: colors.border, color: colors.text, fontFamily }}
-        className="rounded-xl px-4 py-2.5 mb-4 text-sm border"
+        style={{
+          backgroundColor: colors.bg,
+          borderColor: colors.border,
+          color: colors.text,
+          fontFamily,
+          borderRadius: radius.md,
+          borderWidth: 1,
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.sm + 2,
+          marginBottom: spacing.lg,
+          ...typography.body,
+        }}
         placeholder={t('feedComponents', 'pollQuestionPlaceholder')}
         placeholderTextColor={colors.textFaint}
         value={question}
@@ -89,13 +99,23 @@ export default function PollCreator({ onSave, onCancel }: Props) {
       />
 
       {/* Options */}
-      <Text style={{ color: colors.textMuted, fontFamily }} className="text-xs mb-1.5 font-medium">{t('feedComponents', 'pollOptionsLabel')}</Text>
-      <View className="gap-2.5 mb-4">
+      <Text style={{ color: colors.textMuted, fontFamily, marginBottom: spacing.xs, ...typography.bodyEmphasis }}>{t('feedComponents', 'pollOptionsLabel')}</Text>
+      <View style={{ gap: spacing.sm + 2, marginBottom: spacing.lg }}>
         {options.map((option, index) => (
-          <View key={index} className="flex-row items-center gap-2">
+          <View key={index} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             <TextInput
-              style={{ backgroundColor: colors.bg, borderColor: colors.border, color: colors.text, fontFamily }}
-              className="flex-1 rounded-xl px-4 py-2.5 text-sm border"
+              style={{
+                backgroundColor: colors.bg,
+                borderColor: colors.border,
+                color: colors.text,
+                fontFamily,
+                flex: 1,
+                borderRadius: radius.md,
+                borderWidth: 1,
+                paddingHorizontal: spacing.lg,
+                paddingVertical: spacing.sm + 2,
+                ...typography.body,
+              }}
               placeholder={`${t('feedComponents', 'pollOptionPlaceholderPrefix')} ${index + 1}`}
               placeholderTextColor={colors.textFaint}
               value={option}
@@ -104,8 +124,7 @@ export default function PollCreator({ onSave, onCancel }: Props) {
             {options.length > 2 && (
               <TouchableOpacity
                 onPress={() => handleRemoveOption(index)}
-                style={{ backgroundColor: colors.error + '1a', borderColor: colors.error + '33' }}
-                className="p-2.5 rounded-xl border"
+                style={{ backgroundColor: colors.error + '1a', borderColor: colors.error + '33', padding: spacing.sm + 2, borderRadius: radius.md, borderWidth: 1 }}
               >
                 <Trash2 size={16} color={colors.error} />
               </TouchableOpacity>
@@ -118,29 +137,37 @@ export default function PollCreator({ onSave, onCancel }: Props) {
       {options.length < 5 && (
         <TouchableOpacity
           onPress={handleAddOption}
-          style={{ backgroundColor: colors.border + '80', borderColor: colors.border }}
-          className="flex-row items-center justify-center gap-2 py-2.5 rounded-xl mb-4 border"
+          style={{
+            backgroundColor: colors.border + '80',
+            borderColor: colors.border,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: spacing.sm,
+            paddingVertical: spacing.sm + 2,
+            borderRadius: radius.md,
+            marginBottom: spacing.lg,
+            borderWidth: 1,
+          }}
         >
           <Plus size={16} color={colors.text} />
-          <Text style={{ color: colors.text, fontFamily }} className="text-sm font-semibold">{t('feedComponents', 'addOptionLabel')}</Text>
+          <Text style={{ color: colors.text, fontFamily, ...typography.bodyEmphasis }}>{t('feedComponents', 'addOptionLabel')}</Text>
         </TouchableOpacity>
       )}
 
       {/* Actions */}
-      <View className="flex-row gap-3">
+      <View style={{ flexDirection: 'row', gap: spacing.md }}>
         <TouchableOpacity
           onPress={onCancel}
-          style={{ backgroundColor: colors.border, borderColor: colors.borderLight }}
-          className="flex-1 py-2.5 rounded-xl items-center border"
+          style={{ backgroundColor: colors.border, borderColor: colors.borderLight, flex: 1, paddingVertical: spacing.sm + 2, borderRadius: radius.md, alignItems: 'center', borderWidth: 1 }}
         >
-          <Text style={{ color: colors.text, fontFamily }} className="text-sm font-medium">{t('feedComponents', 'cancelButtonLabel')}</Text>
+          <Text style={{ color: colors.text, fontFamily, ...typography.bodyEmphasis }}>{t('feedComponents', 'cancelButtonLabel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={handleSave}
-          style={{ backgroundColor: colors.primary }}
-          className="flex-1 py-2.5 rounded-xl items-center"
+          style={{ backgroundColor: colors.primary, flex: 1, paddingVertical: spacing.sm + 2, borderRadius: radius.md, alignItems: 'center' }}
         >
-          <Text style={{ fontFamily }} className="text-white text-sm font-medium">{t('feedComponents', 'createButtonLabel')}</Text>
+          <Text style={{ fontFamily, color: '#fff', ...typography.bodyEmphasis }}>{t('feedComponents', 'createButtonLabel')}</Text>
         </TouchableOpacity>
       </View>
     </View>
