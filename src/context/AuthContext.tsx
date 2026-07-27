@@ -172,6 +172,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadAuth();
   }, []);
 
+  // Silently refresh the session on every app launch — this, plus a
+  // long-lived token on the backend, is what makes login "stay logged in
+  // indefinitely" rather than expiring on a fixed timer. Runs after the UI
+  // is already up so it doesn't add startup latency; only forces logout if
+  // the refresh explicitly fails (banned/deleted member, truly invalid
+  // token) — a real network hiccup just leaves the existing token in place
+  // to retry next launch.
+  useEffect(() => {
+    if (isLoading || !token) return;
+    let cancelled = false;
+
+    client.post('/portal/refresh')
+      .then(async (res) => {
+        if (cancelled || !res.data?.success) return;
+        const newToken = res.data.token;
+        setToken(newToken);
+        await storage.setItem(STORAGE_KEYS.PORTAL_TOKEN, newToken);
+      })
+      .catch((err) => {
+        const status = err?.response?.status;
+        if (!cancelled && (status === 401 || status === 403)) {
+          logout();
+        }
+        // Any other error (offline, 5xx) — keep the existing token, try again next launch.
+      });
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
+
   // Listen for forced logout event from API interceptor
   useEffect(() => {
     const handleForcedLogout = () => {
