@@ -24,11 +24,11 @@ import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../hooks/useSocket';
 import * as chatApi from '../../api/chat';
 import { ChatContact } from '../../api/chat';
-import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
+import { cleanPhoto } from '../../utils/googleDriveUrl';
 import { timeAgoShort } from '../../utils/feedUtils';
 import SkeletonBox from '../../components/common/SkeletonBox';
 import EmptyState from '../../components/common/EmptyState';
-import { Image } from 'expo-image';
+import Avatar from '../../components/common/Avatar';
 
 const { width: W } = Dimensions.get('window');
 
@@ -73,12 +73,13 @@ function mapRowToMessage(row: chatApi.ChatMessageRow, myId: string): ChatMessage
 }
 
 function InboxSkeleton() {
+  const { spacing } = useTheme();
   return (
-    <View style={{ padding: 16, gap: 16 }}>
+    <View style={{ padding: spacing.lg, gap: spacing.lg }}>
       {[1, 2, 3, 4].map(i => (
-        <View key={i} style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+        <View key={i} style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
           <SkeletonBox width={50} height={50} borderRadius={25} />
-          <View style={{ flex: 1, gap: 8 }}>
+          <View style={{ flex: 1, gap: spacing.sm }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <SkeletonBox width="40%" height={14} />
               <SkeletonBox width="15%" height={10} />
@@ -93,6 +94,7 @@ function InboxSkeleton() {
 
 // Bouncing typing indicator component
 function TypingIndicator({ colors }: { colors: ReturnType<typeof useTheme>['colors'] }) {
+  const { spacing, radius } = useTheme();
   const [dot1] = useState(new Animated.Value(0));
   const [dot2] = useState(new Animated.Value(0));
   const [dot3] = useState(new Animated.Value(0));
@@ -125,7 +127,7 @@ function TypingIndicator({ colors }: { colors: ReturnType<typeof useTheme>['colo
   }, []);
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.card, borderRadius: 16, alignSelf: 'flex-start', marginLeft: 44, marginTop: 4 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, backgroundColor: colors.card, borderRadius: radius.lg, alignSelf: 'flex-start', marginLeft: 44, marginTop: spacing.xs }}>
       <Animated.View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.textMuted, transform: [{ translateY: dot1 }] }} />
       <Animated.View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.textMuted, transform: [{ translateY: dot2 }] }} />
       <Animated.View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.textMuted, transform: [{ translateY: dot3 }] }} />
@@ -136,7 +138,7 @@ function TypingIndicator({ colors }: { colors: ReturnType<typeof useTheme>['colo
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const { lang, t } = useLanguage();
-  const { colors: C } = useTheme();
+  const { colors: C, spacing, radius, typography, shadow } = useTheme();
   const { member } = useAuth();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
@@ -323,13 +325,13 @@ export default function ChatScreen() {
       <View style={{
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 14,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md + 2,
         backgroundColor: C.card,
         borderBottomWidth: 1,
         borderBottomColor: C.border,
       }}>
-        <Text style={{ color: C.text, fontSize: 20, fontWeight: '800', fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }}>
+        <Text style={{ color: C.text, fontSize: typography.heading.fontSize, lineHeight: typography.heading.lineHeight, fontWeight: typography.heading.fontWeight, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }}>
           {t('chat', 'title')}
         </Text>
       </View>
@@ -337,24 +339,24 @@ export default function ChatScreen() {
       {/* Inbox view */}
       <View style={{ flex: 1 }}>
         {/* Search */}
-        <View style={{ padding: 16 }}>
+        <View style={{ padding: spacing.lg }}>
           <View style={{
             flexDirection: 'row',
             alignItems: 'center',
             backgroundColor: C.card,
-            borderRadius: 12,
-            paddingHorizontal: 12,
+            borderRadius: radius.md,
+            paddingHorizontal: spacing.md,
             height: 44,
             borderWidth: 1,
             borderColor: C.border,
           }}>
-            <Search size={16} color={C.textMuted} style={{ marginRight: 8 }} />
+            <Search size={16} color={C.textMuted} style={{ marginRight: spacing.sm }} />
             <TextInput
               placeholder={t('chat', 'searchPlaceholder')}
               placeholderTextColor={C.textFaint}
               value={search}
               onChangeText={setSearch}
-              style={{ flex: 1, color: C.text, fontSize: 14, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}
+              style={{ flex: 1, color: C.text, fontSize: typography.body.fontSize, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}
             />
           </View>
         </View>
@@ -371,56 +373,35 @@ export default function ChatScreen() {
           <FlatList
             data={filteredThreads}
             keyExtractor={item => item.id}
-            contentContainerStyle={{ paddingHorizontal: 16 }}
+            contentContainerStyle={{ paddingHorizontal: spacing.lg }}
             renderItem={({ item }) => (
               <TouchableOpacity
                 onPress={() => handleThreadPress(item)}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  paddingVertical: 14,
+                  paddingVertical: spacing.md + 2,
                   borderBottomWidth: 0.5,
                   borderBottomColor: C.border,
                 }}
               >
                 {/* Avatar with Online indicator */}
-                <View style={{ position: 'relative', marginRight: 12 }}>
-                  {item.avatarUrl ? (
-                    <Image
-                      source={{ uri: item.avatarUrl }}
-                      style={{ width: 50, height: 50, borderRadius: 25 }}
-                    />
-                  ) : (
-                    <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 18 }}>{getInitial(item.name)}</Text>
-                    </View>
-                  )}
-                  {item.online && (
-                    <View style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      right: 0,
-                      backgroundColor: C.success,
-                      width: 14,
-                      height: 14,
-                      borderRadius: 7,
-                      borderWidth: 2,
-                      borderColor: C.bg,
-                    }} />
-                  )}
+                <View style={{ marginRight: spacing.md }}>
+                  <Avatar name={item.name} photoUrl={item.avatarUrl} size={50} showOnlineDot={item.online} />
                 </View>
 
                 {/* Info */}
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                    <Text style={{ color: C.text, fontSize: 15, fontWeight: '700' }}>{item.name}</Text>
-                    <Text style={{ color: C.textFaint, fontSize: 11 }}>{item.timestamp}</Text>
+                    <Text style={{ color: C.text, fontSize: typography.label.fontSize, lineHeight: typography.label.lineHeight, fontWeight: typography.label.fontWeight }}>{item.name}</Text>
+                    <Text style={{ color: C.textFaint, fontSize: typography.caption.fontSize, lineHeight: typography.caption.lineHeight }}>{item.timestamp}</Text>
                   </View>
                   <Text
                     numberOfLines={1}
                     style={{
                       color: item.unreadCount > 0 ? C.text : C.textMuted,
-                      fontSize: 13,
+                      fontSize: typography.body.fontSize,
+                      lineHeight: typography.body.lineHeight,
                       fontWeight: item.unreadCount > 0 ? '600' : '400'
                     }}
                   >
@@ -432,15 +413,15 @@ export default function ChatScreen() {
                 {item.unreadCount > 0 && (
                   <View style={{
                     backgroundColor: C.primary,
-                    borderRadius: 10,
+                    borderRadius: radius.full,
                     minWidth: 20,
                     height: 20,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    marginLeft: 10,
-                    paddingHorizontal: 4,
+                    marginLeft: spacing.sm + 2,
+                    paddingHorizontal: spacing.xs,
                   }}>
-                    <Text style={{ color: 'white', fontSize: 10, fontWeight: '700' }}>
+                    <Text style={{ color: 'white', fontSize: typography.caption.fontSize - 2, fontWeight: '700' }}>
                       {item.unreadCount}
                     </Text>
                   </View>
@@ -464,48 +445,24 @@ export default function ChatScreen() {
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
-              paddingHorizontal: 16,
-              paddingVertical: 12,
+              paddingHorizontal: spacing.lg,
+              paddingVertical: spacing.md,
               borderBottomWidth: 1,
               borderBottomColor: C.border,
               backgroundColor: C.card,
             }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <TouchableOpacity onPress={handleCloseThread} style={{ padding: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 }}>
+                <TouchableOpacity onPress={handleCloseThread} style={{ padding: spacing.xs }}>
                   <ArrowLeft size={20} color={C.text} />
                 </TouchableOpacity>
 
-                <View style={{ position: 'relative' }}>
-                  {activeThread.avatarUrl ? (
-                    <Image
-                      source={{ uri: activeThread.avatarUrl }}
-                      style={{ width: 38, height: 38, borderRadius: 19 }}
-                    />
-                  ) : (
-                    <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>{getInitial(activeThread.name)}</Text>
-                    </View>
-                  )}
-                  {activeThread.online && (
-                    <View style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      right: 0,
-                      backgroundColor: C.success,
-                      width: 10,
-                      height: 10,
-                      borderRadius: 5,
-                      borderWidth: 1.5,
-                      borderColor: C.card,
-                    }} />
-                  )}
-                </View>
+                <Avatar name={activeThread.name} photoUrl={activeThread.avatarUrl} size={40} showOnlineDot={activeThread.online} />
 
                 <View>
-                  <Text style={{ color: C.text, fontSize: 15, fontWeight: '700' }}>
+                  <Text style={{ color: C.text, fontSize: typography.label.fontSize, lineHeight: typography.label.lineHeight, fontWeight: typography.label.fontWeight }}>
                     {activeThread.name}
                   </Text>
-                  <Text style={{ color: C.success, fontSize: 11, fontWeight: '600' }}>
+                  <Text style={{ color: C.success, fontSize: typography.caption.fontSize, lineHeight: typography.caption.lineHeight, fontWeight: '600' }}>
                     {activeThread.online ? t('chat', 'online') : t('chat', 'offline')}
                   </Text>
                 </View>
@@ -528,7 +485,7 @@ export default function ChatScreen() {
                   ref={flatListRef}
                   data={messages}
                   keyExtractor={item => item.id}
-                  contentContainerStyle={{ padding: 16, gap: 12 }}
+                  contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
                   onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
                   renderItem={({ item }) => {
                     const isMe = item.sender === 'me';
@@ -537,34 +494,25 @@ export default function ChatScreen() {
                         flexDirection: 'row',
                         justifyContent: isMe ? 'flex-end' : 'flex-start',
                         alignItems: 'flex-end',
-                        gap: 8,
+                        gap: spacing.sm,
                       }}>
                         {/* Avatar for received messages ONLY */}
                         {!isMe && (
-                          activeThread.avatarUrl ? (
-                            <Image
-                              source={{ uri: activeThread.avatarUrl }}
-                              style={{ width: 28, height: 28, borderRadius: 14 }}
-                            />
-                          ) : (
-                            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
-                              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 11 }}>{getInitial(activeThread.name)}</Text>
-                            </View>
-                          )
+                          <Avatar name={activeThread.name} photoUrl={activeThread.avatarUrl} size={28} />
                         )}
 
                         <View style={{
                           maxWidth: W * 0.7,
                           backgroundColor: isMe ? C.primary : C.card,
-                          paddingHorizontal: 14,
-                          paddingVertical: 10,
-                          borderRadius: 18,
-                          borderTopRightRadius: isMe ? 2 : 18,
-                          borderTopLeftRadius: isMe ? 18 : 2,
+                          paddingHorizontal: spacing.md + 2,
+                          paddingVertical: spacing.sm + 2,
+                          borderRadius: radius.xl - 2,
+                          borderTopRightRadius: isMe ? 2 : radius.xl - 2,
+                          borderTopLeftRadius: isMe ? radius.xl - 2 : 2,
                           borderWidth: isMe ? 0 : 1,
                           borderColor: C.border,
                         }}>
-                          <Text style={{ color: isMe ? '#fff' : C.text, fontSize: 14, lineHeight: 18 }}>
+                          <Text style={{ color: isMe ? '#fff' : C.text, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight }}>
                             {item.text}
                           </Text>
 
@@ -572,16 +520,16 @@ export default function ChatScreen() {
                             flexDirection: 'row',
                             alignItems: 'center',
                             justifyContent: 'flex-end',
-                            marginTop: 4,
-                            gap: 4
+                            marginTop: spacing.xs,
+                            gap: spacing.xs
                           }}>
-                            <Text style={{ color: isMe ? 'rgba(255, 255, 255, 0.6)' : C.textMuted, fontSize: 10 }}>
+                            <Text style={{ color: isMe ? 'rgba(255, 255, 255, 0.6)' : C.textMuted, fontSize: typography.caption.fontSize - 2 }}>
                               {item.timestamp}
                             </Text>
                             {isMe && (
                               item.read
-                                ? <CheckCheck size={12} color="rgba(255, 255, 255, 0.8)" />
-                                : <Check size={12} color="rgba(255, 255, 255, 0.6)" />
+                                ? <CheckCheck size={16} color="rgba(255, 255, 255, 0.8)" />
+                                : <Check size={16} color="rgba(255, 255, 255, 0.6)" />
                             )}
                           </View>
                         </View>
@@ -598,8 +546,8 @@ export default function ChatScreen() {
               <View style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                paddingHorizontal: 16,
-                paddingVertical: 8,
+                paddingHorizontal: spacing.lg,
+                paddingVertical: spacing.sm,
                 backgroundColor: C.card,
                 borderTopWidth: 1,
                 borderTopColor: C.border,
@@ -613,11 +561,11 @@ export default function ChatScreen() {
                     flex: 1,
                     color: C.text,
                     backgroundColor: C.bg,
-                    borderRadius: 20,
-                    paddingHorizontal: 16,
-                    paddingVertical: Platform.OS === 'ios' ? 10 : 6,
-                    marginRight: 10,
-                    fontSize: 14,
+                    borderRadius: radius.xl,
+                    paddingHorizontal: spacing.lg,
+                    paddingVertical: Platform.OS === 'ios' ? spacing.sm + 2 : spacing.sm - 2,
+                    marginRight: spacing.sm + 2,
+                    fontSize: typography.body.fontSize,
                     borderWidth: 1,
                     borderColor: C.border,
                     fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined,
@@ -630,7 +578,7 @@ export default function ChatScreen() {
                   style={{
                     width: 38,
                     height: 38,
-                    borderRadius: 19,
+                    borderRadius: radius.full,
                     backgroundColor: messageText.trim() ? C.primary : C.border,
                     alignItems: 'center',
                     justifyContent: 'center',

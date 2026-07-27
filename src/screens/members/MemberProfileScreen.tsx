@@ -11,9 +11,10 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, MapPin, MessageSquare, Users, Image as ImageIcon, LayoutGrid, BadgeCheck } from 'lucide-react-native';
 import * as membersApi from '../../api/members';
-import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
+import { cleanPhoto } from '../../utils/googleDriveUrl';
 import PostCard from '../../components/feed/PostCard';
 import EmptyState from '../../components/common/EmptyState';
+import Avatar from '../../components/common/Avatar';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -24,7 +25,7 @@ export default function MemberProfileScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
-  const { colors: C } = useTheme();
+  const { colors: C, spacing, radius, typography, shadow } = useTheme();
   const { lang, t } = useLanguage();
   const { id, name: nameParam } = route.params || {};
 
@@ -93,12 +94,25 @@ export default function MemberProfileScreen() {
 
   if (!profile) {
     return (
-      <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
-        <Text style={{ color: C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-center mb-4">
+      <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top, justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl }}>
+        <Text
+          style={{
+            color: C.textMuted,
+            fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined,
+            fontSize: typography.body.fontSize,
+            lineHeight: typography.body.lineHeight,
+            marginBottom: spacing.lg,
+            textAlign: 'center',
+          }}
+        >
           {t('memberProfile', 'notFoundText')}
         </Text>
-        <TouchableOpacity onPress={handleBack} style={{ backgroundColor: C.card, borderColor: C.border }} className="py-2.5 px-6 rounded-xl border">
-          <Text style={{ color: C.primaryLight, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="font-semibold">
+        <TouchableOpacity
+          onPress={handleBack}
+          style={{ backgroundColor: C.card, borderColor: C.border, borderRadius: radius.md, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.xl }}
+          className="border"
+        >
+          <Text style={{ color: C.primaryLight, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, fontSize: typography.body.fontSize, fontWeight: '600' }}>
             {t('memberProfile', 'returnToMembers')}
           </Text>
         </TouchableOpacity>
@@ -124,20 +138,24 @@ export default function MemberProfileScreen() {
         stickyHeaderIndices={[1]}
       >
         {/* Child 0: Profile Header Card */}
-        <View style={{ backgroundColor: C.bg, paddingBottom: 8 }}>
+        <View style={{ backgroundColor: C.bg, paddingBottom: spacing.sm }}>
           {/* Back button */}
           <TouchableOpacity
             onPress={handleBack}
-            className="flex-row items-center gap-2 px-4 pt-3 pb-3"
+            className="flex-row items-center"
+            style={{ gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.md }}
           >
             <ArrowLeft size={16} color={C.textMuted} />
-            <Text style={{ color: C.primaryLight, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-sm font-semibold">
+            <Text style={{ color: C.primaryLight, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, fontSize: typography.body.fontSize, fontWeight: '600' }}>
               {t('memberProfile', 'backLabel')}
             </Text>
           </TouchableOpacity>
 
           {/* ── Profile Header Card ── */}
-          <View style={{ backgroundColor: C.card, borderColor: C.border }} className="mx-4 border rounded-2xl overflow-hidden shadow-xl">
+          <View
+            style={{ backgroundColor: C.card, borderColor: C.border, borderRadius: radius.lg, marginHorizontal: spacing.lg, ...shadow.raised }}
+            className="border overflow-hidden"
+          >
             {/* Cover banner - 128px tall gradient */}
             <LinearGradient
               colors={female ? [C.female, C.female + 'cc'] : [C.male, C.male + 'cc']}
@@ -146,38 +164,31 @@ export default function MemberProfileScreen() {
               end={{ x: 1, y: 1 }}
             />
 
-            <View className="px-5 pb-5">
+            <View style={{ paddingHorizontal: spacing.xl - 4, paddingBottom: spacing.xl - 4 }}>
               {/* Avatar + action buttons row */}
               <View className="flex-row justify-between items-end">
-                {/* Large avatar - rounded-2xl shape */}
-                <View style={{ borderColor: C.card, backgroundColor: C.card }} className="w-24 h-24 rounded-2xl border-4 -mt-12 overflow-hidden items-center justify-center z-10 shadow-md">
-                  {photo ? (
-                    <Image source={{ uri: photo }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} />
-                  ) : (
-                    <View className="w-full h-full items-center justify-center" style={{ backgroundColor: female ? C.female : C.male }}>
-                      <Text className="text-white font-bold text-4xl">{getInitial(profile.name)}</Text>
-                    </View>
-                  )}
+                {/* Large hero avatar */}
+                <View style={{ marginTop: -48, zIndex: 10, ...shadow.card, borderRadius: radius.full }}>
+                  <Avatar name={profile.name} photoUrl={photo} gender={profile.gender} size={96} />
                 </View>
 
                 {/* Follow + Message buttons */}
-                <View className="flex-row gap-2 mt-2">
+                <View className="flex-row" style={{ gap: spacing.sm, marginTop: spacing.sm }}>
                   <TouchableOpacity
                     onPress={handleFollow}
-                    className="px-5 py-2 rounded-xl font-medium"
-                    style={{ backgroundColor: following ? C.border : C.primary }}
+                    style={{ backgroundColor: following ? C.border : C.primary, borderRadius: radius.md, paddingHorizontal: spacing.xl - 4, paddingVertical: spacing.sm + 2 }}
                   >
-                    <Text style={{ fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-white text-sm font-semibold">
+                    <Text style={{ fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, color: '#fff', fontSize: typography.body.fontSize, fontWeight: '600' }}>
                       {following ? t('memberProfile', 'followingLabel') : t('memberProfile', 'followLabel')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleMessage}
-                    style={{ backgroundColor: C.border }}
-                    className="flex-row items-center gap-1.5 px-4 py-2 rounded-xl"
+                    style={{ backgroundColor: C.border, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm + 2 }}
+                    className="flex-row items-center"
                   >
-                    <MessageSquare size={14} color="white" />
-                    <Text style={{ fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-white text-sm font-medium">
+                    <MessageSquare size={16} color="white" style={{ marginRight: spacing.xs + 2 }} />
+                    <Text style={{ fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, color: '#fff', fontSize: typography.body.fontSize, fontWeight: '500' }}>
                       {t('memberProfile', 'messageLabel')}
                     </Text>
                   </TouchableOpacity>
@@ -185,37 +196,47 @@ export default function MemberProfileScreen() {
               </View>
 
             {/* Name + badges */}
-            <View className="mt-3">
-              <View className="flex-row items-center gap-2 flex-wrap">
-                <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="text-2xl font-bold">{profile.name}</Text>
+            <View style={{ marginTop: spacing.md }}>
+              <View className="flex-row items-center flex-wrap" style={{ gap: spacing.sm }}>
+                <Text
+                  style={{
+                    color: C.text,
+                    fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined,
+                    fontSize: typography.display.fontSize,
+                    lineHeight: typography.display.lineHeight,
+                    fontWeight: typography.display.fontWeight,
+                  }}
+                >
+                  {profile.name}
+                </Text>
               </View>
-              <View className="flex-row items-center gap-2 mt-1 flex-wrap">
+              <View className="flex-row items-center flex-wrap" style={{ gap: spacing.sm, marginTop: spacing.xs }}>
                 {profile.isHoF ? (
-                  <View style={{ backgroundColor: C.amber + '1a', borderColor: C.amber + '33' }} className="border px-2 py-0.5 rounded-full">
-                    <Text style={{ color: C.amber, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-xs font-semibold">
+                  <View style={{ backgroundColor: C.amber + '1a', borderColor: C.amber + '33', borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 }} className="border">
+                    <Text style={{ color: C.amber, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, fontSize: typography.caption.fontSize, fontWeight: '600' }}>
                       {t('memberProfile', 'headOfFamily')}
                     </Text>
                   </View>
                 ) : (
-                  <Text style={{ color: C.textMuted }} className="text-sm">{profile.relation}</Text>
+                  <Text style={{ color: C.textMuted, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight }}>{profile.relation}</Text>
                 )}
-                <Text style={{ color: C.textFaint }} className="text-sm">#{profile.id}</Text>
+                <Text style={{ color: C.textFaint, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight }}>#{profile.id}</Text>
               </View>
 
               {/* Location + joined */}
-              <View className="mt-3 gap-1.5">
+              <View style={{ marginTop: spacing.md, gap: spacing.sm - 2 }}>
                 {profile.village ? (
-                  <View className="flex-row items-center gap-1.5">
-                    <MapPin size={14} color={C.textFaint} />
-                    <Text style={{ color: C.textMuted }} className="text-sm">
+                  <View className="flex-row items-center" style={{ gap: spacing.sm - 2 }}>
+                    <MapPin size={16} color={C.textFaint} />
+                    <Text style={{ color: C.textMuted, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight }}>
                       {profile.village}{profile.district ? `, ${profile.district}` : ''}
                     </Text>
                   </View>
                 ) : null}
                 {profile.joined ? (
-                  <View className="flex-row items-center gap-1.5">
-                    <Users size={14} color={C.textFaint} />
-                    <Text style={{ color: C.textMuted }} className="text-sm">{t('memberProfile', 'joinedPrefix')} {profile.joined}</Text>
+                  <View className="flex-row items-center" style={{ gap: spacing.sm - 2 }}>
+                    <Users size={16} color={C.textFaint} />
+                    <Text style={{ color: C.textMuted, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight }}>{t('memberProfile', 'joinedPrefix')} {profile.joined}</Text>
                   </View>
                 ) : null}
               </View>
@@ -232,11 +253,11 @@ export default function MemberProfileScreen() {
             ].map((stat, i, arr) => (
               <View
                 key={stat.label}
-                style={i < arr.length - 1 ? { borderRightWidth: 1, borderRightColor: C.border + '80' } : undefined}
-                className="flex-1 p-3 items-center"
+                style={i < arr.length - 1 ? { borderRightWidth: 1, borderRightColor: C.border + '80', padding: spacing.md } : { padding: spacing.md }}
+                className="flex-1 items-center"
               >
-                <Text style={{ color: C.text }} className="text-lg font-bold">{stat.value}</Text>
-                <Text style={{ color: C.textFaint, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-xs font-medium uppercase tracking-wider">{stat.label}</Text>
+                <Text style={{ color: C.text, fontSize: typography.title.fontSize, lineHeight: typography.title.lineHeight, fontWeight: typography.title.fontWeight }}>{stat.value}</Text>
+                <Text style={{ color: C.textFaint, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, fontSize: typography.caption.fontSize, fontWeight: '500' }} className="uppercase tracking-wider">{stat.label}</Text>
               </View>
             ))}
           </View>
@@ -244,17 +265,17 @@ export default function MemberProfileScreen() {
       </View>
 
         {/* Child 1: Tab Navigation Bar (Sticky) */}
-        <View style={{ backgroundColor: C.bg, paddingHorizontal: 16 }}>
+        <View style={{ backgroundColor: C.bg, paddingHorizontal: spacing.lg }}>
           <View style={{ borderColor: C.border }} className="flex-row border-b">
             {TABS.map(tab => (
               <TouchableOpacity
                 key={tab.key}
                 onPress={() => handleTabPress(tab.key as any)}
-                style={{ borderBottomColor: activeTab === tab.key ? C.primaryLight : 'transparent' }}
-                className="flex-row items-center gap-2 px-3 py-3.5 border-b-2"
+                style={{ borderBottomColor: activeTab === tab.key ? C.primaryLight : 'transparent', paddingHorizontal: spacing.md, paddingVertical: spacing.md - 2 }}
+                className="flex-row items-center border-b-2"
               >
                 {tab.icon}
-                <Text style={{ color: activeTab === tab.key ? C.primaryLight : C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-sm font-bold">
+                <Text style={{ color: activeTab === tab.key ? C.primaryLight : C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, fontSize: typography.body.fontSize, fontWeight: '700', marginLeft: spacing.sm }}>
                   {tab.label}
                 </Text>
               </TouchableOpacity>
@@ -263,10 +284,10 @@ export default function MemberProfileScreen() {
         </View>
 
         {/* Child 2: Tab Content */}
-        <View className="mt-4 px-4">
+        <View style={{ marginTop: spacing.lg, paddingHorizontal: spacing.lg }}>
           {/* Posts tab */}
           {activeTab === 'posts' && (
-            <View className="gap-4">
+            <View style={{ gap: spacing.lg }}>
               {(profile.posts || []).length > 0 ? (
                 profile.posts.map((post: any) => (
                   <PostCard
@@ -289,35 +310,28 @@ export default function MemberProfileScreen() {
 
           {/* Family tab */}
           {activeTab === 'family' && (
-            <View style={{ backgroundColor: C.card, borderColor: C.border }} className="border rounded-2xl overflow-hidden shadow-md">
-              <View style={{ backgroundColor: C.bg + '80', borderColor: C.border }} className="flex-row items-center justify-between p-4 border-b">
-                <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="font-semibold">
+            <View style={{ backgroundColor: C.card, borderColor: C.border, borderRadius: radius.lg, ...shadow.card }} className="border overflow-hidden">
+              <View style={{ backgroundColor: C.bg + '80', borderColor: C.border, padding: spacing.lg }} className="flex-row items-center justify-between border-b">
+                <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, fontSize: typography.body.fontSize, fontWeight: '600' }}>
                   {t('memberProfile', 'familyMembersHeader')}
                 </Text>
-                <Text style={{ color: C.textFaint }} className="text-xs">#{profile.id}</Text>
+                <Text style={{ color: C.textFaint, fontSize: typography.caption.fontSize }}>#{profile.id}</Text>
               </View>
               {(profile.family || []).map((fam: any, idx: number) => {
-                const fmFemale = isFemale(fam.gender);
                 const fmPhoto = cleanPhoto(fam.avatar);
                 return (
                   <View
                     key={idx}
-                    style={{ borderColor: C.border + '80' }}
-                    className="flex-row items-center gap-4 p-4 border-b"
+                    style={{ borderColor: C.border + '80', gap: spacing.lg, padding: spacing.lg }}
+                    className="flex-row items-center border-b"
                   >
-                    <View className="w-12 h-12 rounded-full overflow-hidden items-center justify-center" style={{ backgroundColor: fmFemale ? C.female : C.male }}>
-                      {fmPhoto ? (
-                        <Image source={{ uri: fmPhoto }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} />
-                      ) : (
-                        <Text className="text-white font-bold text-lg">{getInitial(fam.name)}</Text>
-                      )}
-                    </View>
+                    <Avatar name={fam.name} photoUrl={fmPhoto} gender={fam.gender} size={40} />
                     <View className="flex-1">
-                      <View className="flex-row items-center gap-1.5">
-                        <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="font-semibold">{fam.name}</Text>
-                        {fam.isHoF && <BadgeCheck size={14} color={C.amber} />}
+                      <View className="flex-row items-center" style={{ gap: spacing.sm - 2 }}>
+                        <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, fontSize: typography.body.fontSize, fontWeight: '600' }}>{fam.name}</Text>
+                        {fam.isHoF && <BadgeCheck size={16} color={C.amber} />}
                       </View>
-                      <Text style={{ color: C.textMuted }} className="text-sm capitalize">{fam.relation}</Text>
+                      <Text style={{ color: C.textMuted, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight }} className="capitalize">{fam.relation}</Text>
                     </View>
                   </View>
                 );
@@ -329,12 +343,12 @@ export default function MemberProfileScreen() {
           {activeTab === 'gallery' && (
             <View>
               {galleryItems.length > 0 ? (
-                <View className="flex-row flex-wrap gap-2">
+                <View className="flex-row flex-wrap" style={{ gap: spacing.sm }}>
                   {galleryItems.map((item: any, idx: number) => (
                     <View
                       key={idx}
-                      style={{ width: (W - 48) / 3, height: (W - 48) / 3, backgroundColor: C.card, borderColor: C.border }}
-                      className="rounded-xl overflow-hidden border"
+                      style={{ width: (W - 48) / 3, height: (W - 48) / 3, backgroundColor: C.card, borderColor: C.border, borderRadius: radius.md }}
+                      className="overflow-hidden border"
                     >
                       <Image source={{ uri: item.url }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} />
                     </View>

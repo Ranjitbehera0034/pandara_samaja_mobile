@@ -7,6 +7,7 @@ import {
 import { X, Check } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import Button from '../common/Button';
 
 interface FilterOptions {
   districts: string[];
@@ -33,7 +34,7 @@ interface Props {
 }
 
 export default function FilterModal({ visible, onClose, options, filters, onChange, totalResults }: Props) {
-  const { colors: C } = useTheme();
+  const { colors: C, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
   const [local, setLocal] = useState<FilterState>(filters);
 
@@ -66,12 +67,22 @@ export default function FilterModal({ visible, onClose, options, filters, onChan
   const OptionRow = ({ label, selected, onSelect }: { label: string; selected: boolean; onSelect: () => void }) => (
     <TouchableOpacity
       onPress={onSelect}
-      style={{ borderColor: C.border + '4d', backgroundColor: selected ? C.primary + '1a' : 'transparent' }}
-      className="flex-row items-center justify-between px-4 py-3 border-b"
+      style={{
+        borderColor: C.border + '4d',
+        backgroundColor: selected ? C.primary + '1a' : 'transparent',
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md - 1,
+      }}
+      className="flex-row items-center justify-between border-b"
     >
       <Text
-        style={{ color: selected ? C.primaryLight : C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}
-        className={`text-sm ${selected ? 'font-semibold' : ''}`}
+        style={{
+          color: selected ? C.primaryLight : C.textMuted,
+          fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined,
+          fontSize: typography.body.fontSize,
+          lineHeight: typography.body.lineHeight,
+          fontWeight: selected ? '600' : typography.body.fontWeight,
+        }}
       >
         {label}
       </Text>
@@ -81,10 +92,18 @@ export default function FilterModal({ visible, onClose, options, filters, onChan
 
   // Section component
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <View className="mb-4">
+    <View style={{ marginBottom: spacing.lg }}>
       <Text
-        style={{ color: C.textFaint, backgroundColor: C.bg + '99', fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }}
-        className="text-xs font-bold uppercase tracking-wider px-4 py-2"
+        style={{
+          color: C.textFaint,
+          backgroundColor: C.bg + '99',
+          fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined,
+          fontSize: typography.caption.fontSize,
+          fontWeight: '700',
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.sm,
+        }}
+        className="uppercase tracking-wider"
       >
         {title}
       </Text>
@@ -95,10 +114,18 @@ export default function FilterModal({ visible, onClose, options, filters, onChan
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Pressable className="flex-1 bg-black/60" onPress={onClose} />
-      <View style={{ backgroundColor: C.card }} className="absolute bottom-0 left-0 right-0 rounded-t-3xl max-h-[85%]">
+      <View style={{ backgroundColor: C.card, borderTopLeftRadius: radius.xl + 4, borderTopRightRadius: radius.xl + 4 }} className="absolute bottom-0 left-0 right-0 max-h-[85%]">
         {/* Header */}
-        <View style={{ borderColor: C.border }} className="flex-row items-center justify-between p-5 border-b">
-          <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined }} className="font-bold text-lg">
+        <View style={{ borderColor: C.border, padding: spacing.xl - 4 }} className="flex-row items-center justify-between border-b">
+          <Text
+            style={{
+              color: C.text,
+              fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined,
+              fontSize: typography.title.fontSize,
+              lineHeight: typography.title.lineHeight,
+              fontWeight: typography.title.fontWeight,
+            }}
+          >
             {t('members', 'filterModalTitle')}
           </Text>
           <TouchableOpacity onPress={onClose}>
@@ -156,21 +183,21 @@ export default function FilterModal({ visible, onClose, options, filters, onChan
             ))}
           </Section>
 
-          <View className="h-8" />
+          <View style={{ height: spacing.xl + 8 }} />
         </ScrollView>
 
         {/* Footer */}
-        <View style={{ borderColor: C.border }} className="flex-row gap-3 p-4 border-t">
-          <TouchableOpacity onPress={reset} style={{ backgroundColor: C.border }} className="flex-1 py-3 rounded-xl items-center">
-            <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-sm font-medium">
-              {t('members', 'resetButton')}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={apply} style={{ backgroundColor: C.primary }} className="flex-1 py-3 rounded-xl items-center">
-            <Text style={{ fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined }} className="text-white text-sm font-semibold">
-              {t('members', 'showResultsPrefix')} {totalResults.toLocaleString()} {t('members', 'showResultsSuffix')}
-            </Text>
-          </TouchableOpacity>
+        <View style={{ borderColor: C.border, padding: spacing.lg, gap: spacing.md }} className="flex-row border-t">
+          <View style={{ flex: 1 }}>
+            <Button label={t('members', 'resetButton')} onPress={reset} variant="secondary" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button
+              label={`${t('members', 'showResultsPrefix')} ${totalResults.toLocaleString()} ${t('members', 'showResultsSuffix')}`}
+              onPress={apply}
+              variant="primary"
+            />
+          </View>
         </View>
       </View>
     </Modal>
