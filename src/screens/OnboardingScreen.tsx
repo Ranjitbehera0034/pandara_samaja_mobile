@@ -20,7 +20,7 @@ const SLIDE_META = [
 export default function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
   const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
   const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
@@ -60,20 +60,20 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
         scrollEventThrottle={16}
       >
         {SLIDES.map((s, i) => (
-          <View key={i} style={{ width: W, flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+          <View key={i} style={{ width: W, flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xxl }}>
             <View style={{
-              width: 120, height: 120, borderRadius: 32,
+              width: 120, height: 120, borderRadius: radius.xl,
               backgroundColor: s.accent + '20',
               borderWidth: 1, borderColor: s.accent + '40',
               alignItems: 'center', justifyContent: 'center',
-              marginBottom: 32,
+              marginBottom: spacing.xxl,
             }}>
               <Text style={{ fontSize: 56 }}>{s.emoji}</Text>
             </View>
-            <Text style={{ color: colors.text, fontSize: 24, fontWeight: '800', textAlign: 'center', marginBottom: 6, fontFamily: fontBold }}>
+            <Text style={{ color: colors.text, textAlign: 'center', marginBottom: spacing.sm, fontFamily: fontBold, ...typography.display }}>
               {s.title}
             </Text>
-            <Text style={{ color: colors.textMuted, fontSize: 15, textAlign: 'center', lineHeight: 22, fontFamily: fontRegular }}>
+            <Text style={{ color: colors.textMuted, textAlign: 'center', fontFamily: fontRegular, ...typography.body }}>
               {s.body}
             </Text>
           </View>
@@ -81,7 +81,7 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
       </ScrollView>
 
       {/* Dots */}
-      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 24 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xs + 2, marginBottom: spacing.xl }}>
         {SLIDES.map((_, i) => (
           <View key={i} style={{
             width: activeIndex === i ? 20 : 6,
@@ -93,19 +93,19 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
       </View>
 
       {/* Actions */}
-      <View style={{ paddingHorizontal: 24, paddingBottom: 40, flexDirection: 'row', gap: 12 }}>
+      <View style={{ paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl + spacing.sm, flexDirection: 'row', gap: spacing.md }}>
         {activeIndex < SLIDES.length - 1 ? (
           <>
-            <TouchableOpacity onPress={finish} style={{ flex: 1, paddingVertical: 14, alignItems: 'center' }}>
-              <Text style={{ color: colors.textFaint, fontSize: 15, fontFamily: fontRegular }}>
+            <TouchableOpacity onPress={finish} style={{ flex: 1, paddingVertical: spacing.md + 2, alignItems: 'center' }}>
+              <Text style={{ color: colors.textFaint, fontFamily: fontRegular, ...typography.body }}>
                 {t('onboarding', 'skip')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => goTo(activeIndex + 1)}
-              style={{ flex: 2, backgroundColor: slide.accent, paddingVertical: 14, borderRadius: 16, alignItems: 'center' }}
+              style={{ flex: 2, backgroundColor: slide.accent, paddingVertical: spacing.md + 2, borderRadius: radius.lg, alignItems: 'center' }}
             >
-              <Text style={{ color: 'white', fontWeight: '700', fontSize: 15, fontFamily: fontBold }}>
+              <Text style={{ color: 'white', fontFamily: fontBold, ...typography.label, fontWeight: '700' }}>
                 {t('onboarding', 'next')}
               </Text>
             </TouchableOpacity>
@@ -113,9 +113,9 @@ export default function OnboardingScreen({ onComplete }: { onComplete: () => voi
         ) : (
           <TouchableOpacity
             onPress={finish}
-            style={{ flex: 1, backgroundColor: slide.accent, paddingVertical: 14, borderRadius: 16, alignItems: 'center' }}
+            style={{ flex: 1, backgroundColor: slide.accent, paddingVertical: spacing.md + 2, borderRadius: radius.lg, alignItems: 'center' }}
           >
-            <Text style={{ color: 'white', fontWeight: '700', fontSize: 16, fontFamily: fontBold }}>
+            <Text style={{ color: 'white', fontFamily: fontBold, ...typography.label, fontWeight: '700' }}>
               {t('onboarding', 'getStarted')}
             </Text>
           </TouchableOpacity>

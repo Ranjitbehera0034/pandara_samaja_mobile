@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   ScrollView, KeyboardAvoidingView, Platform,
-  ActivityIndicator, Alert, Image, Linking
+  Alert, Image, Linking
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -14,6 +14,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { AuthStackParams } from '../../navigation/AuthStack';
 import { APP_NAME, APP_TAGLINE } from '../../config/constants';
+import Button from '../../components/common/Button';
 
 type Nav = StackNavigationProp<AuthStackParams, 'Login'>;
 
@@ -21,7 +22,7 @@ export default function LoginScreen() {
   const navigation = useNavigation<Nav>();
   const { requestOtp } = useAuth();
   const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
+  const { colors, spacing, radius, typography, shadow } = useTheme();
   const { lang, t } = useLanguage();
   const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
   const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
@@ -99,40 +100,49 @@ export default function LoginScreen() {
         contentContainerStyle={{
           flexGrow: 1,
           justifyContent: 'center',
-          paddingHorizontal: 24,
-          paddingTop: insets.top + 24,
-          paddingBottom: insets.bottom + 24
+          paddingHorizontal: spacing.xl,
+          paddingTop: insets.top + spacing.xl,
+          paddingBottom: insets.bottom + spacing.xl
         }}
         keyboardShouldPersistTaps="handled"
       >
         {/* Logo */}
-        <View className="items-center mb-10">
+        <View className="items-center" style={{ marginBottom: spacing.xxl }}>
           <View
-            className="w-24 h-24 rounded-3xl items-center justify-center mb-4 border shadow-2xl overflow-hidden"
-            style={{ backgroundColor: colors.card, borderColor: colors.border }}
+            className="items-center justify-center overflow-hidden"
+            style={{
+              width: 96, height: 96, borderRadius: radius.xl,
+              marginBottom: spacing.lg, borderWidth: 1,
+              backgroundColor: colors.card, borderColor: colors.border,
+              ...shadow.raised,
+            }}
           >
             <Image
               source={require('../../../assets/logo.png')}
               style={{ width: '100%', height: '100%', resizeMode: 'cover' }}
             />
           </View>
-          <Text className="font-bold text-2xl text-center" style={{ color: colors.text }}>{APP_NAME}</Text>
-          <Text className="text-xs tracking-widest mt-1" style={{ color: colors.textMuted }}>{APP_TAGLINE}</Text>
+          <Text style={{ color: colors.text, textAlign: 'center', fontFamily: fontBold, ...typography.display }}>{APP_NAME}</Text>
+          <Text className="tracking-widest" style={{ color: colors.textMuted, marginTop: spacing.xs, ...typography.caption }}>{APP_TAGLINE}</Text>
         </View>
 
         {/* Card */}
-        <View className="rounded-2xl p-6 border shadow-xl" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
-          <Text className="font-semibold text-lg mb-6" style={{ color: colors.text, fontFamily: fontBold }}>
+        <View style={{ borderRadius: radius.lg, padding: spacing.xl, borderWidth: 1, backgroundColor: colors.card, borderColor: colors.border, ...shadow.raised }}>
+          <Text style={{ color: colors.text, fontFamily: fontBold, marginBottom: spacing.xl, ...typography.title }}>
             {t('auth', 'memberLoginTitle')}
           </Text>
 
           {/* Membership No */}
-          <Text className="text-sm mb-2" style={{ color: colors.textMuted, fontFamily: fontRegular }}>
+          <Text style={{ color: colors.textMuted, marginBottom: spacing.sm, fontFamily: fontRegular, ...typography.label }}>
             {t('auth', 'membershipNumberLabel')}
           </Text>
           <TextInput
-            className="border rounded-xl px-4 py-3 mb-4 text-base"
-            style={{ backgroundColor: colors.bg, borderColor: colors.border, color: colors.text, fontFamily: fontRegular }}
+            style={{
+              borderWidth: 1, borderRadius: radius.md,
+              paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg,
+              backgroundColor: colors.bg, borderColor: colors.border, color: colors.text, fontFamily: fontRegular,
+              ...typography.body,
+            }}
             placeholder={t('auth', 'membershipPlaceholder')}
             placeholderTextColor={colors.textFaint}
             value={membershipNo}
@@ -146,17 +156,20 @@ export default function LoginScreen() {
           />
 
           {/* Mobile */}
-          <Text className="text-sm mb-2" style={{ color: colors.textMuted, fontFamily: fontRegular }}>
+          <Text style={{ color: colors.textMuted, marginBottom: spacing.sm, fontFamily: fontRegular, ...typography.label }}>
             {t('auth', 'mobileNumberLabel')}
           </Text>
           <View
-            className="flex-row items-center border rounded-xl px-4 py-3 mb-6"
-            style={{ backgroundColor: colors.bg, borderColor: colors.border }}
+            className="flex-row items-center"
+            style={{
+              borderWidth: 1, borderRadius: radius.md,
+              paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.xl,
+              backgroundColor: colors.bg, borderColor: colors.border,
+            }}
           >
-            <Text className="mr-2 font-medium" style={{ color: colors.textMuted }}>+91</Text>
+            <Text style={{ color: colors.textMuted, marginRight: spacing.sm, ...typography.body, fontWeight: '500' }}>+91</Text>
             <TextInput
-              className="flex-1 text-base"
-              style={{ color: colors.text, fontFamily: fontRegular }}
+              style={{ flex: 1, color: colors.text, fontFamily: fontRegular, ...typography.body }}
               placeholder={t('auth', 'mobilePlaceholder')}
               placeholderTextColor={colors.textFaint}
               value={mobile}
@@ -168,41 +181,32 @@ export default function LoginScreen() {
           </View>
 
           {/* Send OTP Button */}
-          <TouchableOpacity
-            className="rounded-xl py-4 items-center"
-            style={{
-              backgroundColor: !isValid || isLoading ? colors.border : colors.primary,
-              opacity: !isValid || isLoading ? 0.6 : 1,
-            }}
+          <Button
+            variant="primary"
+            label={t('auth', 'sendOtpButton')}
             onPress={handleSendOtp}
-            disabled={!isValid || isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text className="font-bold text-base" style={{ color: 'white', fontFamily: fontBold }}>
-                {t('auth', 'sendOtpButton')}
-              </Text>
-            )}
-          </TouchableOpacity>
+            disabled={!isValid}
+            loading={isLoading}
+            haptics={false}
+          />
         </View>
 
         {/* WhatsApp Help & Support Card */}
-        <View className="mt-6 rounded-2xl p-5 border" style={{ backgroundColor: colors.card + '40', borderColor: colors.border + '40' }}>
-          <Text className="font-bold text-sm mb-3" style={{ color: colors.text, fontFamily: fontBold }}>
+        <View style={{ marginTop: spacing.xl, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, backgroundColor: colors.card + '40', borderColor: colors.border + '40' }}>
+          <Text style={{ color: colors.text, fontFamily: fontBold, marginBottom: spacing.md, ...typography.bodyEmphasis }}>
             {t('auth', 'helpSupportTitle')}
           </Text>
 
           {/* Find Membership No */}
           <TouchableOpacity
             onPress={handleGetMembershipNo}
-            className="flex-row items-center justify-between py-3 border-b"
-            style={{ borderBottomColor: colors.border }}
+            className="flex-row items-center justify-between border-b"
+            style={{ paddingVertical: spacing.md, borderBottomColor: colors.border }}
           >
-            <Text className="text-xs font-semibold" style={{ color: colors.textMuted, fontFamily: fontRegular }}>
+            <Text style={{ color: colors.textMuted, fontFamily: fontRegular, ...typography.caption }}>
               {t('auth', 'noMembershipNo')}
             </Text>
-            <Text className="text-xs font-bold" style={{ color: colors.primaryLight, fontFamily: fontBold }}>
+            <Text style={{ color: colors.primaryLight, fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>
               {t('auth', 'getOnWhatsapp')}
             </Text>
           </TouchableOpacity>
@@ -210,19 +214,20 @@ export default function LoginScreen() {
           {/* Update Mobile Number */}
           <TouchableOpacity
             onPress={handleUpdateMobile}
-            className="flex-row items-center justify-between py-3"
+            className="flex-row items-center justify-between"
+            style={{ paddingVertical: spacing.md }}
           >
-            <Text className="text-xs font-semibold" style={{ color: colors.textMuted, fontFamily: fontRegular }}>
+            <Text style={{ color: colors.textMuted, fontFamily: fontRegular, ...typography.caption }}>
               {t('auth', 'updateMobileNo')}
             </Text>
-            <Text className="text-xs font-bold" style={{ color: colors.primaryLight, fontFamily: fontBold }}>
+            <Text style={{ color: colors.primaryLight, fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>
               {t('auth', 'updateOnWhatsapp')}
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Footer */}
-        <Text className="text-xs text-center mt-6" style={{ color: colors.textFaint, fontFamily: fontRegular }}>
+        <Text style={{ color: colors.textFaint, textAlign: 'center', marginTop: spacing.xl, fontFamily: fontRegular, ...typography.caption }}>
           {t('auth', 'termsFooter')}
         </Text>
       </ScrollView>
