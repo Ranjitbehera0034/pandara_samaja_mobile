@@ -1,6 +1,6 @@
 // src/components/common/FirebaseRecaptcha.tsx
-import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { View, Modal, ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import React, { forwardRef, useImperativeHandle, useRef, useState, useEffect } from 'react';
+import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, BackHandler } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -175,6 +175,17 @@ export const FirebaseRecaptcha = forwardRef<FirebaseRecaptchaRef, FirebaseRecapt
       },
     }));
 
+    // Replaces Modal's onRequestClose now that this renders as a persistent
+    // overlay instead of a Modal (see rendering note below).
+    useEffect(() => {
+      if (!isVisible || !onClose) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        onClose();
+        return true;
+      });
+      return () => sub.remove();
+    }, [isVisible, onClose]);
+
     const handleMessage = (event: any) => {
       try {
         const data = JSON.parse(event.nativeEvent.data);
@@ -198,54 +209,61 @@ export const FirebaseRecaptcha = forwardRef<FirebaseRecaptchaRef, FirebaseRecapt
       );
     };
 
+    // Deliberately NOT using RN's <Modal> here: Modal tears down its native
+    // content entirely when `visible` goes false, which would destroy the
+    // WebView (and with it, Firebase's in-page `confirmationResult`) right
+    // after the OTP is sent — before the user ever gets to verify it. This
+    // overlay stays mounted continuously; only its visual visibility and
+    // touch-interactivity toggle, so the WebView's JS state survives across
+    // both the send and verify steps.
     return (
-      <Modal
-        visible={isVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={onClose}
+      <View
+        pointerEvents={isVisible ? 'auto' : 'none'}
+        style={[
+          StyleSheet.absoluteFillObject,
+          styles.container,
+          { opacity: isVisible ? 1 : 0, zIndex: isVisible ? 999 : -1 },
+        ]}
       >
-        <View style={styles.container}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {/* WebView container */}
-            <View style={styles.webViewContainer}>
-              <WebView
-                ref={webViewRef}
-                source={{
-                  html: HTML_CONTENT,
-                  baseUrl: 'https://nikhila-odisha-pandara-samaja.firebaseapp.com', // Match authorized domain
-                }}
-                onMessage={handleMessage}
-                onLoadEnd={handleLoadEnd}
-                style={styles.webView}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                originWhitelist={['*']}
-                mixedContentMode="always"
-              />
-            </View>
+        <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {/* WebView container */}
+          <View style={styles.webViewContainer}>
+            <WebView
+              ref={webViewRef}
+              source={{
+                html: HTML_CONTENT,
+                baseUrl: 'https://nikhila-odisha-pandara-samaja.firebaseapp.com', // Match authorized domain
+              }}
+              onMessage={handleMessage}
+              onLoadEnd={handleLoadEnd}
+              style={styles.webView}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              originWhitelist={['*']}
+              mixedContentMode="always"
+            />
+          </View>
 
-            {/* Loading Indicator / Help text */}
-            <View style={[styles.loadingContainer, { borderTopColor: colors.border }]}>
-              <ActivityIndicator size="large" color={colors.primaryLight} />
-              <Text style={[styles.text, { color: colors.text, fontFamily: fontFamilyBold }]}>
-                {t('common', 'securityCheckTitle')}
-              </Text>
-              <Text style={[styles.subtext, { color: colors.textMuted, fontFamily }]}>
-                {t('common', 'securityCheckMessage')}
-              </Text>
-              {onClose && (
-                <TouchableOpacity
-                  onPress={onClose}
-                  style={[styles.cancelButton, { backgroundColor: colors.border }]}
-                >
-                  <Text style={[styles.cancelText, { color: colors.text, fontFamily }]}>{t('common', 'cancel')}</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+          {/* Loading Indicator / Help text */}
+          <View style={[styles.loadingContainer, { borderTopColor: colors.border }]}>
+            <ActivityIndicator size="large" color={colors.primaryLight} />
+            <Text style={[styles.text, { color: colors.text, fontFamily: fontFamilyBold }]}>
+              {t('common', 'securityCheckTitle')}
+            </Text>
+            <Text style={[styles.subtext, { color: colors.textMuted, fontFamily }]}>
+              {t('common', 'securityCheckMessage')}
+            </Text>
+            {onClose && (
+              <TouchableOpacity
+                onPress={onClose}
+                style={[styles.cancelButton, { backgroundColor: colors.border }]}
+              >
+                <Text style={[styles.cancelText, { color: colors.text, fontFamily }]}>{t('common', 'cancel')}</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
-      </Modal>
+      </View>
     );
   }
 );
