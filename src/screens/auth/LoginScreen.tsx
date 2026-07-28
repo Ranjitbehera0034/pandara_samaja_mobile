@@ -270,6 +270,19 @@ export default function LoginScreen() {
         <Text style={{ color: colors.textFaint, textAlign: 'center', marginTop: spacing.xl, fontFamily: fontRegular, ...typography.caption }}>
           {t('auth', 'termsFooter')}
         </Text>
+
+        {/* Staff-only entry point — low visual weight, not a primary member action */}
+        <TouchableOpacity
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('AdminLogin');
+          }}
+          style={{ marginTop: spacing.lg, alignItems: 'center', paddingVertical: spacing.sm }}
+        >
+          <Text style={{ color: colors.textFaint, fontFamily: fontRegular, ...typography.caption }}>
+            {t('admin', 'entryLinkLabel')}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );

@@ -8,6 +8,7 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import Toast from 'react-native-toast-message';
 import { AuthProvider } from './src/context/AuthContext';
+import { AdminAuthProvider } from './src/context/AdminAuthContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -82,7 +83,9 @@ export default function App() {
       <ThemeProvider>
         <LanguageProvider>
           <AuthProvider>
-            <AppContent />
+            <AdminAuthProvider>
+              <AppContent />
+            </AdminAuthProvider>
           </AuthProvider>
         </LanguageProvider>
       </ThemeProvider>

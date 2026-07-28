@@ -10,6 +10,7 @@ export const STORAGE_KEYS = {
   PORTAL_MEMBER: 'portalMember',
   PORTAL_USER: 'portalUser',
   ADMIN_TOKEN: 'adminToken',
+  ADMIN_USER: 'adminUser',
   SIDEBAR_COLLAPSED: 'sidebarCollapsed',
   LANGUAGE: 'appLanguage',
   THEME: 'appTheme',
