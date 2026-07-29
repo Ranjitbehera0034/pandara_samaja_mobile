@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Users, Flag, ShieldCheck, LogOut, ChevronRight } from 'lucide-react-native';
+import { Users, Flag, ShieldCheck, LogOut, ChevronRight, History, Heart, Newspaper, Megaphone, Wallet, Settings as SettingsIcon } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAdminAuth } from '../../context/AdminAuthContext';
@@ -58,6 +58,48 @@ export default function AdminDashboardScreen() {
       title: t('admin', 'reportsCardTitle'),
       desc: t('admin', 'reportsCardDesc'),
       onPress: () => navigateTo('AdminReports'),
+    },
+    {
+      key: 'tracker',
+      icon: <History size={24} color={C.accent} />,
+      title: t('admin', 'trackerCardTitle'),
+      desc: t('admin', 'trackerCardDesc'),
+      onPress: () => navigateTo('AdminTracker'),
+    },
+    {
+      key: 'matrimony',
+      icon: <Heart size={24} color={C.female} />,
+      title: t('admin', 'matrimonyCardTitle'),
+      desc: t('admin', 'matrimonyCardDesc'),
+      onPress: () => navigateTo('AdminMatrimony'),
+    },
+    {
+      key: 'posts',
+      icon: <Newspaper size={24} color={C.primary} />,
+      title: t('admin', 'postsCardTitle'),
+      desc: t('admin', 'postsCardDesc'),
+      onPress: () => navigateTo('AdminPosts'),
+    },
+    {
+      key: 'announcements',
+      icon: <Megaphone size={24} color={C.warning} />,
+      title: t('admin', 'announcementsCardTitle'),
+      desc: t('admin', 'announcementsCardDesc'),
+      onPress: () => navigateTo('AdminAnnouncements'),
+    },
+    {
+      key: 'expenses',
+      icon: <Wallet size={24} color={C.success} />,
+      title: t('admin', 'expensesCardTitle'),
+      desc: t('admin', 'expensesCardDesc'),
+      onPress: () => navigateTo('AdminExpenses'),
+    },
+    {
+      key: 'settings',
+      icon: <SettingsIcon size={24} color={C.textMuted} />,
+      title: t('admin', 'settingsCardTitle'),
+      desc: t('admin', 'settingsCardDesc'),
+      onPress: () => navigateTo('AdminSettings'),
     },
     ...(isSuperAdmin ? [{
       key: 'users',
