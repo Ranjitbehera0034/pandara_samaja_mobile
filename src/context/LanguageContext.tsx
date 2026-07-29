@@ -292,7 +292,10 @@ const translations = {
       yrsAbbrev: 'yrs',
       profilePhotoTitle: 'Profile Photo', profilePhotoMessage: 'Change or remove your profile picture.',
       removePhoto: 'Remove Photo', removedTitle: 'Removed', removedMessage: 'Profile photo removed.',
-      uploadNewPhoto: 'Upload New Photo', uploadTitle: 'Upload', uploadMessage: 'Photo upload simulated.',
+      uploadNewPhoto: 'Choose from Gallery', uploadTitle: 'Upload', uploadMessage: 'Photo upload simulated.',
+      takePhoto: 'Take Photo', cameraPermissionDenied: 'Camera access is needed to take a photo.',
+      galleryPermissionDenied: 'Photo library access is needed to choose a photo.',
+      uploadError: 'Failed to update your profile photo.',
       profileSavedTitle: 'Profile Saved', profileSavedMessage: 'Your address details have been updated.',
     },
     familyTree: {
@@ -812,7 +815,10 @@ const translations = {
       yrsAbbrev: 'ବର୍ଷ',
       profilePhotoTitle: 'ପ୍ରୋଫାଇଲ୍ ଫଟୋ', profilePhotoMessage: 'ଆପଣଙ୍କ ପ୍ରୋଫାଇଲ୍ ଫଟୋ ବଦଳାନ୍ତୁ କିମ୍ବା ହଟାନ୍ତୁ।',
       removePhoto: 'ଫଟୋ ହଟାନ୍ତୁ', removedTitle: 'ହଟାଗଲା', removedMessage: 'ପ୍ରୋଫାଇଲ୍ ଫଟୋ ହଟାଗଲା।',
-      uploadNewPhoto: 'ନୂଆ ଫଟୋ ଅପଲୋଡ୍ କରନ୍ତୁ', uploadTitle: 'ଅପଲୋଡ୍', uploadMessage: 'ଫଟୋ ଅପଲୋଡ୍ ସିମୁଲେଟ୍ ହେଲା।',
+      uploadNewPhoto: 'ଗ୍ୟାଲେରୀରୁ ବାଛନ୍ତୁ', uploadTitle: 'ଅପଲୋଡ୍', uploadMessage: 'ଫଟୋ ଅପଲୋଡ୍ ସିମୁଲେଟ୍ ହେଲା।',
+      takePhoto: 'ଫଟୋ ଉଠାନ୍ତୁ', cameraPermissionDenied: 'ଫଟୋ ଉଠାଇବାକୁ କ୍ୟାମେରା ଅନୁମତି ଆବଶ୍ୟକ।',
+      galleryPermissionDenied: 'ଫଟୋ ବାଛିବାକୁ ଗ୍ୟାଲେରୀ ଅନୁମତି ଆବଶ୍ୟକ।',
+      uploadError: 'ପ୍ରୋଫାଇଲ୍ ଫଟୋ ଅପଡେଟ୍ କରିବାରେ ବିଫଳ।',
       profileSavedTitle: 'ପ୍ରୋଫାଇଲ୍ ସେଭ୍ ହେଲା', profileSavedMessage: 'ଆପଣଙ୍କ ଠିକଣା ବିବରଣୀ ଅପଡେଟ୍ ହୋଇଛି।',
     },
     familyTree: {

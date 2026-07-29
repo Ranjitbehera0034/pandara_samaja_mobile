@@ -20,6 +20,9 @@ interface AuthContextType {
   // Step 2b: verify Firebase OTP path (takes OTP code directly)
   verifyFirebaseOtp: (membershipNo: string, mobile: string, otp: string) => Promise<void>;
   logout: () => Promise<void>;
+  // Updates the locally-cached profile photo (member + logged-in user) after
+  // a successful upload, without waiting for the next silent refresh.
+  updateProfilePhoto: (url: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -189,6 +192,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const newToken = res.data.token;
         setToken(newToken);
         await storage.setItem(STORAGE_KEYS.PORTAL_TOKEN, newToken);
+
+        // The backend now also returns fresh member data (family_members,
+        // profile_photo_url, etc.) alongside the token — keep the stored
+        // member object current instead of only ever refreshing the JWT.
+        if (res.data.member) {
+          setMember(res.data.member);
+          await storage.setItem(STORAGE_KEYS.PORTAL_MEMBER, JSON.stringify(res.data.member));
+        }
       })
       .catch((err) => {
         const status = err?.response?.status;
@@ -301,6 +312,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ]);
   };
 
+  const updateProfilePhoto = async (url: string) => {
+    const updatedMember = member ? { ...member, profile_photo_url: url } : member;
+    const updatedUser = user ? { ...user, profile_photo_url: url } : user;
+    setMember(updatedMember);
+    setUser(updatedUser);
+    await Promise.all([
+      updatedMember ? storage.setItem(STORAGE_KEYS.PORTAL_MEMBER, JSON.stringify(updatedMember)) : Promise.resolve(),
+      updatedUser ? storage.setItem(STORAGE_KEYS.PORTAL_USER, JSON.stringify(updatedUser)) : Promise.resolve(),
+    ]);
+  };
+
   return (
     <AuthContext.Provider value={{
       member,
@@ -312,6 +334,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       verifyOtp,
       verifyFirebaseOtp,
       logout,
+      updateProfilePhoto,
     }}>
       {children}
       <FirebaseRecaptcha

@@ -50,6 +50,13 @@
           "resizeMode": "contain",
           "backgroundColor": "#0f172a"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to update your profile picture and share posts.",
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to take a profile picture or share a photo."
+        }
       ]
     ],
     "extra": {

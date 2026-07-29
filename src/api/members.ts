@@ -47,3 +47,15 @@ export const toggleSubscribe = async (memberId: string) => {
   return res.data;
   // Returns: { success, subscribed: boolean, message }
 };
+
+// PUT /api/portal/me/photo — update the logged-in member's own profile photo
+export const updateMyProfilePhoto = async (file: { uri: string; name: string; type: string }) => {
+  const formData = new FormData();
+  // @ts-ignore — React Native FormData file shape
+  formData.append('photo', file);
+  const res = await client.put('/portal/me/photo', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+  // Returns: { success, profile_photo_url }
+};

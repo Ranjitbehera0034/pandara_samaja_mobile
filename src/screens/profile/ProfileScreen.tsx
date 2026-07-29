@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { Edit2, Check, X, Camera, ChevronDown, ChevronUp, Users, Heart, Image as ImageIcon, Calendar, ShieldAlert } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,13 +14,14 @@ import { useAuth } from '../../context/AuthContext';
 import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import * as membersApi from '../../api/members';
 
 const { width: W } = Dimensions.get('window');
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
-  const { member, user } = useAuth();
+  const { member, user, updateProfilePhoto } = useAuth();
   const { colors: C, spacing, radius, typography, shadow } = useTheme();
   const { lang, t } = useLanguage();
 
@@ -29,6 +31,7 @@ export default function ProfileScreen() {
   const [village, setVillage] = useState(member?.village || '');
   const [panchayat, setPanchayat] = useState(member?.panchayat || '');
   const [familyCollapsed, setFamilyCollapsed] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const handleEditToggle = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -48,28 +51,74 @@ export default function ProfileScreen() {
     Alert.alert(t('profile', 'profileSavedTitle'), t('profile', 'profileSavedMessage'));
   };
 
+  const uploadPickedPhoto = async (asset: ImagePicker.ImagePickerAsset) => {
+    setUploadingPhoto(true);
+    try {
+      const uriParts = asset.uri.split('/');
+      const name = uriParts[uriParts.length - 1] || `photo-${Date.now()}.jpg`;
+      const ext = name.split('.').pop()?.toLowerCase();
+      const type = ext === 'png' ? 'image/png' : 'image/jpeg';
+
+      const data = await membersApi.updateMyProfilePhoto({ uri: asset.uri, name, type });
+      if (data.success) {
+        await updateProfilePhoto(data.profile_photo_url);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        throw new Error(data.message || 'Upload failed');
+      }
+    } catch (e) {
+      console.error('[PROFILE_PHOTO] Upload failed:', e);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t('common', 'errorTitle'), t('profile', 'uploadError'));
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(t('common', 'errorTitle'), t('profile', 'cameraPermissionDenied'));
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+    if (!result.canceled && result.assets[0]) {
+      await uploadPickedPhoto(result.assets[0]);
+    }
+  };
+
+  const handlePickFromGallery = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(t('common', 'errorTitle'), t('profile', 'galleryPermissionDenied'));
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+    if (!result.canceled && result.assets[0]) {
+      await uploadPickedPhoto(result.assets[0]);
+    }
+  };
+
   const handleAvatarPress = () => {
+    if (uploadingPhoto) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Alert.alert(
       t('profile', 'profilePhotoTitle'),
       t('profile', 'profilePhotoMessage'),
       [
         { text: t('common', 'cancel'), style: 'cancel' },
-        {
-          text: t('profile', 'removePhoto'),
-          style: 'destructive',
-          onPress: () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            Alert.alert(t('profile', 'removedTitle'), t('profile', 'removedMessage'));
-          }
-        },
-        {
-          text: t('profile', 'uploadNewPhoto'),
-          onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            Alert.alert(t('profile', 'uploadTitle'), t('profile', 'uploadMessage'));
-          }
-        },
+        { text: t('profile', 'takePhoto'), onPress: handleTakePhoto },
+        { text: t('profile', 'uploadNewPhoto'), onPress: handlePickFromGallery },
       ]
     );
   };
