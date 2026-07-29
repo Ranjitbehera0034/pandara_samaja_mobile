@@ -88,6 +88,22 @@ export const setMemberBanned = async (id: string, banned: boolean) => {
   return res.data as { success: boolean; message?: string; member: AdminMember };
 };
 
+export interface UpdateAdminMemberInput {
+  name?: string;
+  mobile?: string;
+  district?: string;
+  taluka?: string;
+  panchayat?: string;
+  village?: string;
+  address?: string;
+  head_gender?: string;
+}
+
+export const updateAdminMember = async (id: string, data: UpdateAdminMemberInput) => {
+  const res = await adminClient.put(`/admin/members/${id}`, data);
+  return res.data as { success: boolean; message?: string; member: AdminMember };
+};
+
 // ── Content moderation (admin + superadmin) ──
 
 export const fetchReportedPosts = async () => {
@@ -393,5 +409,71 @@ export const updateExpense = async (id: string | number, data: Partial<ExpenseIn
 
 export const deleteExpense = async (id: string | number) => {
   const res = await adminClient.delete(`/admin/expenses/${id}`);
+  return res.data as { success: boolean; message?: string };
+};
+
+// ── Community leaders management (admin + superadmin) ──
+// Mirrors the matrimony admin pattern above — multipart FormData for
+// create/update (optional `image` file), plain query params for the list.
+
+export interface Leader {
+  id: number | string;
+  name: string;
+  name_or?: string | null;
+  role: string;
+  role_or?: string | null;
+  level: string; // 'State' | 'District' | 'Taluka' | 'Panchayat'
+  location?: string | null;
+  image_url?: string | null;
+  display_order?: number | null;
+  created_at?: string;
+}
+
+export interface LeaderInput {
+  name: string;
+  name_or?: string;
+  role: string;
+  role_or?: string;
+  level: string;
+  location?: string;
+  display_order?: number | string;
+  image?: { uri: string; name: string; type: string } | null;
+}
+
+export const fetchAdminLeaders = async (params: { page?: number; limit?: number; level?: string; search?: string } = {}) => {
+  const res = await adminClient.get('/admin/leaders', { params });
+  return res.data as { success: boolean; message?: string; leaders: Leader[]; total: number; page: number; totalPages: number };
+};
+
+const buildLeaderFormData = (data: Partial<LeaderInput>) => {
+  const formData = new FormData();
+  if (data.name !== undefined) formData.append('name', data.name);
+  if (data.name_or !== undefined) formData.append('name_or', data.name_or);
+  if (data.role !== undefined) formData.append('role', data.role);
+  if (data.role_or !== undefined) formData.append('role_or', data.role_or);
+  if (data.level !== undefined) formData.append('level', data.level);
+  if (data.location !== undefined) formData.append('location', data.location);
+  if (data.display_order !== undefined) formData.append('display_order', String(data.display_order));
+  // @ts-ignore — React Native FormData file shape
+  if (data.image) formData.append('image', data.image);
+  return formData;
+};
+
+export const createLeader = async (data: LeaderInput) => {
+  const res = await adminClient.post('/admin/leaders', buildLeaderFormData(data), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data as { success: boolean; message?: string; leader?: Leader };
+};
+
+export const updateLeader = async (id: string | number, data: Partial<LeaderInput>) => {
+  const res = await adminClient.put(`/admin/leaders/${id}`, buildLeaderFormData(data), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data as { success: boolean; message?: string; leader?: Leader };
+};
+
+export const deleteLeader = async (id: string | number) => {
+  const res = await adminClient.delete(`/admin/leaders/${id}`);
   return res.data as { success: boolean; message?: string };
 };

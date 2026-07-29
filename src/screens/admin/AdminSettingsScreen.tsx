@@ -2,19 +2,21 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Lock } from 'lucide-react-native';
+import { ArrowLeft, Lock, UserCircle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
 import Button from '../../components/common/Button';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAdminAuth } from '../../context/AdminAuthContext';
 
 export default function AdminSettingsScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { colors: C, spacing, radius, typography, shadow } = useTheme();
   const { lang, t } = useLanguage();
+  const { adminUser } = useAdminAuth();
   const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
   const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
 
@@ -73,6 +75,24 @@ export default function AdminSettingsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.xl }}>
+        {/* Account info card */}
+        <View style={{ backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg, ...shadow.card }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg }}>
+            <UserCircle size={18} color={C.primary} />
+            <Text style={{ color: C.text, fontFamily: fontBold, ...typography.bodyEmphasis }}>{t('admin', 'accountInfoHeader')}</Text>
+          </View>
+
+          <Text style={labelStyle}>{t('admin', 'usernameLabel')}</Text>
+          <Text style={{ color: C.text, fontFamily: fontRegular, marginBottom: spacing.lg, ...typography.body }}>
+            {adminUser?.username || '—'}
+          </Text>
+
+          <Text style={labelStyle}>{t('admin', 'roleFieldLabel')}</Text>
+          <Text style={{ color: C.text, fontFamily: fontRegular, ...typography.body }}>
+            {adminUser?.role === 'superadmin' ? t('admin', 'roleSuperadmin') : t('admin', 'roleAdmin')}
+          </Text>
+        </View>
+
         <View style={{ backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, ...shadow.card }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg }}>
             <Lock size={18} color={C.primary} />

@@ -179,9 +179,9 @@ export default function MembersScreen() {
   const keyExtractor = useCallback((item: Member) => item.membership_no, []);
 
   const ListHeader = () => (
-    <View style={{ paddingTop: spacing.md, paddingBottom: spacing.sm }}>
+    <View style={{ paddingBottom: spacing.sm }}>
       {/* Title */}
-      <View className="flex-row items-center justify-between" style={{ marginBottom: spacing.lg }}>
+      <View className="flex-row items-center justify-between" style={{ marginBottom: spacing.sm }}>
         <View>
           <Text
             style={{
@@ -211,122 +211,126 @@ export default function MembersScreen() {
           <ActivityIndicator size="small" color={C.primaryLight} />
         )}
       </View>
-
-      {/* Search bar */}
-      <View className="flex-row" style={{ gap: spacing.sm, marginBottom: spacing.md }}>
-        <View
-          style={{ backgroundColor: C.card, borderColor: C.border, borderRadius: radius.md, paddingHorizontal: spacing.md, gap: spacing.sm }}
-          className="flex-1 flex-row items-center border"
-        >
-          <Search size={16} color={C.textMuted} />
-          <TextInput
-            style={{
-              color: C.text,
-              fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined,
-              fontSize: typography.body.fontSize,
-              lineHeight: typography.body.lineHeight,
-              paddingVertical: spacing.sm,
-            }}
-            className="flex-1"
-            placeholder={t('members', 'searchPlaceholder')}
-            placeholderTextColor={C.textFaint}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            returnKeyType="search"
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <X size={16} color={C.textFaint} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-
-        {/* Filter button */}
-        <TouchableOpacity
-          onPress={handleFilterClick}
-          style={{
-            backgroundColor: activeFilterCount > 0 ? C.primary : C.card,
-            borderColor: activeFilterCount > 0 ? C.primary : C.border,
-            borderRadius: radius.md,
-            paddingHorizontal: spacing.md,
-            paddingVertical: spacing.sm,
-          }}
-          className="border items-center justify-center"
-        >
-          <Filter size={16} color={activeFilterCount > 0 ? 'white' : C.textMuted} />
-          {activeFilterCount > 0 && (
-            <View
-              style={{ backgroundColor: C.error, borderRadius: radius.full }}
-              className="absolute -top-1.5 -right-1.5 w-4 h-4 items-center justify-center"
-            >
-              <Text style={{ color: '#fff', fontSize: typography.caption.fontSize, fontWeight: '700' }}>{activeFilterCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {/* Refresh */}
-        <TouchableOpacity
-          onPress={onRefresh}
-          style={{ backgroundColor: C.card, borderColor: C.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}
-          className="border items-center justify-center"
-        >
-          <RefreshCw size={16} color={C.textMuted} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Active filter chips */}
-      {activeFilterCount > 0 && (
-        <View className="flex-row flex-wrap" style={{ gap: spacing.sm, marginBottom: spacing.md }}>
-          {filters.district ? (
-            <View style={{ backgroundColor: C.primary + '1a', borderColor: C.primary + '33', borderRadius: radius.full, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs }} className="flex-row items-center gap-1 border">
-              <Text style={{ color: C.primaryLight, fontSize: typography.caption.fontSize, fontWeight: '600' }}>{filters.district}</Text>
-              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, district: '', taluka: '', panchayat: '', village: '' })}>
-                <X size={16} color={C.primaryLight} />
-              </TouchableOpacity>
-            </View>
-          ) : null}
-          {filters.taluka ? (
-            <View style={{ backgroundColor: C.primary + '1a', borderColor: C.primary + '33', borderRadius: radius.full, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs }} className="flex-row items-center gap-1 border">
-              <Text style={{ color: C.primaryLight, fontSize: typography.caption.fontSize, fontWeight: '600' }}>{filters.taluka}</Text>
-              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, taluka: '', panchayat: '', village: '' })}>
-                <X size={16} color={C.primaryLight} />
-              </TouchableOpacity>
-            </View>
-          ) : null}
-          {filters.panchayat ? (
-            <View style={{ backgroundColor: C.primary + '1a', borderColor: C.primary + '33', borderRadius: radius.full, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs }} className="flex-row items-center gap-1 border">
-              <Text style={{ color: C.primaryLight, fontSize: typography.caption.fontSize, fontWeight: '600' }}>{filters.panchayat}</Text>
-              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, panchayat: '', village: '' })}>
-                <X size={16} color={C.primaryLight} />
-              </TouchableOpacity>
-            </View>
-          ) : null}
-          {filters.village ? (
-            <View style={{ backgroundColor: C.primary + '1a', borderColor: C.primary + '33', borderRadius: radius.full, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs }} className="flex-row items-center gap-1 border">
-              <Text style={{ color: C.primaryLight, fontSize: typography.caption.fontSize, fontWeight: '600' }}>{filters.village}</Text>
-              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, village: '' })}>
-                <X size={16} color={C.primaryLight} />
-              </TouchableOpacity>
-            </View>
-          ) : null}
-          {filters.gender ? (
-            <View style={{ backgroundColor: C.primary + '1a', borderColor: C.primary + '33', borderRadius: radius.full, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs }} className="flex-row items-center gap-1 border">
-              <Text style={{ color: C.primaryLight, fontSize: typography.caption.fontSize, fontWeight: '600' }}>{filters.gender === 'male' ? t('members', 'maleHof') : t('members', 'femaleHof')}</Text>
-              <TouchableOpacity onPress={() => handleFilterChange({ ...filters, gender: '' })}>
-                <X size={16} color={C.primaryLight} />
-              </TouchableOpacity>
-            </View>
-          ) : null}
-        </View>
-      )}
     </View>
   );
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top }}>
       <View className="flex-1" style={{ paddingHorizontal: spacing.lg }}>
+        {/* Search bar — kept as a sibling View above the FlashList (NOT inside
+            ListHeaderComponent) so the TextInput doesn't lose focus when the
+            list's `data` prop changes on every debounced keystroke/fetch. */}
+        <View style={{ paddingTop: spacing.md }}>
+          <View className="flex-row" style={{ gap: spacing.sm, marginBottom: spacing.md }}>
+            <View
+              style={{ backgroundColor: C.card, borderColor: C.border, borderRadius: radius.md, paddingHorizontal: spacing.md, gap: spacing.sm }}
+              className="flex-1 flex-row items-center border"
+            >
+              <Search size={16} color={C.textMuted} />
+              <TextInput
+                style={{
+                  color: C.text,
+                  fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined,
+                  fontSize: typography.body.fontSize,
+                  lineHeight: typography.body.lineHeight,
+                  paddingVertical: spacing.sm,
+                }}
+                className="flex-1"
+                placeholder={t('members', 'searchPlaceholder')}
+                placeholderTextColor={C.textFaint}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                returnKeyType="search"
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+              {searchQuery ? (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <X size={16} color={C.textFaint} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {/* Filter button */}
+            <TouchableOpacity
+              onPress={handleFilterClick}
+              style={{
+                backgroundColor: activeFilterCount > 0 ? C.primary : C.card,
+                borderColor: activeFilterCount > 0 ? C.primary : C.border,
+                borderRadius: radius.md,
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.sm,
+              }}
+              className="border items-center justify-center"
+            >
+              <Filter size={16} color={activeFilterCount > 0 ? 'white' : C.textMuted} />
+              {activeFilterCount > 0 && (
+                <View
+                  style={{ backgroundColor: C.error, borderRadius: radius.full }}
+                  className="absolute -top-1.5 -right-1.5 w-4 h-4 items-center justify-center"
+                >
+                  <Text style={{ color: '#fff', fontSize: typography.caption.fontSize, fontWeight: '700' }}>{activeFilterCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            {/* Refresh */}
+            <TouchableOpacity
+              onPress={onRefresh}
+              style={{ backgroundColor: C.card, borderColor: C.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}
+              className="border items-center justify-center"
+            >
+              <RefreshCw size={16} color={C.textMuted} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Active filter chips */}
+          {activeFilterCount > 0 && (
+            <View className="flex-row flex-wrap" style={{ gap: spacing.sm, marginBottom: spacing.md }}>
+              {filters.district ? (
+                <View style={{ backgroundColor: C.primary + '1a', borderColor: C.primary + '33', borderRadius: radius.full, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs }} className="flex-row items-center gap-1 border">
+                  <Text style={{ color: C.primaryLight, fontSize: typography.caption.fontSize, fontWeight: '600' }}>{filters.district}</Text>
+                  <TouchableOpacity onPress={() => handleFilterChange({ ...filters, district: '', taluka: '', panchayat: '', village: '' })}>
+                    <X size={16} color={C.primaryLight} />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+              {filters.taluka ? (
+                <View style={{ backgroundColor: C.primary + '1a', borderColor: C.primary + '33', borderRadius: radius.full, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs }} className="flex-row items-center gap-1 border">
+                  <Text style={{ color: C.primaryLight, fontSize: typography.caption.fontSize, fontWeight: '600' }}>{filters.taluka}</Text>
+                  <TouchableOpacity onPress={() => handleFilterChange({ ...filters, taluka: '', panchayat: '', village: '' })}>
+                    <X size={16} color={C.primaryLight} />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+              {filters.panchayat ? (
+                <View style={{ backgroundColor: C.primary + '1a', borderColor: C.primary + '33', borderRadius: radius.full, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs }} className="flex-row items-center gap-1 border">
+                  <Text style={{ color: C.primaryLight, fontSize: typography.caption.fontSize, fontWeight: '600' }}>{filters.panchayat}</Text>
+                  <TouchableOpacity onPress={() => handleFilterChange({ ...filters, panchayat: '', village: '' })}>
+                    <X size={16} color={C.primaryLight} />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+              {filters.village ? (
+                <View style={{ backgroundColor: C.primary + '1a', borderColor: C.primary + '33', borderRadius: radius.full, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs }} className="flex-row items-center gap-1 border">
+                  <Text style={{ color: C.primaryLight, fontSize: typography.caption.fontSize, fontWeight: '600' }}>{filters.village}</Text>
+                  <TouchableOpacity onPress={() => handleFilterChange({ ...filters, village: '' })}>
+                    <X size={16} color={C.primaryLight} />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+              {filters.gender ? (
+                <View style={{ backgroundColor: C.primary + '1a', borderColor: C.primary + '33', borderRadius: radius.full, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs }} className="flex-row items-center gap-1 border">
+                  <Text style={{ color: C.primaryLight, fontSize: typography.caption.fontSize, fontWeight: '600' }}>{filters.gender === 'male' ? t('members', 'maleHof') : t('members', 'femaleHof')}</Text>
+                  <TouchableOpacity onPress={() => handleFilterChange({ ...filters, gender: '' })}>
+                    <X size={16} color={C.primaryLight} />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+            </View>
+          )}
+        </View>
+
         {loading && members.length === 0 ? (
           <View className="flex-1">
             <ListHeader />

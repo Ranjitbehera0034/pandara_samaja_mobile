@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { ArrowLeft, Ban, CheckCircle2, Phone, MapPin } from 'lucide-react-native';
+import { ArrowLeft, Ban, CheckCircle2, Phone, MapPin, Pencil } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
@@ -47,6 +47,11 @@ export default function AdminMemberDetailScreen() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    const unsub = navigation.addListener('focus', () => load());
+    return unsub;
+  }, [navigation, load]);
+
   const isBanned = !!member?.is_banned;
 
   const doToggleBan = async () => {
@@ -85,7 +90,15 @@ export default function AdminMemberDetailScreen() {
         <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.goBack(); }} style={{ padding: spacing.xs, borderRadius: radius.full, backgroundColor: C.card }}>
           <ArrowLeft size={20} color={C.text} />
         </TouchableOpacity>
-        <Text style={{ color: C.text, fontFamily: fontBold, ...typography.heading }}>{t('admin', 'memberDetailTitle')}</Text>
+        <Text style={{ flex: 1, color: C.text, fontFamily: fontBold, ...typography.heading }}>{t('admin', 'memberDetailTitle')}</Text>
+        {member && (
+          <TouchableOpacity
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('AdminMemberEdit', { id: member.membership_no }); }}
+            style={{ padding: spacing.xs, borderRadius: radius.full, backgroundColor: C.card }}
+          >
+            <Pencil size={20} color={C.text} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {loading ? (

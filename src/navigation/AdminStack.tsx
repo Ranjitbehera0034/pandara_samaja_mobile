@@ -13,11 +13,16 @@ import AdminPostsScreen from '../screens/admin/AdminPostsScreen';
 import AdminAnnouncementsScreen from '../screens/admin/AdminAnnouncementsScreen';
 import AdminExpensesScreen from '../screens/admin/AdminExpensesScreen';
 import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen';
+import AdminLeadersScreen from '../screens/admin/AdminLeadersScreen';
+import AdminLeaderFormScreen from '../screens/admin/AdminLeaderFormScreen';
+import AdminMemberEditScreen from '../screens/admin/AdminMemberEditScreen';
+import { Leader } from '../api/admin';
 
 export type AdminStackParams = {
   AdminDashboard: undefined;
   AdminMembers: undefined;
   AdminMemberDetail: { id: string };
+  AdminMemberEdit: { id: string };
   AdminReports: undefined;
   AdminUsers: undefined;
   AdminTracker: undefined;
@@ -27,6 +32,8 @@ export type AdminStackParams = {
   AdminAnnouncements: undefined;
   AdminExpenses: undefined;
   AdminSettings: undefined;
+  AdminLeaders: undefined;
+  AdminLeaderForm: { id?: string | number; leader?: Leader };
 };
 
 const Stack = createStackNavigator<AdminStackParams>();
@@ -37,6 +44,7 @@ export default function AdminStack() {
       <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
       <Stack.Screen name="AdminMembers" component={AdminMembersScreen} />
       <Stack.Screen name="AdminMemberDetail" component={AdminMemberDetailScreen} />
+      <Stack.Screen name="AdminMemberEdit" component={AdminMemberEditScreen} />
       <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
       <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
       <Stack.Screen name="AdminTracker" component={AdminTrackerScreen} />
@@ -46,6 +54,8 @@ export default function AdminStack() {
       <Stack.Screen name="AdminAnnouncements" component={AdminAnnouncementsScreen} />
       <Stack.Screen name="AdminExpenses" component={AdminExpensesScreen} />
       <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} />
+      <Stack.Screen name="AdminLeaders" component={AdminLeadersScreen} />
+      <Stack.Screen name="AdminLeaderForm" component={AdminLeaderFormScreen} />
     </Stack.Navigator>
   );
 }

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react-native';
 import { Post, Comment, ReactionType } from '../../types';
 import { timeAgoShort, REACTIONS, mapComment, containsBannedContent, censorText } from '../../utils/feedUtils';
+import { urlsToMedia } from '../../utils/media';
 import { useAuth } from '../../context/AuthContext';
 import MediaGrid from './MediaGrid';
 import RichContent from './RichContent';
@@ -279,7 +280,7 @@ export default function PostCard({
       {/* ── Media Grid ── */}
       {((post.media?.length ?? 0) > 0 || (post.images?.length ?? 0) > 0) && (
         <MediaGrid
-          media={post.media?.length ? post.media : (post.images?.map(url => ({ url, type: 'image' as const })) || [])}
+          media={post.media?.length ? post.media : urlsToMedia(post.images)}
         />
       )}
 
