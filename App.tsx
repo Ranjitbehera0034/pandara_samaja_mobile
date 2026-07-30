@@ -12,6 +12,7 @@ import { AdminAuthProvider } from './src/context/AdminAuthContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
+import UpdateBanner from './src/components/common/UpdateBanner';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -57,6 +58,7 @@ function AppContent() {
       {/* @ts-ignore */}
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} backgroundColor={colors.bg} />
       <RootNavigator />
+      <UpdateBanner />
       <Toast config={toastConfig} />
     </>
   );

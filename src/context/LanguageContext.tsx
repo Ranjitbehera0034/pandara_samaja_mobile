@@ -27,6 +27,9 @@ const translations = {
       topResults: 'Top Results',
       securityCheckTitle: 'Security Check in Progress',
       securityCheckMessage: 'Please wait a moment while we establish a secure connection.',
+      updateAvailableTitle: 'Update available',
+      updateAvailableSubtitle: 'A new version is ready to install',
+      updateNowButton: 'Update Now',
     },
     feed: {
       noPostsTitle: 'No posts yet', noPostsSubtitle: 'Be the first to share something',
@@ -856,6 +859,9 @@ const translations = {
       topResults: 'ଶୀର୍ଷ ଫଳାଫଳ',
       securityCheckTitle: 'ସୁରକ୍ଷା ଯାଞ୍ଚ ଚାଲୁଛି',
       securityCheckMessage: 'ଦୟାକରି ଅପେକ୍ଷା କରନ୍ତୁ, ଆମେ ଏକ ସୁରକ୍ଷିତ ସଂଯୋଗ ସ୍ଥାପନ କରୁଛୁ।',
+      updateAvailableTitle: 'ଅପଡେଟ୍ ଉପଲବ୍ଧ',
+      updateAvailableSubtitle: 'ଏକ ନୂଆ ସଂସ୍କରଣ ଇନଷ୍ଟଲ୍ ପାଇଁ ପ୍ରସ୍ତୁତ',
+      updateNowButton: 'ଏବେ ଅପଡେଟ୍ କରନ୍ତୁ',
     },
     feed: {
       noPostsTitle: 'ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ପୋଷ୍ଟ ନାହିଁ', noPostsSubtitle: 'କିଛି ସେୟାର କରିବାରେ ପ୍ରଥମ ହୁଅନ୍ତୁ',
