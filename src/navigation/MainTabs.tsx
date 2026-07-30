@@ -82,6 +82,12 @@ function ProfileStack() {
     <S.Navigator screenOptions={{ headerShown: false }}>
       <S.Screen name="ProfileMain" component={ProfileScreen} />
       <S.Screen name="Settings" component={SettingsScreen} />
+      <S.Screen name="FamilyTree" component={FamilyTreeScreen} />
+      <S.Screen name="Matrimony" component={MatrimonyScreen} />
+      <S.Screen name="FamilyAlbums" component={FamilyAlbumsScreen} />
+      <S.Screen name="FamilyEvents" component={FamilyEventsScreen} />
+      <S.Screen name="Leaders" component={LeadersScreen} />
+      <S.Screen name="MemberProfile" component={MemberProfileScreen} />
     </S.Navigator>
   );
 }
