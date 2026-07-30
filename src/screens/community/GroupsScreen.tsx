@@ -39,7 +39,7 @@ const MOCK_GROUPS: Group[] = [
   {
     id: 'g1',
     name: 'Bhubaneswar Pandara Unit',
-    nameOdia: 'ଭୁବନେଶ୍ୱର ପଣ୍ଡାର ୟୁନିଟ୍',
+    nameOdia: 'ଭୁବନେଶ୍ୱର ପନ୍ଦରା ୟୁନିଟ୍',
     description: 'Official group for members residing in Bhubaneswar. Regular weekend assemblies and local events.',
     descriptionOdia: 'ଭୁବନେଶ୍ୱରରେ ରହୁଥିବା ସଦସ୍ୟମାନଙ୍କ ପାଇଁ ସରକାରୀ ଗ୍ରୁପ୍। ନିୟମିତ ସପ୍ତାହାନ୍ତ ସଭା ଏବଂ ସ୍ଥାନୀୟ କାର୍ଯ୍ୟକ୍ରମ।',
     category: 'regional',
@@ -65,7 +65,7 @@ const MOCK_GROUPS: Group[] = [
   {
     id: 'g3',
     name: 'Pandara Youth Wing',
-    nameOdia: 'ପଣ୍ଡାର ଯୁବ ସଂଘ',
+    nameOdia: 'ପନ୍ଦରା ଯୁବ ସଂଘ',
     description: 'Platform for the youth to coordinate sports, career guidance, and social volunteering.',
     descriptionOdia: 'ଯୁବପିଢିଙ୍କ ପାଇଁ କ୍ରୀଡା, କ୍ୟାରିୟର ମାର୍ଗଦର୍ଶନ ଏବଂ ସେବା କାର୍ଯ୍ୟର ସମନ୍ୱୟ ପ୍ଲାଟଫର୍ମ।',
     category: 'youth',
@@ -91,7 +91,7 @@ const MOCK_GROUPS: Group[] = [
   {
     id: 'g5',
     name: 'Pandara Entrepreneurs',
-    nameOdia: 'ପଣ୍ଡାର ଉଦ୍ୟୋଗୀ ମଞ୍ଚ',
+    nameOdia: 'ପନ୍ଦରା ଉଦ୍ୟୋଗୀ ମଞ୍ଚ',
     description: 'Professional networking, business collaborations, and resource sharing for entrepreneurs.',
     descriptionOdia: 'ଉଦ୍ୟୋଗୀମାନଙ୍କ ପାଇଁ ବ୍ୟବସାୟିକ ନେଟୱର୍କିଙ୍ଗ, ସହଯୋଗ ଏବଂ ସମ୍ପଦର ଭାଗିଦାରୀ।',
     category: 'professional',

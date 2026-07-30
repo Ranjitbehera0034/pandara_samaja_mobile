@@ -843,7 +843,7 @@ const translations = {
       members: 'ସଦସ୍ୟ', gallery: 'ଗ୍ୟାଲେରୀ', profile: 'ପ୍ରୋଫାଇଲ', settings: 'ସେଟିଂ',
     },
     common: {
-      appName: 'ପଣ୍ଡାର ସମାଜ', appTagline: 'ସାମୁଦାୟିକ ପୋର୍ଟାଲ',
+      appName: 'ପନ୍ଦରା ସମାଜ', appTagline: 'ସାମୁଦାୟିକ ପୋର୍ଟାଲ',
       logout: 'ଲଗ୍ ଆଉଟ', collapse: 'ସଂକୁଚିତ', expand: 'ବିସ୍ତାର',
       loading: 'ଲୋଡ ହେଉଛି...', error: 'କିଛି ଭୁଲ ହୋଇଗଲା',
       cancel: 'ବାତିଲ', save: 'ସେଭ୍', reset: 'ପୁନଃସେଟ୍', delete: 'ଡିଲିଟ୍',
@@ -898,7 +898,7 @@ const translations = {
       confirmLogoutTitle: 'ଲଗ୍ ଆଉଟ୍ ନିଶ୍ଚିତ କରନ୍ତୁ',
       confirmLogoutMessage: 'ଆପଣ ନିଶ୍ଚିତ ଭାବରେ ଲଗ୍ ଆଉଟ୍ କରିବାକୁ ଚାହୁଁଛନ୍ତି କି?',
       supportAlertMessage: 'ସହାୟତା ସେବା ଶୀଘ୍ର ଉପଲବ୍ଧ ହେବ।',
-      footerName: 'ନିଖିଳ ଓଡ଼ିଶା ପଣ୍ଡାର ସମାଜ',
+      footerName: 'ନିଖିଳ ଓଡ଼ିଶା ପନ୍ଦରା ସମାଜ',
     },
     auth: {
       memberLoginTitle: 'ସଦସ୍ୟ ଲଗଇନ',
@@ -921,8 +921,8 @@ const translations = {
       resendOtpIn: 'ପୁନଃ OTP ପଠାଇବାରେ', resendOtp: 'ପୁନଃ OTP ପଠାନ୍ତୁ',
     },
     onboarding: {
-      slide1Title: 'ପଣ୍ଡାର ସମାଜକୁ ସ୍ୱାଗତ',
-      slide1Body: 'ଓଡ଼ିଶା ଭରିରେ ନିଖିଳ ଓଡ଼ିଶା ପଣ୍ଡାର ସମାଜର ୧୦,୦୦୦+ ସଦସ୍ୟଙ୍କ ସହ ଯୋଡ଼ି ହୁଅନ୍ତୁ।',
+      slide1Title: 'ପନ୍ଦରା ସମାଜକୁ ସ୍ୱାଗତ',
+      slide1Body: 'ଓଡ଼ିଶା ଭରିରେ ନିଖିଳ ଓଡ଼ିଶା ପନ୍ଦରା ସମାଜର ୧୦,୦୦୦+ ସଦସ୍ୟଙ୍କ ସହ ଯୋଡ଼ି ହୁଅନ୍ତୁ।',
       slide2Title: 'ଆପଣଙ୍କ ପରିବାର, ସଂଯୁକ୍ତ',
       slide2Body: 'ସାମୁଦାୟିକ ସଦସ୍ୟ ତାଲିକା ଅନ୍ୱେଷଣ କରନ୍ତୁ। ଅନୁସରଣ କରନ୍ତୁ, ବାର୍ତ୍ତା ପଠାନ୍ତୁ ଏବଂ ଆପଣଙ୍କ ଲୋକଙ୍କ ସହ ସଂଯୁକ୍ତ ରୁହନ୍ତୁ।',
       slide3Title: 'ଖବର ପାଆନ୍ତୁ',
@@ -1134,7 +1134,7 @@ const translations = {
     profile: {
       title: 'ମୋର ପ୍ରୋଫାଇଲ୍',
       settingsButton: 'ସେଟିଂ',
-      memberBadge: 'ପଣ୍ଡାର ସଦସ୍ୟ',
+      memberBadge: 'ପନ୍ଦରା ସଦସ୍ୟ',
       headOfFamily: 'ପରିବାର ମୁଖ୍ୟ',
       mobilePrefix: 'ମୋବାଇଲ:',
       familyHubHeader: 'ପାରିବାରିକ କେନ୍ଦ୍ର',
