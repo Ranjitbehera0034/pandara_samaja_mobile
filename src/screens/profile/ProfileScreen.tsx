@@ -237,7 +237,11 @@ export default function ProfileScreen() {
                 key={hub.label}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  navigation.navigate(hub.screen);
+                  // These screens live in the Feed tab's nested stack, not
+                  // ProfileStack — navigate explicitly to the tab + nested
+                  // screen instead of relying on implicit cross-stack
+                  // bubbling, which is unreliable for some screens.
+                  navigation.navigate('Feed', { screen: hub.screen });
                 }}
                 style={{ width: (W - 40) / 2, backgroundColor: C.card, borderColor: C.border + '99', borderRadius: radius.lg, padding: spacing.lg, ...shadow.card }}
                 className="border flex-col justify-between"

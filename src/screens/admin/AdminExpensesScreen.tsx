@@ -2,15 +2,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ActivityIndicator, RefreshControl, Alert,
-  Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView,
+  Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Linking,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Plus, Trash2, X as XIcon, TrendingUp, TrendingDown } from 'lucide-react-native';
+import { ArrowLeft, Plus, Trash2, X as XIcon, Wallet, Paperclip } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
-import { ExpenseEntry, ExpenseSummary } from '../../api/admin';
+import { ExpenseEntry } from '../../api/admin';
 import EmptyState from '../../components/common/EmptyState';
 import SkeletonBox from '../../components/common/SkeletonBox';
 import Button from '../../components/common/Button';
@@ -18,7 +18,6 @@ import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 const PAGE_SIZE = 30;
-type TypeFilter = 'all' | 'income' | 'expense';
 
 export default function AdminExpensesScreen() {
   const navigation = useNavigation<any>();
@@ -28,34 +27,34 @@ export default function AdminExpensesScreen() {
   const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
   const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
 
-  const [filter, setFilter] = useState<TypeFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [categories, setCategories] = useState<string[]>([]);
   const [entries, setEntries] = useState<ExpenseEntry[]>([]);
-  const [summary, setSummary] = useState<ExpenseSummary>({ totalIncome: 0, totalExpense: 0, balance: 0 });
+  const [totalSpent, setTotalSpent] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [migrationPending, setMigrationPending] = useState(false);
   const [removingId, setRemovingId] = useState<string | number | null>(null);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ExpenseEntry | null>(null);
   const [formTitle, setFormTitle] = useState('');
-  const [formType, setFormType] = useState<'income' | 'expense'>('expense');
   const [formAmount, setFormAmount] = useState('');
   const [formCategory, setFormCategory] = useState('');
-  const [formNote, setFormNote] = useState('');
+  const [formPayee, setFormPayee] = useState('');
+  const [formDescription, setFormDescription] = useState('');
   const [formDate, setFormDate] = useState('');
   const [saving, setSaving] = useState(false);
 
   const fetchEntries = useCallback(async (pageNum: number, replace = false) => {
     try {
-      const data = await adminApi.fetchAdminExpenses({ page: pageNum, limit: PAGE_SIZE, type: filter === 'all' ? undefined : filter });
+      const data = await adminApi.fetchAdminExpenses({ page: pageNum, limit: PAGE_SIZE, category: categoryFilter || undefined });
       if (data.success) {
-        setMigrationPending(!!data.migrationPending);
         setEntries(prev => replace ? data.expenses : [...prev, ...data.expenses]);
-        setSummary(data.summary);
+        setTotalSpent(data.totalSpent ?? 0);
+        setCategories(data.categories ?? []);
         setPage(data.page);
         setTotalPages(data.totalPages ?? 1);
       }
@@ -63,7 +62,7 @@ export default function AdminExpensesScreen() {
       console.error('[ADMIN_EXPENSES] Fetch failed:', e);
       Alert.alert(t('common', 'errorTitle'), t('admin', 'expensesLoadError'));
     }
-  }, [filter, t]);
+  }, [categoryFilter, t]);
 
   useEffect(() => {
     setLoading(true);
@@ -85,10 +84,10 @@ export default function AdminExpensesScreen() {
   const resetForm = () => {
     setEditing(null);
     setFormTitle('');
-    setFormType('expense');
     setFormAmount('');
     setFormCategory('');
-    setFormNote('');
+    setFormPayee('');
+    setFormDescription('');
     setFormDate('');
   };
 
@@ -101,11 +100,11 @@ export default function AdminExpensesScreen() {
   const openEdit = (item: ExpenseEntry) => {
     setEditing(item);
     setFormTitle(item.title);
-    setFormType(item.type);
     setFormAmount(String(item.amount));
     setFormCategory(item.category || '');
-    setFormNote(item.note || '');
-    setFormDate(item.entry_date ? item.entry_date.slice(0, 10) : '');
+    setFormPayee(item.payee || '');
+    setFormDescription(item.description || '');
+    setFormDate(item.expense_date ? item.expense_date.slice(0, 10) : '');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowForm(true);
   };
@@ -113,6 +112,10 @@ export default function AdminExpensesScreen() {
   const handleSave = async () => {
     if (!formTitle.trim()) {
       Alert.alert(t('common', 'errorTitle'), t('admin', 'expenseTitleRequiredError'));
+      return;
+    }
+    if (!formCategory.trim()) {
+      Alert.alert(t('common', 'errorTitle'), t('admin', 'expenseCategoryRequiredError'));
       return;
     }
     if (!formAmount || isNaN(Number(formAmount))) {
@@ -124,11 +127,11 @@ export default function AdminExpensesScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const payload = {
         title: formTitle.trim(),
-        type: formType,
+        category: formCategory.trim(),
         amount: Number(formAmount),
-        category: formCategory.trim() || undefined,
-        note: formNote.trim() || undefined,
-        entryDate: formDate.trim() || undefined,
+        payee: formPayee.trim() || undefined,
+        description: formDescription.trim() || undefined,
+        expenseDate: formDate.trim() || undefined,
       };
       const data = editing
         ? await adminApi.updateExpense(editing.id, payload)
@@ -181,41 +184,37 @@ export default function AdminExpensesScreen() {
     );
   };
 
-  const tabs: { key: TypeFilter; label: string }[] = [
-    { key: 'all', label: t('admin', 'expenseFilterAll') },
-    { key: 'income', label: t('admin', 'expenseFilterIncome') },
-    { key: 'expense', label: t('admin', 'expenseFilterExpense') },
-  ];
-
-  const renderEntry = useCallback(({ item }: { item: ExpenseEntry }) => {
-    const isIncome = item.type === 'income';
-    return (
-      <TouchableOpacity
-        onPress={() => openEdit(item)}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md, ...shadow.card }}
-      >
-        <View style={{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: (isIncome ? C.success : C.error) + '15', alignItems: 'center', justifyContent: 'center' }}>
-          {isIncome ? <TrendingUp size={16} color={C.success} /> : <TrendingDown size={16} color={C.error} />}
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: C.text, fontFamily: fontBold, ...typography.bodyEmphasis }} numberOfLines={1}>{item.title}</Text>
-          <Text style={{ color: C.textMuted, fontFamily: fontRegular, marginTop: 2, ...typography.caption }} numberOfLines={1}>
-            {[item.category, item.entry_date ? new Date(item.entry_date).toLocaleDateString() : null].filter(Boolean).join(' · ') || '—'}
-          </Text>
-        </View>
-        <Text style={{ color: isIncome ? C.success : C.error, fontFamily: fontBold, ...typography.bodyEmphasis }}>
-          {isIncome ? '+' : '−'}₹{Number(item.amount).toLocaleString('en-IN')}
+  const renderEntry = useCallback(({ item }: { item: ExpenseEntry }) => (
+    <TouchableOpacity
+      onPress={() => openEdit(item)}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md, ...shadow.card }}
+    >
+      <View style={{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: C.error + '15', alignItems: 'center', justifyContent: 'center' }}>
+        <Wallet size={16} color={C.error} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: C.text, fontFamily: fontBold, ...typography.bodyEmphasis }} numberOfLines={1}>{item.title}</Text>
+        <Text style={{ color: C.textMuted, fontFamily: fontRegular, marginTop: 2, ...typography.caption }} numberOfLines={1}>
+          {[item.category, item.payee, item.expense_date ? new Date(item.expense_date).toLocaleDateString() : null].filter(Boolean).join(' · ') || '—'}
         </Text>
-        <TouchableOpacity
-          onPress={() => handleRemove(item)}
-          disabled={removingId === item.id}
-          style={{ width: 30, height: 30, borderRadius: radius.full, backgroundColor: C.error + '15', alignItems: 'center', justifyContent: 'center' }}
-        >
-          {removingId === item.id ? <ActivityIndicator size="small" color={C.error} /> : <Trash2 size={14} color={C.error} />}
+      </View>
+      {item.attachment_url ? (
+        <TouchableOpacity onPress={() => Linking.openURL(item.attachment_url!)} style={{ padding: spacing.xs }}>
+          <Paperclip size={16} color={C.textMuted} />
         </TouchableOpacity>
+      ) : null}
+      <Text style={{ color: C.error, fontFamily: fontBold, ...typography.bodyEmphasis }}>
+        ₹{Number(item.amount).toLocaleString('en-IN')}
+      </Text>
+      <TouchableOpacity
+        onPress={() => handleRemove(item)}
+        disabled={removingId === item.id}
+        style={{ width: 30, height: 30, borderRadius: radius.full, backgroundColor: C.error + '15', alignItems: 'center', justifyContent: 'center' }}
+      >
+        {removingId === item.id ? <ActivityIndicator size="small" color={C.error} /> : <Trash2 size={14} color={C.error} />}
       </TouchableOpacity>
-    );
-  }, [C, spacing, radius, typography, shadow, fontBold, fontRegular, removingId]);
+    </TouchableOpacity>
+  ), [C, spacing, radius, typography, shadow, fontBold, fontRegular, removingId]);
 
   const keyExtractor = useCallback((item: ExpenseEntry) => String(item.id), []);
 
@@ -235,38 +234,38 @@ export default function AdminExpensesScreen() {
       </View>
 
       <View style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.md }}>
-        <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
-          <View style={{ flex: 1, backgroundColor: C.success + '15', borderRadius: radius.lg, padding: spacing.md, alignItems: 'center' }}>
-            <Text style={{ color: C.success, ...typography.caption, fontWeight: '700' }}>{t('admin', 'summaryIncomeLabel')}</Text>
-            <Text style={{ color: C.success, fontFamily: fontBold, marginTop: 2, ...typography.bodyEmphasis }}>₹{summary.totalIncome.toLocaleString('en-IN')}</Text>
-          </View>
-          <View style={{ flex: 1, backgroundColor: C.error + '15', borderRadius: radius.lg, padding: spacing.md, alignItems: 'center' }}>
-            <Text style={{ color: C.error, ...typography.caption, fontWeight: '700' }}>{t('admin', 'summaryExpenseLabel')}</Text>
-            <Text style={{ color: C.error, fontFamily: fontBold, marginTop: 2, ...typography.bodyEmphasis }}>₹{summary.totalExpense.toLocaleString('en-IN')}</Text>
-          </View>
-          <View style={{ flex: 1, backgroundColor: C.primary + '15', borderRadius: radius.lg, padding: spacing.md, alignItems: 'center' }}>
-            <Text style={{ color: C.primary, ...typography.caption, fontWeight: '700' }}>{t('admin', 'summaryBalanceLabel')}</Text>
-            <Text style={{ color: C.primary, fontFamily: fontBold, marginTop: 2, ...typography.bodyEmphasis }}>₹{summary.balance.toLocaleString('en-IN')}</Text>
-          </View>
+        <View style={{ backgroundColor: C.error + '15', borderRadius: radius.lg, padding: spacing.lg, alignItems: 'center', marginBottom: spacing.md }}>
+          <Text style={{ color: C.error, ...typography.caption, fontWeight: '700' }}>{t('admin', 'summaryTotalSpentLabel')}</Text>
+          <Text style={{ color: C.error, fontFamily: fontBold, marginTop: 2, ...typography.title }}>₹{totalSpent.toLocaleString('en-IN')}</Text>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          {tabs.map(tab => (
+        {categories.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
             <TouchableOpacity
-              key={tab.key}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setFilter(tab.key); }}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCategoryFilter(''); }}
               style={{
-                flex: 1, alignItems: 'center', paddingVertical: spacing.sm, borderRadius: radius.md,
-                borderWidth: 1, borderColor: filter === tab.key ? C.primary : C.border,
-                backgroundColor: filter === tab.key ? C.primary + '15' : C.card,
+                paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
+                borderWidth: 1, borderColor: !categoryFilter ? C.primary : C.border,
+                backgroundColor: !categoryFilter ? C.primary + '15' : C.card,
               }}
             >
-              <Text style={{ color: filter === tab.key ? C.primary : C.textMuted, fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>
-                {tab.label}
-              </Text>
+              <Text style={{ color: !categoryFilter ? C.primary : C.textMuted, ...typography.caption, fontWeight: '700' }}>{t('admin', 'expenseFilterAll')}</Text>
             </TouchableOpacity>
-          ))}
-        </View>
+            {categories.map(cat => (
+              <TouchableOpacity
+                key={cat}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCategoryFilter(cat); }}
+                style={{
+                  paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
+                  borderWidth: 1, borderColor: categoryFilter === cat ? C.primary : C.border,
+                  backgroundColor: categoryFilter === cat ? C.primary + '15' : C.card,
+                }}
+              >
+                <Text style={{ color: categoryFilter === cat ? C.primary : C.textMuted, ...typography.caption, fontWeight: '700' }}>{cat}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
       </View>
 
       <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
@@ -282,8 +281,6 @@ export default function AdminExpensesScreen() {
               </View>
             ))}
           </View>
-        ) : migrationPending ? (
-          <EmptyState emoji="🛠️" title={t('admin', 'expensesMigrationPendingTitle')} subtitle={t('admin', 'expensesMigrationPendingSubtitle')} />
         ) : (
           <FlashList
             data={entries}
@@ -323,24 +320,6 @@ export default function AdminExpensesScreen() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
-                {(['income', 'expense'] as const).map(ty => (
-                  <TouchableOpacity
-                    key={ty}
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setFormType(ty); }}
-                    style={{
-                      flex: 1, alignItems: 'center', paddingVertical: spacing.md, borderRadius: radius.md,
-                      borderWidth: 1, borderColor: formType === ty ? C.primary : C.border,
-                      backgroundColor: formType === ty ? C.primary + '15' : C.card,
-                    }}
-                  >
-                    <Text style={{ color: formType === ty ? C.primary : C.textMuted, ...typography.body, fontWeight: '700' }}>
-                      {ty === 'income' ? t('admin', 'expenseFilterIncome') : t('admin', 'expenseFilterExpense')}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
               <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'expenseTitleLabel')}</Text>
               <TextInput
                 style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text, fontFamily: fontRegular, ...typography.body }}
@@ -369,6 +348,15 @@ export default function AdminExpensesScreen() {
                 onChangeText={setFormCategory}
               />
 
+              <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'expensePayeeLabel')}</Text>
+              <TextInput
+                style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text, fontFamily: fontRegular, ...typography.body }}
+                placeholder={t('admin', 'expensePayeePlaceholder')}
+                placeholderTextColor={C.textFaint}
+                value={formPayee}
+                onChangeText={setFormPayee}
+              />
+
               <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'expenseDateLabel')}</Text>
               <TextInput
                 style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text, ...typography.body }}
@@ -379,13 +367,13 @@ export default function AdminExpensesScreen() {
                 autoCapitalize="none"
               />
 
-              <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'expenseNoteLabel')}</Text>
+              <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'expenseDescriptionLabel')}</Text>
               <TextInput
                 style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text, fontFamily: fontRegular, minHeight: 70, textAlignVertical: 'top', ...typography.body }}
-                placeholder={t('admin', 'expenseNotePlaceholder')}
+                placeholder={t('admin', 'expenseDescriptionPlaceholder')}
                 placeholderTextColor={C.textFaint}
-                value={formNote}
-                onChangeText={setFormNote}
+                value={formDescription}
+                onChangeText={setFormDescription}
                 multiline
               />
 

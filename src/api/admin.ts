@@ -360,50 +360,65 @@ export const deleteAnnouncement = async (id: string | number) => {
   return res.data as { success: boolean; message?: string };
 };
 
-// ── Community expenses ledger (admin + superadmin) ──
+// ── Expense ledger (admin + superadmin) — the real, pre-existing `expenses`
+// table already used by the web app (receipts, no income/type split — this
+// only tracks money spent, not money received). ──
 
 export interface ExpenseEntry {
   id: number | string;
   title: string;
-  type: 'income' | 'expense';
+  category: string;
   amount: number | string;
-  category?: string | null;
-  note?: string | null;
-  entry_date: string;
-  created_by?: number | string | null;
+  description?: string | null;
+  payee?: string | null;
+  expense_date: string;
+  attachment_url?: string | null;
+  recorded_by?: string | null;
   created_at: string;
-}
-
-export interface ExpenseSummary {
-  totalIncome: number;
-  totalExpense: number;
-  balance: number;
 }
 
 export interface ExpenseInput {
   title: string;
-  type: 'income' | 'expense';
+  category: string;
   amount: number | string;
-  category?: string;
-  note?: string;
-  entryDate?: string;
+  description?: string;
+  payee?: string;
+  expenseDate?: string;
+  attachment?: { uri: string; name: string; type: string };
 }
 
-export const fetchAdminExpenses = async (params: { type?: 'income' | 'expense'; page?: number; limit?: number } = {}) => {
+const buildExpenseFormData = (data: Partial<ExpenseInput>) => {
+  const formData = new FormData();
+  if (data.title !== undefined) formData.append('title', data.title);
+  if (data.category !== undefined) formData.append('category', data.category);
+  if (data.amount !== undefined) formData.append('amount', String(data.amount));
+  if (data.description !== undefined) formData.append('description', data.description);
+  if (data.payee !== undefined) formData.append('payee', data.payee);
+  if (data.expenseDate !== undefined) formData.append('expenseDate', data.expenseDate);
+  // @ts-ignore — React Native FormData file shape
+  if (data.attachment) formData.append('attachment', data.attachment);
+  return formData;
+};
+
+export const fetchAdminExpenses = async (params: { category?: string; page?: number; limit?: number } = {}) => {
   const res = await adminClient.get('/admin/expenses', { params });
   return res.data as {
     success: boolean; message?: string; expenses: ExpenseEntry[]; total: number; page: number; totalPages: number;
-    summary: ExpenseSummary; migrationPending?: boolean;
+    totalSpent: number; categories: string[];
   };
 };
 
 export const createExpense = async (data: ExpenseInput) => {
-  const res = await adminClient.post('/admin/expenses', data);
+  const res = await adminClient.post('/admin/expenses', buildExpenseFormData(data), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return res.data as { success: boolean; message?: string; expense?: ExpenseEntry };
 };
 
 export const updateExpense = async (id: string | number, data: Partial<ExpenseInput>) => {
-  const res = await adminClient.put(`/admin/expenses/${id}`, data);
+  const res = await adminClient.put(`/admin/expenses/${id}`, buildExpenseFormData(data), {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return res.data as { success: boolean; message?: string; expense?: ExpenseEntry };
 };
 
