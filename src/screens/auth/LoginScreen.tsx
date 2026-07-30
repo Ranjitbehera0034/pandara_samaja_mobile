@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { UserPlus } from 'lucide-react-native';
+import { UserPlus, Users } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
@@ -94,6 +94,14 @@ export default function LoginScreen() {
   const handleContactToRegister = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const url = 'https://wa.me/918249339238?text=Hello%20Pandara%20Samaja%20Support%2C%20I%20am%20not%20a%20registered%20member%20yet%20and%20would%20like%20to%20know%20how%20to%20join.';
+    Linking.openURL(url).catch(() => {
+      Alert.alert(t('common', 'errorTitle'), t('auth', 'whatsappNotInstalled'));
+    });
+  };
+
+  const handleJoinWhatsappGroup = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const url = 'https://chat.whatsapp.com/BiBlBOpYMKi2qCSzkM4aPJ';
     Linking.openURL(url).catch(() => {
       Alert.alert(t('common', 'errorTitle'), t('auth', 'whatsappNotInstalled'));
     });
@@ -262,6 +270,37 @@ export default function LoginScreen() {
             </Text>
             <Text style={{ color: colors.success, fontFamily: fontBold, marginTop: 2, ...typography.caption, fontWeight: '700' }}>
               {t('auth', 'contactToRegister')}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Join the community WhatsApp group */}
+        <TouchableOpacity
+          onPress={handleJoinWhatsappGroup}
+          className="flex-row items-center"
+          style={{
+            marginTop: spacing.md,
+            gap: spacing.md,
+            borderRadius: radius.lg,
+            padding: spacing.lg,
+            borderWidth: 1,
+            backgroundColor: colors.success + '15',
+            borderColor: colors.success + '40',
+            ...shadow.card,
+          }}
+        >
+          <View
+            className="items-center justify-center"
+            style={{ width: 40, height: 40, borderRadius: radius.full, backgroundColor: colors.success + '25' }}
+          >
+            <Users size={20} color={colors.success} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: colors.text, fontFamily: fontBold, ...typography.bodyEmphasis }}>
+              {t('auth', 'joinGroupTitle')}
+            </Text>
+            <Text style={{ color: colors.success, fontFamily: fontBold, marginTop: 2, ...typography.caption, fontWeight: '700' }}>
+              {t('auth', 'joinGroupSubtitle')}
             </Text>
           </View>
         </TouchableOpacity>
