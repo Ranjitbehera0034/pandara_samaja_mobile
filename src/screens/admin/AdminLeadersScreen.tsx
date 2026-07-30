@@ -1,6 +1,6 @@
 // src/screens/admin/AdminLeadersScreen.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, RefreshControl, Modal, Pressable, ScrollView, Dimensions } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
 import { Search, X, ArrowLeft, Plus, MapPin } from 'lucide-react-native';
@@ -33,6 +33,10 @@ export default function AdminLeadersScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 400);
   const [levelFilter, setLevelFilter] = useState<LevelFilter>('');
+  const [locationFilter, setLocationFilter] = useState('');
+  const [locations, setLocations] = useState<string[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
 
   const [leaders, setLeaders] = useState<Leader[]>([]);
   const [page, setPage] = useState(1);
@@ -48,6 +52,7 @@ export default function AdminLeadersScreen() {
         limit: PAGE_SIZE,
         search: debouncedSearch || undefined,
         level: levelFilter || undefined,
+        location: locationFilter || undefined,
       });
       if (data.success) {
         setLeaders(prev => replace ? data.leaders : [...prev, ...data.leaders]);
@@ -57,12 +62,22 @@ export default function AdminLeadersScreen() {
     } catch (e) {
       console.error('[ADMIN_LEADERS] Fetch failed:', e);
     }
-  }, [debouncedSearch, levelFilter]);
+  }, [debouncedSearch, levelFilter, locationFilter]);
 
   useEffect(() => {
     setLoading(true);
     fetchLeaders(1, true).finally(() => setLoading(false));
   }, [fetchLeaders]);
+
+  // Load distinct locations for the picker whenever the level changes.
+  useEffect(() => {
+    setLocationFilter('');
+    setLocationsLoading(true);
+    adminApi.fetchAdminLeaderLocations(levelFilter || undefined)
+      .then(r => { if (r.success) setLocations(r.data || []); })
+      .catch(() => setLocations([]))
+      .finally(() => setLocationsLoading(false));
+  }, [levelFilter]);
 
   useEffect(() => {
     const unsub = navigation.addListener('focus', () => fetchLeaders(1, true));
@@ -177,6 +192,30 @@ export default function AdminLeadersScreen() {
             );
           })}
         </View>
+
+        {/* Location filter — only meaningful once locations exist for the
+            current level scope (unfiltered "All levels" spans every
+            location in the table, which is still useful to narrow down). */}
+        {locationsLoading ? (
+          <ActivityIndicator size="small" color={C.primaryLight} style={{ marginBottom: spacing.md }} />
+        ) : locations.length > 0 ? (
+          <TouchableOpacity
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowLocationModal(true); }}
+            style={{
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+              backgroundColor: C.card, borderColor: C.border, borderWidth: 1,
+              borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginBottom: spacing.md,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <MapPin size={14} color={locationFilter ? C.primary : C.textMuted} />
+              <Text style={{ color: locationFilter ? C.primary : C.textMuted, fontFamily: fontRegular, ...typography.caption, fontWeight: locationFilter ? '700' : '400' }}>
+                {locationFilter || t('admin', 'leadersAllLocations')}
+              </Text>
+            </View>
+            <Text style={{ color: C.primaryLight, ...typography.caption, fontWeight: '700' }}>{t('admin', 'leadersChooseLocation')}</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
@@ -214,6 +253,49 @@ export default function AdminLeadersScreen() {
           />
         )}
       </View>
+
+      <Modal visible={showLocationModal} transparent animationType="slide" onRequestClose={() => setShowLocationModal(false)}>
+        <Pressable style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={() => setShowLocationModal(false)}>
+          <View
+            style={{
+              backgroundColor: C.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
+              maxHeight: Dimensions.get('window').height * 0.7, paddingBottom: insets.bottom + spacing.xl, padding: spacing.xl,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
+              <Text style={{ color: C.text, fontFamily: fontBold, ...typography.title }}>{t('admin', 'leadersSelectLocationTitle')}</Text>
+              <TouchableOpacity onPress={() => setShowLocationModal(false)}>
+                <X size={20} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <TouchableOpacity
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLocationFilter(''); setShowLocationModal(false); }}
+                style={{
+                  backgroundColor: !locationFilter ? C.primary + '15' : C.bg, borderColor: !locationFilter ? C.primaryLight + '40' : C.border,
+                  padding: spacing.md, borderRadius: radius.md, marginBottom: spacing.sm,
+                }}
+                className="border"
+              >
+                <Text style={{ color: !locationFilter ? C.primaryLight : C.text, ...typography.bodyEmphasis }}>{t('admin', 'leadersAllLocations')}</Text>
+              </TouchableOpacity>
+              {locations.map(loc => (
+                <TouchableOpacity
+                  key={loc}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLocationFilter(loc); setShowLocationModal(false); }}
+                  style={{
+                    backgroundColor: locationFilter === loc ? C.primary + '15' : C.bg, borderColor: locationFilter === loc ? C.primaryLight + '40' : C.border,
+                    padding: spacing.md, borderRadius: radius.md, marginBottom: spacing.sm,
+                  }}
+                  className="border"
+                >
+                  <Text style={{ color: locationFilter === loc ? C.primaryLight : C.text, ...typography.bodyEmphasis }}>{loc}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }

@@ -567,9 +567,14 @@ export interface LeaderInput {
   image?: { uri: string; name: string; type: string } | null;
 }
 
-export const fetchAdminLeaders = async (params: { page?: number; limit?: number; level?: string; search?: string } = {}) => {
+export const fetchAdminLeaders = async (params: { page?: number; limit?: number; level?: string; location?: string; search?: string } = {}) => {
   const res = await adminClient.get('/admin/leaders', { params });
   return res.data as { success: boolean; message?: string; leaders: Leader[]; total: number; page: number; totalPages: number };
+};
+
+export const fetchAdminLeaderLocations = async (level?: string) => {
+  const res = await adminClient.get('/admin/leaders/locations', { params: { level } });
+  return res.data as { success: boolean; message?: string; data: string[] };
 };
 
 const buildLeaderFormData = (data: Partial<LeaderInput>) => {

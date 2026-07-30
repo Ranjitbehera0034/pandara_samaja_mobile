@@ -598,6 +598,9 @@ const translations = {
 
       leadersTitle: 'Manage Leaders',
       leadersSearchPlaceholder: 'Search by name or role…',
+      leadersAllLocations: 'All locations',
+      leadersChooseLocation: 'Choose',
+      leadersSelectLocationTitle: 'Select Location',
       leadersLoadError: 'Failed to load leaders',
       leadersEmptyTitle: 'No leaders found',
       leadersEmptySubtitle: 'Tap + to add your first leader',
@@ -1430,6 +1433,9 @@ const translations = {
 
       leadersTitle: 'ନେତୃତ୍ୱ ପରିଚାଳନା',
       leadersSearchPlaceholder: 'ନାମ କିମ୍ବା ଭୂମିକା ଦ୍ୱାରା ଖୋଜନ୍ତୁ…',
+      leadersAllLocations: 'ସମସ୍ତ ସ୍ଥାନ',
+      leadersChooseLocation: 'ବାଛନ୍ତୁ',
+      leadersSelectLocationTitle: 'ସ୍ଥାନ ବାଛନ୍ତୁ',
       leadersLoadError: 'ନେତାମାନଙ୍କୁ ଲୋଡ୍ କରିବାରେ ବିଫଳ',
       leadersEmptyTitle: 'କୌଣସି ନେତା ମିଳିଲେ ନାହିଁ',
       leadersEmptySubtitle: 'ପ୍ରଥମ ନେତା ଯୋଡିବାକୁ + ଦବାନ୍ତୁ',
