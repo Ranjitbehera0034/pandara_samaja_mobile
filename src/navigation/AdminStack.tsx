@@ -9,6 +9,8 @@ import AdminUsersScreen from '../screens/admin/AdminUsersScreen';
 import AdminTrackerScreen from '../screens/admin/AdminTrackerScreen';
 import AdminMatrimonyScreen from '../screens/admin/AdminMatrimonyScreen';
 import AdminMatrimonyFormScreen from '../screens/admin/AdminMatrimonyFormScreen';
+import AdminMatrimonyApplicationsScreen from '../screens/admin/AdminMatrimonyApplicationsScreen';
+import AdminMatrimonyHistoryScreen from '../screens/admin/AdminMatrimonyHistoryScreen';
 import AdminPostsScreen from '../screens/admin/AdminPostsScreen';
 import AdminAnnouncementsScreen from '../screens/admin/AdminAnnouncementsScreen';
 import AdminExpensesScreen from '../screens/admin/AdminExpensesScreen';
@@ -28,6 +30,8 @@ export type AdminStackParams = {
   AdminTracker: undefined;
   AdminMatrimony: undefined;
   AdminMatrimonyForm: { id?: string | number };
+  AdminMatrimonyApplications: undefined;
+  AdminMatrimonyHistory: undefined;
   AdminPosts: undefined;
   AdminAnnouncements: undefined;
   AdminExpenses: undefined;
@@ -50,6 +54,8 @@ export default function AdminStack() {
       <Stack.Screen name="AdminTracker" component={AdminTrackerScreen} />
       <Stack.Screen name="AdminMatrimony" component={AdminMatrimonyScreen} />
       <Stack.Screen name="AdminMatrimonyForm" component={AdminMatrimonyFormScreen} />
+      <Stack.Screen name="AdminMatrimonyApplications" component={AdminMatrimonyApplicationsScreen} />
+      <Stack.Screen name="AdminMatrimonyHistory" component={AdminMatrimonyHistoryScreen} />
       <Stack.Screen name="AdminPosts" component={AdminPostsScreen} />
       <Stack.Screen name="AdminAnnouncements" component={AdminAnnouncementsScreen} />
       <Stack.Screen name="AdminExpenses" component={AdminExpensesScreen} />

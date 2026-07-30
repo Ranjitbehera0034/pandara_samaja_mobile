@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
-import { Search, X, ArrowLeft, Ban, CheckCircle2, Plus } from 'lucide-react-native';
+import { Search, X, ArrowLeft, Ban, CheckCircle2, Plus, ClipboardList, History } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -118,6 +118,23 @@ export default function AdminMatrimonyScreen() {
           style={{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}
         >
           <Plus size={18} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.md }}>
+        <TouchableOpacity
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('AdminMatrimonyApplications'); }}
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm, borderRadius: radius.md, backgroundColor: C.card, borderWidth: 1, borderColor: C.border }}
+        >
+          <ClipboardList size={14} color={C.primary} />
+          <Text style={{ color: C.primary, ...typography.caption, fontWeight: '700' }}>{t('admin', 'matrimonyReviewQueueButton')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('AdminMatrimonyHistory'); }}
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm, borderRadius: radius.md, backgroundColor: C.card, borderWidth: 1, borderColor: C.border }}
+        >
+          <History size={14} color={C.primary} />
+          <Text style={{ color: C.primary, ...typography.caption, fontWeight: '700' }}>{t('admin', 'matrimonyHistoryButton')}</Text>
         </TouchableOpacity>
       </View>
 

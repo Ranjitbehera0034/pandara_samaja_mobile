@@ -1,4 +1,12 @@
 // src/screens/community/MatrimonyScreen.tsx
+// Member-facing matrimony directory. Rebuilt against the redesigned
+// backend: matrimony is now a document-upload-and-review directory, not a
+// swipe/Tinder-style matcher. Three tabs:
+//   - Browse: every approved candidate, tap for full detail + uploaded form.
+//   - Submit: fill out a short cover form + upload a photo of the filled &
+//     signed paper registration form, for admin review.
+//   - My Applications: track the status of your own submissions, resubmit
+//     if a correction is requested.
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
@@ -18,10 +26,12 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import {
-  ArrowLeft, Heart, X, MapPin, Briefcase, GraduationCap, FileText,
-  Search, SlidersHorizontal, ImagePlus, Camera, ImageOff,
+  ArrowLeft, MapPin, Briefcase, GraduationCap, FileText,
+  Search, SlidersHorizontal, ImageOff, Download, Camera,
+  Clock, AlertTriangle, CheckCircle2, XCircle,
 } from 'lucide-react-native';
 import * as matrimonyApi from '../../api/matrimony';
+import { Candidate, MatrimonyApplication } from '../../api/matrimony';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import SkeletonBox from '../../components/common/SkeletonBox';
@@ -30,36 +40,9 @@ import Button from '../../components/common/Button';
 
 const { width: W, height: H } = Dimensions.get('window');
 
-type Gender = 'male' | 'female';
-type TabKey = 'browse' | 'myProfile' | 'matches';
+type TabKey = 'browse' | 'submit' | 'myApplications';
 type SortKey = 'newest' | 'age_asc' | 'age_desc' | 'name';
-
-interface Candidate {
-  id: string | number;
-  name: string;
-  gender: string;
-  dob?: string | null;
-  age?: number | null;
-  height?: string | null;
-  blood_group?: string | null;
-  gotra?: string | null;
-  bansha?: string | null;
-  education?: string | null;
-  technical_education?: string | null;
-  professional_education?: string | null;
-  occupation?: string | null;
-  father?: string | null;
-  mother?: string | null;
-  address?: string | null;
-  phone?: string | null;
-  email?: string | null;
-  photo?: string | null;
-  photos?: string[] | null;
-  form_url?: string | null;
-  submitted_by?: string | number | null;
-  is_matched?: boolean;
-  created_at?: string;
-}
+type PickedFile = { uri: string; name: string; type: string };
 
 interface FilterState {
   minAge: string;
@@ -71,25 +54,17 @@ interface FilterState {
 
 const EMPTY_FILTERS: FilterState = { minAge: '', maxAge: '', education: '', gotra: '', gender: '' };
 
-interface ProfileFormState {
-  name: string; gender: Gender | ''; dob: string; age: string; height: string;
-  bloodGroup: string; gotra: string; bansha: string; education: string;
-  technicalEducation: string; professionalEducation: string; occupation: string;
-  father: string; mother: string; address: string; phone: string; email: string;
-}
-
-const EMPTY_PROFILE_FORM: ProfileFormState = {
-  name: '', gender: '', dob: '', age: '', height: '', bloodGroup: '', gotra: '', bansha: '',
-  education: '', technicalEducation: '', professionalEducation: '', occupation: '',
-  father: '', mother: '', address: '', phone: '', email: '',
-};
-
 const LIMIT = 10;
 
 function getCandidatePhotos(c: Candidate): string[] {
   if (c.photos && c.photos.length > 0) return c.photos;
   if (c.photo) return [c.photo];
   return [];
+}
+
+function pickedFromAsset(asset: ImagePicker.ImagePickerAsset): PickedFile {
+  const parts = asset.uri.split('/');
+  return { uri: asset.uri, name: parts[parts.length - 1], type: 'image/jpeg' };
 }
 
 // ════════════════════════════════════════════════
@@ -135,7 +110,7 @@ function PhotoCarousel({ photos, width, height, borderRadius, colors: C }: {
 }
 
 // ════════════════════════════════════════════════
-//  Candidate detail modal (browse tap / matches tap)
+//  Candidate detail modal (browse tap)
 // ════════════════════════════════════════════════
 function CandidateDetailModal({ candidate, onClose }: { candidate: Candidate | null; onClose: () => void }) {
   const { colors: C, spacing, radius, typography } = useTheme();
@@ -177,7 +152,7 @@ function CandidateDetailModal({ candidate, onClose }: { candidate: Candidate | n
               alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <X size={20} color="white" />
+            <XCircle size={20} color="white" />
           </TouchableOpacity>
         </View>
 
@@ -284,7 +259,7 @@ function MatrimonyFilterModal({ visible, onClose, filters, sort, onApply }: {
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
             <Text style={{ color: C.text, ...typography.title }}>{t('matrimony', 'filtersTitle')}</Text>
             <TouchableOpacity onPress={onClose}>
-              <X size={20} color={C.textMuted} />
+              <XCircle size={20} color={C.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -390,347 +365,9 @@ function MatrimonyFilterModal({ visible, onClose, filters, sort, onApply }: {
 }
 
 // ════════════════════════════════════════════════
-//  Create / edit "my profile" form modal
+//  Browse card (no swipe — plain tap-to-open-detail)
 // ════════════════════════════════════════════════
-function ProfileFormModal({ visible, initial, onClose, onSaved }: {
-  visible: boolean; initial: Candidate | null; onClose: () => void; onSaved: (c: Candidate) => void;
-}) {
-  const { colors: C, spacing, radius, typography, shadow } = useTheme();
-  const { lang, t } = useLanguage();
-  const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;
-  const fontFamilyBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
-
-  const [form, setForm] = useState<ProfileFormState>(EMPTY_PROFILE_FORM);
-  const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
-  const [existingFormUrl, setExistingFormUrl] = useState<string | null>(null);
-  const [newPhotos, setNewPhotos] = useState<{ uri: string; name: string; type: string }[]>([]);
-  const [formFile, setFormFile] = useState<{ uri: string; name: string; type: string } | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!visible) return;
-    if (initial) {
-      setForm({
-        name: initial.name || '',
-        gender: (initial.gender === 'male' || initial.gender === 'female') ? initial.gender : '',
-        dob: initial.dob || '',
-        age: initial.age != null ? String(initial.age) : '',
-        height: initial.height || '',
-        bloodGroup: initial.blood_group || '',
-        gotra: initial.gotra || '',
-        bansha: initial.bansha || '',
-        education: initial.education || '',
-        technicalEducation: initial.technical_education || '',
-        professionalEducation: initial.professional_education || '',
-        occupation: initial.occupation || '',
-        father: initial.father || '',
-        mother: initial.mother || '',
-        address: initial.address || '',
-        phone: initial.phone || '',
-        email: initial.email || '',
-      });
-      setExistingPhotos(getCandidatePhotos(initial));
-      setExistingFormUrl(initial.form_url || null);
-    } else {
-      setForm(EMPTY_PROFILE_FORM);
-      setExistingPhotos([]);
-      setExistingFormUrl(null);
-    }
-    setNewPhotos([]);
-    setFormFile(null);
-  }, [visible, initial]);
-
-  const set = (key: keyof ProfileFormState) => (value: string) => setForm(f => ({ ...f, [key]: value }));
-
-  const pickPhotos = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      quality: 0.8,
-    });
-    if (result.canceled || result.assets.length === 0) return;
-    const picked = result.assets.map(asset => {
-      const parts = asset.uri.split('/');
-      return { uri: asset.uri, name: parts[parts.length - 1], type: 'image/jpeg' };
-    });
-    setNewPhotos(prev => [...prev, ...picked]);
-  };
-
-  const removeNewPhoto = (index: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setNewPhotos(prev => prev.filter((_, i) => i !== index));
-  };
-
-  // NOTE: expo-document-picker is not installed in this project, so the
-  // "biodata form" upload falls back to picking a photographed/scanned
-  // image of the document via expo-image-picker (single image, no PDFs).
-  const pickForm = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-    });
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
-    const parts = asset.uri.split('/');
-    setFormFile({ uri: asset.uri, name: parts[parts.length - 1], type: 'image/jpeg' });
-  };
-
-  const handleSubmit = async () => {
-    if (!form.name.trim()) {
-      Alert.alert(t('common', 'errorTitle'), t('matrimony', 'nameRequiredError'));
-      return;
-    }
-    if (!form.gender) {
-      Alert.alert(t('common', 'errorTitle'), t('matrimony', 'genderRequiredError'));
-      return;
-    }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setSaving(true);
-    try {
-      const fd = new FormData();
-      if (initial?.id) fd.append('id', String(initial.id));
-      fd.append('name', form.name.trim());
-      fd.append('gender', form.gender);
-      if (form.dob.trim()) fd.append('dob', form.dob.trim());
-      if (form.age.trim()) fd.append('age', form.age.trim());
-      if (form.height.trim()) fd.append('height', form.height.trim());
-      if (form.bloodGroup.trim()) fd.append('bloodGroup', form.bloodGroup.trim());
-      if (form.gotra.trim()) fd.append('gotra', form.gotra.trim());
-      if (form.bansha.trim()) fd.append('bansha', form.bansha.trim());
-      if (form.education.trim()) fd.append('education', form.education.trim());
-      if (form.technicalEducation.trim()) fd.append('technicalEducation', form.technicalEducation.trim());
-      if (form.professionalEducation.trim()) fd.append('professionalEducation', form.professionalEducation.trim());
-      if (form.occupation.trim()) fd.append('occupation', form.occupation.trim());
-      if (form.father.trim()) fd.append('father', form.father.trim());
-      if (form.mother.trim()) fd.append('mother', form.mother.trim());
-      if (form.address.trim()) fd.append('address', form.address.trim());
-      if (form.phone.trim()) fd.append('phone', form.phone.trim());
-      if (form.email.trim()) fd.append('email', form.email.trim());
-
-      if (formFile) {
-        // @ts-ignore — React Native FormData file shape
-        fd.append('form', formFile);
-      }
-      newPhotos.forEach((photo) => {
-        // @ts-ignore — React Native FormData file shape
-        fd.append('photos', photo);
-      });
-
-      const data = await matrimonyApi.saveProfile(fd);
-      if (data.success) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        onSaved(data.candidate);
-        onClose();
-      }
-    } catch (e) {
-      console.error('[MATRIMONY] save profile failed:', e);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert(t('common', 'errorTitle'), t('matrimony', 'saveProfileError'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const inputStyle = {
-    backgroundColor: C.bg, borderColor: C.border, color: C.text, borderRadius: radius.md,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, marginBottom: spacing.lg,
-    fontFamily, ...typography.body,
-  };
-  const labelStyle = { color: C.textMuted, marginBottom: spacing.xs, fontFamily, ...typography.caption };
-
-  const Field = ({ label, value, onChangeText, placeholder, keyboardType, multiline }: {
-    label: string; value: string; onChangeText: (v: string) => void; placeholder?: string;
-    keyboardType?: 'default' | 'numeric' | 'phone-pad' | 'email-address'; multiline?: boolean;
-  }) => (
-    <View>
-      <Text style={labelStyle}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={C.textFaint}
-        keyboardType={keyboardType}
-        multiline={multiline}
-        style={multiline ? [inputStyle, { minHeight: 72, textAlignVertical: 'top' }] : inputStyle}
-        className="border"
-      />
-    </View>
-  );
-
-  return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: '#00000080', justifyContent: 'flex-end' }}>
-        <View style={{ backgroundColor: C.bg, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.lg, maxHeight: '92%', ...shadow.raised }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
-            <Text style={{ color: C.text, fontFamily: fontFamilyBold, ...typography.title }}>
-              {initial ? t('matrimony', 'editFormTitle') : t('matrimony', 'createFormTitle')}
-            </Text>
-            <TouchableOpacity onPress={onClose}>
-              <X size={20} color={C.textMuted} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            <Field label={t('matrimony', 'nameFieldLabel')} value={form.name} onChangeText={set('name')} placeholder={t('matrimony', 'namePlaceholder')} />
-
-            <Text style={labelStyle}>{t('matrimony', 'genderFieldLabel')}</Text>
-            <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg }}>
-              <TouchableOpacity
-                onPress={() => setForm(f => ({ ...f, gender: 'male' }))}
-                style={{
-                  flex: 1, paddingVertical: spacing.sm + 2, borderRadius: radius.md, alignItems: 'center',
-                  backgroundColor: form.gender === 'male' ? C.male : C.card,
-                  borderWidth: 1, borderColor: form.gender === 'male' ? C.male : C.border,
-                }}
-              >
-                <Text style={{ color: form.gender === 'male' ? 'white' : C.textMuted, ...typography.bodyEmphasis }}>
-                  {t('matrimony', 'maleOption')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setForm(f => ({ ...f, gender: 'female' }))}
-                style={{
-                  flex: 1, paddingVertical: spacing.sm + 2, borderRadius: radius.md, alignItems: 'center',
-                  backgroundColor: form.gender === 'female' ? C.female : C.card,
-                  borderWidth: 1, borderColor: form.gender === 'female' ? C.female : C.border,
-                }}
-              >
-                <Text style={{ color: form.gender === 'female' ? 'white' : C.textMuted, ...typography.bodyEmphasis }}>
-                  {t('matrimony', 'femaleOption')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: spacing.md }}>
-              <View style={{ flex: 1 }}>
-                <Field label={t('matrimony', 'dobLabel')} value={form.dob} onChangeText={set('dob')} placeholder={t('matrimony', 'dobPlaceholder')} />
-              </View>
-              <View style={{ width: 110 }}>
-                <Field
-                  label={t('matrimony', 'ageFieldLabel')}
-                  value={form.age}
-                  onChangeText={(v) => set('age')(v.replace(/[^0-9]/g, ''))}
-                  placeholder={t('matrimony', 'ageFieldPlaceholder')}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: spacing.md }}>
-              <View style={{ flex: 1 }}>
-                <Field label={t('matrimony', 'heightLabel')} value={form.height} onChangeText={set('height')} placeholder={t('matrimony', 'heightPlaceholder')} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Field label={t('matrimony', 'bloodGroupLabel')} value={form.bloodGroup} onChangeText={set('bloodGroup')} placeholder={t('matrimony', 'bloodGroupPlaceholder')} />
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: spacing.md }}>
-              <View style={{ flex: 1 }}>
-                <Field label={t('matrimony', 'gotraLabel')} value={form.gotra} onChangeText={set('gotra')} placeholder={t('matrimony', 'gotraFilterPlaceholder')} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Field label={t('matrimony', 'banshaLabel')} value={form.bansha} onChangeText={set('bansha')} placeholder={t('matrimony', 'banshaPlaceholder')} />
-              </View>
-            </View>
-
-            <Field label={t('matrimony', 'educationLabel')} value={form.education} onChangeText={set('education')} placeholder={t('matrimony', 'educationPlaceholder')} />
-            <Field label={t('matrimony', 'technicalEducationLabel')} value={form.technicalEducation} onChangeText={set('technicalEducation')} placeholder={t('matrimony', 'technicalEducationPlaceholder')} />
-            <Field label={t('matrimony', 'professionalEducationLabel')} value={form.professionalEducation} onChangeText={set('professionalEducation')} placeholder={t('matrimony', 'professionalEducationPlaceholder')} />
-            <Field label={t('matrimony', 'occupationLabel')} value={form.occupation} onChangeText={set('occupation')} placeholder={t('matrimony', 'occupationPlaceholder')} />
-            <Field label={t('matrimony', 'fatherLabel')} value={form.father} onChangeText={set('father')} placeholder={t('matrimony', 'fatherPlaceholder')} />
-            <Field label={t('matrimony', 'motherLabel')} value={form.mother} onChangeText={set('mother')} placeholder={t('matrimony', 'motherPlaceholder')} />
-            <Field label={t('matrimony', 'addressLabel')} value={form.address} onChangeText={set('address')} placeholder={t('matrimony', 'addressPlaceholder')} multiline />
-            <Field label={t('matrimony', 'phoneLabel')} value={form.phone} onChangeText={set('phone')} placeholder={t('matrimony', 'phonePlaceholder')} keyboardType="phone-pad" />
-            <Field label={t('matrimony', 'emailLabel')} value={form.email} onChangeText={set('email')} placeholder={t('matrimony', 'emailPlaceholder')} keyboardType="email-address" />
-
-            {/* Photos */}
-            <Text style={labelStyle}>{t('matrimony', 'photosFieldLabel')}</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm }}>
-              {existingPhotos.map((uri, i) => (
-                <Image key={`existing-${i}`} source={{ uri }} style={{ width: 72, height: 72, borderRadius: radius.md }} contentFit="cover" />
-              ))}
-              {newPhotos.map((p, i) => (
-                <View key={`new-${i}`} style={{ position: 'relative' }}>
-                  <Image source={{ uri: p.uri }} style={{ width: 72, height: 72, borderRadius: radius.md }} contentFit="cover" />
-                  <TouchableOpacity
-                    onPress={() => removeNewPhoto(i)}
-                    style={{
-                      position: 'absolute', top: -6, right: -6, backgroundColor: C.error, borderRadius: radius.full,
-                      width: 20, height: 20, alignItems: 'center', justifyContent: 'center',
-                    }}
-                  >
-                    <X size={12} color="white" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-            <TouchableOpacity
-              onPress={pickPhotos}
-              style={{
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
-                borderWidth: 1, borderColor: C.border, borderRadius: radius.md, paddingVertical: spacing.md, marginBottom: spacing.lg,
-              }}
-            >
-              <ImagePlus size={18} color={C.primary} />
-              <Text style={{ color: C.primary, ...typography.bodyEmphasis }}>{t('matrimony', 'choosePhotosButton')}</Text>
-            </TouchableOpacity>
-
-            {/* Biodata form */}
-            <Text style={labelStyle}>{t('matrimony', 'formFieldLabel')}</Text>
-            <Text style={{ color: C.textFaint, marginBottom: spacing.sm, fontFamily, ...typography.caption }}>
-              {t('matrimony', 'formPickerHelpText')}
-            </Text>
-            {formFile ? (
-              <Image source={{ uri: formFile.uri }} style={{ width: '100%', height: 140, borderRadius: radius.md, marginBottom: spacing.sm }} contentFit="cover" />
-            ) : existingFormUrl ? (
-              <TouchableOpacity
-                onPress={() => Linking.openURL(existingFormUrl).catch(() => {})}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}
-              >
-                <FileText size={16} color={C.primary} />
-                <Text style={{ color: C.primary, ...typography.caption }}>{t('matrimony', 'viewBiodataButton')}</Text>
-              </TouchableOpacity>
-            ) : null}
-            <TouchableOpacity
-              onPress={pickForm}
-              style={{
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
-                borderWidth: 1, borderColor: C.border, borderRadius: radius.md, paddingVertical: spacing.md, marginBottom: spacing.xl,
-              }}
-            >
-              <Camera size={18} color={C.primary} />
-              <Text style={{ color: C.primary, ...typography.bodyEmphasis }}>{t('matrimony', 'chooseFormButton')}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleSubmit}
-              disabled={saving}
-              style={{ backgroundColor: saving ? C.border : C.primary, paddingVertical: spacing.md, borderRadius: radius.md, alignItems: 'center', marginBottom: spacing.xl }}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={{ color: 'white', fontFamily: fontFamilyBold, ...typography.bodyEmphasis }}>
-                  {t('matrimony', 'submitProfileButton')}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-// ════════════════════════════════════════════════
-//  Browse deck card
-// ════════════════════════════════════════════════
-function CandidateCard({ candidate, onLike, onPass, onOpenDetail, actionLoading }: {
-  candidate: Candidate; onLike: () => void; onPass: () => void; onOpenDetail: () => void; actionLoading: boolean;
-}) {
+function CandidateCard({ candidate, onOpenDetail }: { candidate: Candidate; onOpenDetail: () => void }) {
   const { colors: C, spacing, radius, typography, shadow } = useTheme();
   const { lang, t } = useLanguage();
   const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;
@@ -739,100 +376,70 @@ function CandidateCard({ candidate, onLike, onPass, onOpenDetail, actionLoading 
   const cardWidth = W - spacing.lg * 2;
 
   return (
-    <View style={{ backgroundColor: C.card, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: C.border, ...shadow.card }}>
-      <TouchableOpacity activeOpacity={0.9} onPress={onOpenDetail}>
-        <View style={{ position: 'relative' }}>
-          <PhotoCarousel photos={photos} width={cardWidth} height={cardWidth * 0.95} borderRadius={0} colors={C} />
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={onOpenDetail}
+      style={{ backgroundColor: C.card, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: C.border, ...shadow.card, marginBottom: spacing.lg }}
+    >
+      <View style={{ position: 'relative' }}>
+        <PhotoCarousel photos={photos} width={cardWidth} height={cardWidth * 0.85} borderRadius={0} colors={C} />
+        <View
+          style={{
+            position: 'absolute', bottom: spacing.md, left: spacing.md,
+            backgroundColor: candidate.gender?.toLowerCase() === 'male' ? C.male : C.female,
+            paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.sm,
+          }}
+        >
+          <Text style={{ color: 'white', ...typography.caption, fontWeight: '700' }}>
+            {candidate.gender?.toLowerCase() === 'male' ? t('matrimony', 'groomTag') : t('matrimony', 'brideTag')}
+          </Text>
+        </View>
+      </View>
+
+      <View style={{ padding: spacing.lg }}>
+        <Text style={{ color: C.text, fontFamily: fontFamilyBold, ...typography.title }}>
+          {candidate.name}{typeof candidate.age === 'number' ? `, ${candidate.age}` : ''}
+        </Text>
+        {candidate.gotra ? (
+          <Text style={{ color: C.primaryLight, marginTop: spacing.xs, fontFamily, ...typography.bodyEmphasis }}>
+            {t('matrimony', 'gotraLabel')} {candidate.gotra}
+          </Text>
+        ) : null}
+
+        <View style={{ marginTop: spacing.md, gap: spacing.xs + 2 }}>
+          {candidate.education ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 }}>
+              <GraduationCap size={16} color={C.textMuted} />
+              <Text style={{ color: C.textMuted, fontFamily, fontSize: 13 }}>{candidate.education}</Text>
+            </View>
+          ) : null}
+          {candidate.occupation ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 }}>
+              <Briefcase size={16} color={C.textMuted} />
+              <Text style={{ color: C.textMuted, fontFamily, fontSize: 13 }}>{candidate.occupation}</Text>
+            </View>
+          ) : null}
+          {candidate.address ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 }}>
+              <MapPin size={16} color={C.textMuted} />
+              <Text style={{ color: C.textMuted, fontFamily, fontSize: 13 }}>{candidate.address}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {candidate.form_url ? (
           <View
             style={{
-              position: 'absolute', bottom: spacing.md, left: spacing.md,
-              backgroundColor: candidate.gender === 'male' ? C.male : C.female,
-              paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.sm,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs,
+              marginTop: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, borderWidth: 1, borderColor: C.border,
             }}
           >
-            <Text style={{ color: 'white', ...typography.caption, fontWeight: '700' }}>
-              {candidate.gender === 'male' ? t('matrimony', 'groomTag') : t('matrimony', 'brideTag')}
-            </Text>
+            <FileText size={14} color={C.primary} />
+            <Text style={{ color: C.primary, ...typography.caption, fontWeight: '700' }}>{t('matrimony', 'viewBiodataButton')}</Text>
           </View>
-        </View>
-
-        <View style={{ padding: spacing.lg }}>
-          <Text style={{ color: C.text, fontFamily: fontFamilyBold, ...typography.title }}>
-            {candidate.name}{typeof candidate.age === 'number' ? `, ${candidate.age}` : ''}
-          </Text>
-          {candidate.gotra ? (
-            <Text style={{ color: C.primaryLight, marginTop: spacing.xs, fontFamily, ...typography.bodyEmphasis }}>
-              {t('matrimony', 'gotraLabel')} {candidate.gotra}
-            </Text>
-          ) : null}
-
-          <View style={{ marginTop: spacing.md, gap: spacing.xs + 2 }}>
-            {candidate.education ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 }}>
-                <GraduationCap size={16} color={C.textMuted} />
-                <Text style={{ color: C.textMuted, fontFamily, fontSize: 13 }}>{candidate.education}</Text>
-              </View>
-            ) : null}
-            {candidate.occupation ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 }}>
-                <Briefcase size={16} color={C.textMuted} />
-                <Text style={{ color: C.textMuted, fontFamily, fontSize: 13 }}>{candidate.occupation}</Text>
-              </View>
-            ) : null}
-            {candidate.address ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 }}>
-                <MapPin size={16} color={C.textMuted} />
-                <Text style={{ color: C.textMuted, fontFamily, fontSize: 13 }}>{candidate.address}</Text>
-              </View>
-            ) : null}
-          </View>
-
-          {candidate.form_url ? (
-            <TouchableOpacity
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                Linking.openURL(candidate.form_url as string).catch(() => {});
-              }}
-              style={{
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs,
-                marginTop: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, borderWidth: 1, borderColor: C.border,
-              }}
-            >
-              <FileText size={14} color={C.primary} />
-              <Text style={{ color: C.primary, ...typography.caption, fontWeight: '700' }}>{t('matrimony', 'viewBiodataButton')}</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </TouchableOpacity>
-
-      {/* Like / Pass actions */}
-      <View style={{ flexDirection: 'row', gap: spacing.md, padding: spacing.lg, paddingTop: 0 }}>
-        <TouchableOpacity
-          disabled={actionLoading}
-          onPress={onPass}
-          style={{
-            flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs,
-            paddingVertical: spacing.md, borderRadius: radius.full, borderWidth: 1.5, borderColor: C.border,
-            opacity: actionLoading ? 0.6 : 1,
-          }}
-        >
-          <X size={18} color={C.error} />
-          <Text style={{ color: C.error, ...typography.label }}>{t('matrimony', 'passButtonLabel')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          disabled={actionLoading}
-          onPress={onLike}
-          style={{
-            flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs,
-            paddingVertical: spacing.md, borderRadius: radius.full, backgroundColor: C.primary,
-            opacity: actionLoading ? 0.6 : 1,
-          }}
-        >
-          {actionLoading ? <ActivityIndicator size="small" color="#fff" /> : <Heart size={18} color="white" fill="white" />}
-          <Text style={{ color: 'white', ...typography.label }}>{t('matrimony', 'likeButtonLabel')}</Text>
-        </TouchableOpacity>
+        ) : null}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -841,7 +448,7 @@ function BrowseSkeleton({ colors: C, spacing, radius }: { colors: ReturnType<typ
   return (
     <View style={{ padding: spacing.lg }}>
       <View style={{ backgroundColor: C.card, borderRadius: radius.lg, overflow: 'hidden', borderWidth: 1, borderColor: C.border }}>
-        <SkeletonBox width="100%" height={cardWidth * 0.95} borderRadius={0} />
+        <SkeletonBox width="100%" height={cardWidth * 0.85} borderRadius={0} />
         <View style={{ padding: spacing.lg, gap: spacing.sm + 2 }}>
           <SkeletonBox width="60%" height={18} />
           <SkeletonBox width="40%" height={13} />
@@ -849,6 +456,32 @@ function BrowseSkeleton({ colors: C, spacing, radius }: { colors: ReturnType<typ
           <SkeletonBox width="55%" height={13} />
         </View>
       </View>
+    </View>
+  );
+}
+
+// ════════════════════════════════════════════════
+//  Status badge (My Applications tab)
+// ════════════════════════════════════════════════
+function StatusBadge({ status }: { status: MatrimonyApplication['status'] }) {
+  const { colors: C, spacing, radius, typography } = useTheme();
+  const { t } = useLanguage();
+
+  const map: Record<MatrimonyApplication['status'], { color: string; label: string; Icon: any }> = {
+    pending: { color: C.warning, label: t('matrimony', 'statusPendingBadge'), Icon: Clock },
+    correction_needed: { color: C.warning, label: t('matrimony', 'statusCorrectionNeededBadge'), Icon: AlertTriangle },
+    approved: { color: C.success, label: t('matrimony', 'statusApprovedBadge'), Icon: CheckCircle2 },
+    rejected: { color: C.error, label: t('matrimony', 'statusRejectedBadge'), Icon: XCircle },
+  };
+  const { color, label, Icon } = map[status] || map.pending;
+
+  return (
+    <View style={{
+      flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start',
+      backgroundColor: color + '15', borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 4,
+    }}>
+      <Icon size={12} color={color} />
+      <Text style={{ color, ...typography.caption, fontWeight: '700' }}>{label}</Text>
     </View>
   );
 }
@@ -869,12 +502,10 @@ export default function MatrimonyScreen() {
 
   // ── Browse tab state ──
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [cursor, setCursor] = useState(0);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingBrowse, setLoadingBrowse] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
 
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -894,12 +525,8 @@ export default function MatrimonyScreen() {
     if (filters.maxAge) params.maxAge = filters.maxAge;
     if (filters.education.trim()) params.education = filters.education.trim();
     if (filters.gotra.trim()) params.gotra = filters.gotra.trim();
-    // The API's `gender` param excludes candidates of that gender (it's meant
-    // for "browse the opposite gender by default"), so a UI request to show
-    // only grooms (male) must pass gender=female to exclude female, and vice
-    // versa.
-    if (filters.gender === 'male') params.gender = 'female';
-    else if (filters.gender === 'female') params.gender = 'male';
+    // Plain optional filter now — no forced opposite-gender default.
+    if (filters.gender) params.gender = filters.gender;
     return params;
   }, [debouncedSearch, sort, filters]);
 
@@ -911,7 +538,6 @@ export default function MatrimonyScreen() {
       if (data.success) {
         const list: Candidate[] = data.candidates || [];
         setCandidates(prev => (replace ? list : [...prev, ...list]));
-        if (replace) setCursor(0);
         setHasMore(list.length >= LIMIT);
         setPage(pageNum);
       }
@@ -930,38 +556,9 @@ export default function MatrimonyScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, sort, filters]);
 
-  // Prefetch the next page as the deck runs low.
-  useEffect(() => {
-    if (!loadingBrowse && !loadingMore && hasMore && candidates.length - cursor <= 2) {
-      loadBrowse(page + 1, false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cursor, candidates.length]);
-
-  const currentCandidate = candidates[cursor];
-
-  const handleSwipe = async (direction: 'like' | 'pass') => {
-    if (!currentCandidate || actionLoading) return;
-    Haptics.impactAsync(direction === 'like' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
-    setActionLoading(true);
-    try {
-      const data = await matrimonyApi.swipeCandidate(currentCandidate.id, direction);
-      if (data.success) {
-        if (direction === 'like') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setCursor(prev => prev + 1);
-        if (data.matched) {
-          setTimeout(() => {
-            Alert.alert(t('matrimony', 'matchedAlertTitle'), t('matrimony', 'matchedAlertMessage'));
-          }, 250);
-        }
-      }
-    } catch (e) {
-      console.error('[MATRIMONY] swipe failed:', e);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert(t('common', 'errorTitle'), t('matrimony', 'swipeError'));
-    } finally {
-      setActionLoading(false);
-    }
+  const onEndReached = () => {
+    if (loadingBrowse || loadingMore || !hasMore) return;
+    loadBrowse(page + 1, false);
   };
 
   const resetAllFilters = () => {
@@ -977,60 +574,162 @@ export default function MatrimonyScreen() {
     [filters, sort]
   );
 
-  // ── My Profile tab state ──
-  const [myProfile, setMyProfile] = useState<Candidate | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
-  const [profileLoaded, setProfileLoaded] = useState(false);
-  const [profileFormVisible, setProfileFormVisible] = useState(false);
+  // ── Submit tab state ──
+  const RELATION_OPTIONS = ['Self/Head', 'Son', 'Daughter'] as const;
+  const [candidateName, setCandidateName] = useState('');
+  const [relation, setRelation] = useState<string>('Self/Head');
+  const [relationOther, setRelationOther] = useState('');
+  const [submitGender, setSubmitGender] = useState<'Male' | 'Female' | ''>('');
+  const [uploadedForm, setUploadedForm] = useState<PickedFile | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
 
-  const loadMyProfile = useCallback(async () => {
-    setLoadingProfile(true);
+  const handleDownloadForm = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDownloadingTemplate(true);
     try {
-      const data = await matrimonyApi.fetchMyProfile();
-      if (data.success) setMyProfile((data.candidates && data.candidates[0]) || null);
+      const data = await matrimonyApi.fetchFormTemplateUrl();
+      if (data.success && data.url) {
+        await Linking.openURL(data.url);
+      }
     } catch (e) {
-      console.error('[MATRIMONY] load profile failed:', e);
-      Alert.alert(t('common', 'errorTitle'), t('matrimony', 'loadProfileError'));
+      console.error('[MATRIMONY] fetch form template failed:', e);
+      Alert.alert(t('common', 'errorTitle'), t('matrimony', 'downloadFormError'));
     } finally {
-      setLoadingProfile(false);
-      setProfileLoaded(true);
+      setDownloadingTemplate(false);
+    }
+  };
+
+  const pickUploadedForm = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    setUploadedForm(pickedFromAsset(result.assets[0]));
+  };
+
+  const resetSubmitForm = () => {
+    setCandidateName('');
+    setRelation('Self/Head');
+    setRelationOther('');
+    setSubmitGender('');
+    setUploadedForm(null);
+  };
+
+  const handleSubmitApplication = async () => {
+    if (!candidateName.trim()) {
+      Alert.alert(t('common', 'errorTitle'), t('matrimony', 'candidateNameRequiredError'));
+      return;
+    }
+    const relationValue = relation === 'Other' ? relationOther.trim() : relation;
+    if (!relationValue) {
+      Alert.alert(t('common', 'errorTitle'), relation === 'Other' ? t('matrimony', 'relationOtherRequiredError') : t('matrimony', 'relationRequiredError'));
+      return;
+    }
+    if (!submitGender) {
+      Alert.alert(t('common', 'errorTitle'), t('matrimony', 'genderRequiredError'));
+      return;
+    }
+    if (!uploadedForm) {
+      Alert.alert(t('common', 'errorTitle'), t('matrimony', 'uploadedFormRequiredError'));
+      return;
+    }
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.append('candidateName', candidateName.trim());
+      fd.append('relationToHof', relationValue);
+      fd.append('gender', submitGender);
+      // @ts-ignore — React Native FormData file shape
+      fd.append('form', uploadedForm);
+
+      const data = await matrimonyApi.submitMatrimonyApplication(fd);
+      if (data.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        resetSubmitForm();
+        setMyApplicationsLoaded(false);
+        Alert.alert(t('matrimony', 'submitApplicationSuccessTitle'), t('matrimony', 'submitApplicationSuccessMessage'));
+        setActiveTab('myApplications');
+      }
+    } catch (e) {
+      console.error('[MATRIMONY] submit application failed:', e);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t('common', 'errorTitle'), t('matrimony', 'submitApplicationError'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ── My Applications tab state ──
+  const [myApplications, setMyApplications] = useState<MatrimonyApplication[]>([]);
+  const [loadingApplications, setLoadingApplications] = useState(true);
+  const [myApplicationsLoaded, setMyApplicationsLoaded] = useState(false);
+  const [resubmittingId, setResubmittingId] = useState<string | number | null>(null);
+
+  const loadMyApplications = useCallback(async () => {
+    setLoadingApplications(true);
+    try {
+      const data = await matrimonyApi.fetchMyApplications();
+      if (data.success) setMyApplications(data.applications || []);
+    } catch (e) {
+      console.error('[MATRIMONY] load applications failed:', e);
+      Alert.alert(t('common', 'errorTitle'), t('matrimony', 'loadApplicationsError'));
+    } finally {
+      setLoadingApplications(false);
+      setMyApplicationsLoaded(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'myProfile' && !profileLoaded) loadMyProfile();
-  }, [activeTab, profileLoaded, loadMyProfile]);
+    if (activeTab === 'myApplications' && !myApplicationsLoaded) loadMyApplications();
+  }, [activeTab, myApplicationsLoaded, loadMyApplications]);
 
-  // ── Matches tab state ──
-  const [matches, setMatches] = useState<Candidate[]>([]);
-  const [loadingMatches, setLoadingMatches] = useState(true);
-  const [matchesLoaded, setMatchesLoaded] = useState(false);
+  const handleResubmit = async (applicationId: string | number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const file = pickedFromAsset(result.assets[0]);
 
-  const loadMatches = useCallback(async () => {
-    setLoadingMatches(true);
+    setResubmittingId(applicationId);
     try {
-      const data = await matrimonyApi.fetchMatches();
-      if (data.success) setMatches(data.matches || []);
+      const fd = new FormData();
+      // @ts-ignore — React Native FormData file shape
+      fd.append('form', file);
+      const data = await matrimonyApi.resubmitApplication(applicationId, fd);
+      if (data.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setMyApplications(prev => prev.map(a => (a.id === applicationId ? data.application : a)));
+        Alert.alert(t('matrimony', 'resubmitSuccessTitle'), t('matrimony', 'resubmitSuccessMessage'));
+      }
     } catch (e) {
-      console.error('[MATRIMONY] load matches failed:', e);
-      Alert.alert(t('common', 'errorTitle'), t('matrimony', 'loadMatchesError'));
+      console.error('[MATRIMONY] resubmit failed:', e);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t('common', 'errorTitle'), t('matrimony', 'resubmitError'));
     } finally {
-      setLoadingMatches(false);
-      setMatchesLoaded(true);
+      setResubmittingId(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'matches' && !matchesLoaded) loadMatches();
-  }, [activeTab, matchesLoaded, loadMatches]);
+  };
 
   const TABS: { key: TabKey; label: string }[] = [
     { key: 'browse', label: t('matrimony', 'tabBrowse') },
-    { key: 'myProfile', label: t('matrimony', 'tabMyProfile') },
-    { key: 'matches', label: t('matrimony', 'tabMatches') },
+    { key: 'submit', label: t('matrimony', 'tabSubmit') },
+    { key: 'myApplications', label: t('matrimony', 'tabMyApplications') },
   ];
+
+  const inputStyle = {
+    backgroundColor: C.card, borderColor: C.border, color: C.text, borderRadius: radius.md,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, marginBottom: spacing.lg,
+    fontFamily, ...typography.body,
+  };
+  const labelStyle = { color: C.textMuted, marginBottom: spacing.xs, fontFamily, ...typography.caption };
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top }}>
@@ -1115,143 +814,227 @@ export default function MatrimonyScreen() {
             subtitle={t('matrimony', 'emptySubtitle')}
             action={{ label: t('matrimony', 'resetFilter'), onPress: resetAllFilters }}
           />
-        ) : cursor >= candidates.length ? (
-          loadingMore ? (
-            <View style={{ paddingVertical: spacing.xxl, alignItems: 'center' }}>
-              <ActivityIndicator size="small" color={C.primary} />
-            </View>
-          ) : (
-            <EmptyState
-              emoji="🎉"
-              title={t('matrimony', 'emptyTitle')}
-              subtitle={t('matrimony', 'emptySubtitle')}
-              action={{ label: t('matrimony', 'resetFilter'), onPress: resetAllFilters }}
-            />
-          )
         ) : (
-          <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxl }} showsVerticalScrollIndicator={false}>
-            <CandidateCard
-              candidate={currentCandidate}
-              onLike={() => handleSwipe('like')}
-              onPass={() => handleSwipe('pass')}
-              onOpenDetail={() => setDetailCandidate(currentCandidate)}
-              actionLoading={actionLoading}
-            />
-          </ScrollView>
-        )
-      )}
-
-      {/* My Profile tab content */}
-      {activeTab === 'myProfile' && (
-        loadingProfile ? (
-          <View style={{ padding: spacing.lg }}>
-            <SkeletonBox width="100%" height={260} borderRadius={radius.lg} />
-          </View>
-        ) : myProfile ? (
-          <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.xxl }} showsVerticalScrollIndicator={false}>
-            <Text style={{ color: C.text, fontFamily: fontFamilyBold, marginBottom: spacing.md, ...typography.heading }}>
-              {t('matrimony', 'myProfileHeader')}
-            </Text>
-            <View style={{ backgroundColor: C.card, borderRadius: radius.lg, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
-              <PhotoCarousel photos={getCandidatePhotos(myProfile)} width={W - spacing.lg * 2} height={220} borderRadius={0} colors={C} />
-              <View style={{ padding: spacing.lg }}>
-                <Text style={{ color: C.text, fontFamily: fontFamilyBold, ...typography.title }}>
-                  {myProfile.name}{typeof myProfile.age === 'number' ? `, ${myProfile.age}` : ''}
-                </Text>
-                {myProfile.gotra ? (
-                  <Text style={{ color: C.primaryLight, marginTop: spacing.xs, ...typography.bodyEmphasis }}>
-                    {t('matrimony', 'gotraLabel')} {myProfile.gotra}
-                  </Text>
-                ) : null}
-                <View style={{ marginTop: spacing.md, gap: spacing.xs }}>
-                  {myProfile.education ? (
-                    <Text style={{ color: C.textMuted, fontSize: 13 }}>{myProfile.education}</Text>
-                  ) : null}
-                  {myProfile.occupation ? (
-                    <Text style={{ color: C.textMuted, fontSize: 13 }}>{myProfile.occupation}</Text>
-                  ) : null}
-                </View>
-                {myProfile.form_url ? (
-                  <TouchableOpacity
-                    onPress={() => Linking.openURL(myProfile.form_url as string).catch(() => {})}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.md }}
-                  >
-                    <FileText size={16} color={C.primary} />
-                    <Text style={{ color: C.primary, ...typography.caption }}>{t('matrimony', 'viewBiodataButton')}</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-            </View>
-            <View style={{ marginTop: spacing.lg }}>
-              <Button
-                label={t('matrimony', 'editProfileButton')}
-                variant="primary"
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setProfileFormVisible(true); }}
-              />
-            </View>
-          </ScrollView>
-        ) : (
-          <EmptyState
-            emoji="💍"
-            title={t('matrimony', 'noProfileTitle')}
-            subtitle={t('matrimony', 'noProfileSubtitle')}
-            action={{
-              label: t('matrimony', 'createProfileButton'),
-              onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setProfileFormVisible(true); },
+          <ScrollView
+            contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.xxl }}
+            showsVerticalScrollIndicator={false}
+            onScroll={({ nativeEvent }) => {
+              const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+              if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 200) onEndReached();
             }}
-          />
+            scrollEventThrottle={200}
+          >
+            {candidates.map(c => (
+              <CandidateCard key={String(c.id)} candidate={c} onOpenDetail={() => setDetailCandidate(c)} />
+            ))}
+            {loadingMore ? (
+              <View style={{ paddingVertical: spacing.lg, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={C.primary} />
+              </View>
+            ) : null}
+          </ScrollView>
         )
       )}
 
-      {/* Matches tab content */}
-      {activeTab === 'matches' && (
-        loadingMatches ? (
-          <View style={{ padding: spacing.lg, gap: spacing.md }}>
-            {[1, 2, 3].map(i => <SkeletonBox key={i} width="100%" height={84} borderRadius={radius.lg} />)}
-          </View>
-        ) : matches.length === 0 ? (
-          <EmptyState emoji="💞" title={t('matrimony', 'noMatchesTitle')} subtitle={t('matrimony', 'noMatchesSubtitle')} />
-        ) : (
-          <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.xxl }} showsVerticalScrollIndicator={false}>
-            {matches.map((m) => {
-              const photos = getCandidatePhotos(m);
+      {/* Submit tab content */}
+      {activeTab === 'submit' && (
+        <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.xxl }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <Text style={{ color: C.text, fontFamily: fontFamilyBold, marginBottom: spacing.xs, ...typography.heading }}>
+            {t('matrimony', 'submitIntroTitle')}
+          </Text>
+          <Text style={{ color: C.textMuted, marginBottom: spacing.xl, fontFamily, ...typography.body }}>
+            {t('matrimony', 'submitIntroSubtitle')}
+          </Text>
+
+          <TouchableOpacity
+            onPress={handleDownloadForm}
+            disabled={downloadingTemplate}
+            style={{
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+              backgroundColor: C.primary + '15', borderWidth: 1, borderColor: C.primary + '30',
+              borderRadius: radius.md, paddingVertical: spacing.md, marginBottom: spacing.xl,
+            }}
+          >
+            {downloadingTemplate ? <ActivityIndicator size="small" color={C.primary} /> : <Download size={18} color={C.primary} />}
+            <Text style={{ color: C.primary, ...typography.bodyEmphasis }}>{t('matrimony', 'downloadFormButton')}</Text>
+          </TouchableOpacity>
+
+          <Text style={labelStyle}>{t('matrimony', 'candidateNameFieldLabel')}</Text>
+          <TextInput
+            value={candidateName}
+            onChangeText={setCandidateName}
+            placeholder={t('matrimony', 'candidateNamePlaceholder')}
+            placeholderTextColor={C.textFaint}
+            style={inputStyle}
+            className="border"
+          />
+
+          <Text style={labelStyle}>{t('matrimony', 'relationToHofFieldLabel')}</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm }}>
+            {[...RELATION_OPTIONS, 'Other'].map(opt => {
+              const label = opt === 'Self/Head' ? t('matrimony', 'relationSelf')
+                : opt === 'Son' ? t('matrimony', 'relationSon')
+                : opt === 'Daughter' ? t('matrimony', 'relationDaughter')
+                : t('matrimony', 'relationOther');
               return (
                 <TouchableOpacity
-                  key={String(m.id)}
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setDetailCandidate(m); }}
+                  key={opt}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRelation(opt); }}
                   style={{
-                    flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: C.card,
-                    borderRadius: radius.lg, borderWidth: 1, borderColor: C.border, padding: spacing.md, marginBottom: spacing.md,
+                    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
+                    backgroundColor: relation === opt ? C.primary : C.card,
+                    borderWidth: 1, borderColor: relation === opt ? C.primary : C.border,
                   }}
                 >
-                  {photos.length > 0 ? (
-                    <Image source={{ uri: photos[0] }} style={{ width: 64, height: 64, borderRadius: radius.md, backgroundColor: C.border }} contentFit="cover" />
-                  ) : (
-                    <View style={{ width: 64, height: 64, borderRadius: radius.md, backgroundColor: C.border, alignItems: 'center', justifyContent: 'center' }}>
-                      <ImageOff size={20} color={C.textFaint} />
-                    </View>
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: C.text, fontFamily: fontFamilyBold, ...typography.bodyEmphasis }}>
-                      {m.name}{typeof m.age === 'number' ? `, ${m.age}` : ''}
-                    </Text>
-                    {m.gotra ? (
-                      <Text style={{ color: C.primaryLight, marginTop: 2, ...typography.caption }}>
-                        {t('matrimony', 'gotraLabel')} {m.gotra}
-                      </Text>
-                    ) : null}
-                    <View
-                      style={{
-                        marginTop: spacing.xs, alignSelf: 'flex-start', backgroundColor: C.success + '15',
-                        paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm,
-                      }}
-                    >
-                      <Text style={{ color: C.success, ...typography.caption, fontWeight: '700' }}>
-                        {t('matrimony', 'matchedBadge')}
-                      </Text>
-                    </View>
-                  </View>
+                  <Text style={{ color: relation === opt ? 'white' : C.textMuted, fontFamily, ...typography.caption, fontWeight: '700' }}>
+                    {label}
+                  </Text>
                 </TouchableOpacity>
+              );
+            })}
+          </View>
+          {relation === 'Other' ? (
+            <TextInput
+              value={relationOther}
+              onChangeText={setRelationOther}
+              placeholder={t('matrimony', 'relationOtherPlaceholder')}
+              placeholderTextColor={C.textFaint}
+              style={inputStyle}
+              className="border"
+            />
+          ) : (
+            <View style={{ marginBottom: spacing.lg }} />
+          )}
+
+          <Text style={labelStyle}>{t('matrimony', 'genderFieldLabel')}</Text>
+          <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg }}>
+            <TouchableOpacity
+              onPress={() => setSubmitGender('Male')}
+              style={{
+                flex: 1, paddingVertical: spacing.sm + 2, borderRadius: radius.md, alignItems: 'center',
+                backgroundColor: submitGender === 'Male' ? C.male : C.card,
+                borderWidth: 1, borderColor: submitGender === 'Male' ? C.male : C.border,
+              }}
+            >
+              <Text style={{ color: submitGender === 'Male' ? 'white' : C.textMuted, ...typography.bodyEmphasis }}>
+                {t('matrimony', 'maleOption')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setSubmitGender('Female')}
+              style={{
+                flex: 1, paddingVertical: spacing.sm + 2, borderRadius: radius.md, alignItems: 'center',
+                backgroundColor: submitGender === 'Female' ? C.female : C.card,
+                borderWidth: 1, borderColor: submitGender === 'Female' ? C.female : C.border,
+              }}
+            >
+              <Text style={{ color: submitGender === 'Female' ? 'white' : C.textMuted, ...typography.bodyEmphasis }}>
+                {t('matrimony', 'femaleOption')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={labelStyle}>{t('matrimony', 'uploadedFormFieldLabel')}</Text>
+          <Text style={{ color: C.textFaint, marginBottom: spacing.sm, fontFamily, ...typography.caption }}>
+            {t('matrimony', 'uploadedFormHelpText')}
+          </Text>
+          {uploadedForm ? (
+            <Image source={{ uri: uploadedForm.uri }} style={{ width: '100%', height: 160, borderRadius: radius.md, marginBottom: spacing.sm }} contentFit="cover" />
+          ) : null}
+          <TouchableOpacity
+            onPress={pickUploadedForm}
+            style={{
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+              borderWidth: 1, borderColor: C.border, borderRadius: radius.md, paddingVertical: spacing.md, marginBottom: spacing.xl,
+            }}
+          >
+            <Camera size={18} color={C.primary} />
+            <Text style={{ color: C.primary, ...typography.bodyEmphasis }}>{t('matrimony', 'chooseUploadedFormButton')}</Text>
+          </TouchableOpacity>
+
+          <Button
+            label={t('matrimony', 'submitApplicationButton')}
+            variant="primary"
+            onPress={handleSubmitApplication}
+            loading={submitting}
+          />
+        </ScrollView>
+      )}
+
+      {/* My Applications tab content */}
+      {activeTab === 'myApplications' && (
+        loadingApplications ? (
+          <View style={{ padding: spacing.lg, gap: spacing.md }}>
+            {[1, 2, 3].map(i => <SkeletonBox key={i} width="100%" height={100} borderRadius={radius.lg} />)}
+          </View>
+        ) : myApplications.length === 0 ? (
+          <EmptyState
+            emoji="📄"
+            title={t('matrimony', 'myApplicationsEmptyTitle')}
+            subtitle={t('matrimony', 'myApplicationsEmptySubtitle')}
+            action={{ label: t('matrimony', 'tabSubmit'), onPress: () => setActiveTab('submit') }}
+          />
+        ) : (
+          <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.xxl }} showsVerticalScrollIndicator={false}>
+            {myApplications.map((application) => {
+              const isResubmitting = resubmittingId === application.id;
+              return (
+                <View
+                  key={String(application.id)}
+                  style={{
+                    backgroundColor: C.card, borderRadius: radius.lg, borderWidth: 1, borderColor: C.border,
+                    padding: spacing.lg, marginBottom: spacing.md,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Text style={{ color: C.text, fontFamily: fontFamilyBold, flex: 1, ...typography.bodyEmphasis }}>
+                      {application.member_name}
+                    </Text>
+                    <StatusBadge status={application.status} />
+                  </View>
+                  <Text style={{ color: C.textFaint, marginTop: spacing.xs, ...typography.caption }}>
+                    {t('matrimony', 'submittedOnPrefix')} {new Date(application.submitted_at).toLocaleDateString()}
+                  </Text>
+
+                  {application.status === 'correction_needed' && application.admin_remarks ? (
+                    <View style={{ marginTop: spacing.sm, backgroundColor: C.warning + '15', borderRadius: radius.md, padding: spacing.md }}>
+                      <Text style={{ color: C.warning, ...typography.caption, fontWeight: '700', marginBottom: 2 }}>
+                        {t('matrimony', 'adminRemarkLabel')}
+                      </Text>
+                      <Text style={{ color: C.text, fontFamily, ...typography.caption }}>{application.admin_remarks}</Text>
+                    </View>
+                  ) : null}
+                  {application.status === 'rejected' && application.admin_remarks ? (
+                    <View style={{ marginTop: spacing.sm, backgroundColor: C.error + '15', borderRadius: radius.md, padding: spacing.md }}>
+                      <Text style={{ color: C.error, ...typography.caption, fontWeight: '700', marginBottom: 2 }}>
+                        {t('matrimony', 'adminRemarkLabel')}
+                      </Text>
+                      <Text style={{ color: C.text, fontFamily, ...typography.caption }}>{application.admin_remarks}</Text>
+                    </View>
+                  ) : null}
+
+                  {application.uploaded_file_url ? (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(application.uploaded_file_url).catch(() => {})}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.md }}
+                    >
+                      <FileText size={16} color={C.primary} />
+                      <Text style={{ color: C.primary, ...typography.caption }}>{t('matrimony', 'viewUploadedFormButton')}</Text>
+                    </TouchableOpacity>
+                  ) : null}
+
+                  {application.status === 'correction_needed' ? (
+                    <View style={{ marginTop: spacing.md }}>
+                      <Button
+                        label={t('matrimony', 'resubmitButton')}
+                        variant="primary"
+                        onPress={() => handleResubmit(application.id)}
+                        loading={isResubmitting}
+                        fullWidth
+                      />
+                    </View>
+                  ) : null}
+                </View>
               );
             })}
           </ScrollView>
@@ -1266,12 +1049,6 @@ export default function MatrimonyScreen() {
         filters={filters}
         sort={sort}
         onApply={(f, s) => { setFilters(f); setSort(s); }}
-      />
-      <ProfileFormModal
-        visible={profileFormVisible}
-        initial={myProfile}
-        onClose={() => setProfileFormVisible(false)}
-        onSaved={(c) => setMyProfile(c)}
       />
     </View>
   );

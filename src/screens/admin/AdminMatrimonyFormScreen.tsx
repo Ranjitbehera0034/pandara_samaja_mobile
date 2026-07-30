@@ -2,9 +2,11 @@
 // Single screen used for both admin-create and admin-edit of a matrimony
 // candidate profile (route param `id` present = edit, absent = create).
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Modal } from 'react-native';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { ArrowLeft, Ban, CheckCircle2, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, Ban, CheckCircle2, Trash2, Heart, X, Camera } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
@@ -13,6 +15,13 @@ import { AdminStackParams } from '../../navigation/AdminStack';
 import Button from '../../components/common/Button';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+
+type PickedFile = { uri: string; name: string; type: string };
+
+function pickedFromAsset(asset: ImagePicker.ImagePickerAsset): PickedFile {
+  const parts = asset.uri.split('/');
+  return { uri: asset.uri, name: parts[parts.length - 1], type: 'image/jpeg' };
+}
 
 type FormRoute = RouteProp<AdminStackParams, 'AdminMatrimonyForm'>;
 
@@ -35,10 +44,12 @@ export default function AdminMatrimonyFormScreen() {
 
   const [form, setForm] = useState<MatrimonyCandidateInput>(emptyForm);
   const [status, setStatus] = useState<string>('approved');
+  const [isMatched, setIsMatched] = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [banning, setBanning] = useState(false);
+  const [matchModalVisible, setMatchModalVisible] = useState(false);
 
   const load = useCallback(async () => {
     if (!isEdit) return;
@@ -54,6 +65,7 @@ export default function AdminMatrimonyFormScreen() {
           phone: c.phone || '', email: c.email || '',
         });
         setStatus(c.status);
+        setIsMatched(!!c.is_matched);
       }
     } catch (e) {
       console.error('[ADMIN_MATRIMONY_FORM] Fetch failed:', e);
@@ -153,6 +165,12 @@ export default function AdminMatrimonyFormScreen() {
     );
   };
 
+  const handleMatchConfirmed = (candidate: adminApi.MatrimonyCandidate) => {
+    setIsMatched(!!candidate.is_matched);
+    setMatchModalVisible(false);
+    Alert.alert(t('admin', 'confirmMatchSuccessTitle'), t('admin', 'confirmMatchSuccessMessage'));
+  };
+
   const inputStyle = {
     borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
     marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text,
@@ -198,29 +216,31 @@ export default function AdminMatrimonyFormScreen() {
           {isEdit && (
             <View style={{
               flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', marginBottom: spacing.lg,
-              backgroundColor: (isBanned ? C.error : C.success) + '15', borderRadius: radius.full,
+              backgroundColor: (isMatched ? C.primary : isBanned ? C.error : C.success) + '15', borderRadius: radius.full,
               paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
             }}>
-              {isBanned ? <Ban size={12} color={C.error} /> : <CheckCircle2 size={12} color={C.success} />}
-              <Text style={{ color: isBanned ? C.error : C.success, ...typography.caption, fontWeight: '700' }}>
-                {isBanned ? t('admin', 'bannedBadge') : t('admin', 'matrimonyApprovedBadge')}
+              {isMatched ? <Heart size={12} color={C.primary} /> : isBanned ? <Ban size={12} color={C.error} /> : <CheckCircle2 size={12} color={C.success} />}
+              <Text style={{ color: isMatched ? C.primary : isBanned ? C.error : C.success, ...typography.caption, fontWeight: '700' }}>
+                {isMatched ? t('admin', 'archivedBadge') : isBanned ? t('admin', 'bannedBadge') : t('admin', 'matrimonyApprovedBadge')}
               </Text>
             </View>
           )}
 
           <Text style={labelStyle}>{t('admin', 'matrimonyNameLabel')}</Text>
-          <TextInput style={inputStyle} placeholder={t('admin', 'matrimonyNameLabel')} placeholderTextColor={C.textFaint} value={form.name} onChangeText={(v) => setField('name', v)} />
+          <TextInput editable={!isMatched} style={inputStyle} placeholder={t('admin', 'matrimonyNameLabel')} placeholderTextColor={C.textFaint} value={form.name} onChangeText={(v) => setField('name', v)} />
 
           <Text style={labelStyle}>{t('admin', 'matrimonyGenderLabel')}</Text>
           <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
             {(['Male', 'Female'] as const).map(g => (
               <TouchableOpacity
                 key={g}
+                disabled={isMatched}
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setField('gender', g); }}
                 style={{
                   flex: 1, alignItems: 'center', paddingVertical: spacing.md, borderRadius: radius.md,
                   borderWidth: 1, borderColor: form.gender === g ? C.primary : C.border,
                   backgroundColor: form.gender === g ? C.primary + '15' : C.card,
+                  opacity: isMatched ? 0.6 : 1,
                 }}
               >
                 <Text style={{ color: form.gender === g ? C.primary : C.textMuted, ...typography.body, fontWeight: '700' }}>
@@ -234,6 +254,7 @@ export default function AdminMatrimonyFormScreen() {
             <View key={f.key}>
               <Text style={labelStyle}>{t('admin', f.labelKey)}</Text>
               <TextInput
+                editable={!isMatched}
                 style={inputStyle}
                 placeholder={t('admin', f.labelKey)}
                 placeholderTextColor={C.textFaint}
@@ -246,8 +267,10 @@ export default function AdminMatrimonyFormScreen() {
           ))}
 
           <View style={{ gap: spacing.md, marginTop: spacing.md }}>
-            <Button variant="primary" label={t('common', 'save')} onPress={handleSave} loading={saving} />
-            {isEdit && (
+            {!isMatched && (
+              <Button variant="primary" label={t('common', 'save')} onPress={handleSave} loading={saving} />
+            )}
+            {isEdit && !isMatched && (
               <>
                 <Button
                   variant="secondary"
@@ -255,6 +278,12 @@ export default function AdminMatrimonyFormScreen() {
                   icon={<Ban size={16} color={C.text} />}
                   onPress={handleBanPress}
                   loading={banning}
+                />
+                <Button
+                  variant="secondary"
+                  label={t('admin', 'confirmMatchButton')}
+                  icon={<Heart size={16} color={C.primary} />}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMatchModalVisible(true); }}
                 />
                 <Button
                   variant="secondary"
@@ -268,6 +297,192 @@ export default function AdminMatrimonyFormScreen() {
           </View>
         </ScrollView>
       )}
+
+      {isEdit && (
+        <ConfirmMatchModal
+          visible={matchModalVisible}
+          candidateId={id!}
+          onClose={() => setMatchModalVisible(false)}
+          onConfirmed={handleMatchConfirmed}
+        />
+      )}
     </View>
+  );
+}
+
+// ════════════════════════════════════════════════
+//  Confirm Match / Marriage modal
+// ════════════════════════════════════════════════
+function ConfirmMatchModal({ visible, candidateId, onClose, onConfirmed }: {
+  visible: boolean; candidateId: string | number; onClose: () => void;
+  onConfirmed: (candidate: adminApi.MatrimonyCandidate) => void;
+}) {
+  const { colors: C, spacing, radius, typography, shadow } = useTheme();
+  const { lang, t } = useLanguage();
+  const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
+  const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
+
+  const [partnerMemberId, setPartnerMemberId] = useState('');
+  const [partnerName, setPartnerName] = useState('');
+  const [partnerGender, setPartnerGender] = useState<'Male' | 'Female' | ''>('');
+  const [matchDate, setMatchDate] = useState('');
+  const [evidence, setEvidence] = useState<PickedFile | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      setPartnerMemberId('');
+      setPartnerName('');
+      setPartnerGender('');
+      setMatchDate('');
+      setEvidence(null);
+    }
+  }, [visible]);
+
+  const pickEvidence = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    setEvidence(pickedFromAsset(result.assets[0]));
+  };
+
+  const handleSubmit = async () => {
+    if (!partnerName.trim()) {
+      Alert.alert(t('common', 'errorTitle'), t('admin', 'matchedPartnerNameRequiredError'));
+      return;
+    }
+    if (!partnerGender) {
+      Alert.alert(t('common', 'errorTitle'), t('admin', 'matchedPartnerGenderRequiredError'));
+      return;
+    }
+    if (!evidence) {
+      Alert.alert(t('common', 'errorTitle'), t('admin', 'evidenceRequiredError'));
+      return;
+    }
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSubmitting(true);
+    try {
+      const fd = new FormData();
+      if (partnerMemberId.trim()) fd.append('matchedPartnerMemberId', partnerMemberId.trim());
+      fd.append('matchedPartnerName', partnerName.trim());
+      fd.append('matchedPartnerGender', partnerGender);
+      if (matchDate.trim()) fd.append('matchDate', matchDate.trim());
+      // @ts-ignore — React Native FormData file shape
+      fd.append('evidence', evidence);
+
+      const data = await adminApi.confirmMatrimonyMatch(candidateId, fd);
+      if (data.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        onConfirmed(data.candidate);
+      } else {
+        throw new Error(data.message || t('admin', 'confirmMatchError'));
+      }
+    } catch (e: any) {
+      console.error('[ADMIN_MATRIMONY_FORM] Confirm match failed:', e);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t('common', 'errorTitle'), e.message || t('admin', 'confirmMatchError'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const inputStyle = {
+    borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
+    marginBottom: spacing.lg, backgroundColor: C.bg, borderColor: C.border, color: C.text,
+    fontFamily: fontRegular, ...typography.body,
+  };
+  const labelStyle = { color: C.textMuted, marginBottom: spacing.sm, fontFamily: fontBold, ...typography.label };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: '#00000080', justifyContent: 'flex-end' }}>
+        <View style={{ backgroundColor: C.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.lg, maxHeight: '90%', ...shadow.raised }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
+            <Text style={{ color: C.text, fontFamily: fontBold, ...typography.title }}>{t('admin', 'confirmMatchTitle')}</Text>
+            <TouchableOpacity onPress={onClose}><X size={20} color={C.textMuted} /></TouchableOpacity>
+          </View>
+
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <Text style={labelStyle}>{t('admin', 'matchedPartnerMemberIdLabel')}</Text>
+            <TextInput
+              value={partnerMemberId}
+              onChangeText={setPartnerMemberId}
+              placeholder="MEM1234567"
+              placeholderTextColor={C.textFaint}
+              autoCapitalize="characters"
+              style={inputStyle}
+            />
+            <Text style={{ color: C.textFaint, marginTop: -spacing.md, marginBottom: spacing.lg, fontFamily: fontRegular, ...typography.caption }}>
+              {t('admin', 'matchedPartnerMemberIdHelpText')}
+            </Text>
+
+            <Text style={labelStyle}>{t('admin', 'matchedPartnerNameFieldLabel')}</Text>
+            <TextInput
+              value={partnerName}
+              onChangeText={setPartnerName}
+              placeholderTextColor={C.textFaint}
+              style={inputStyle}
+            />
+
+            <Text style={labelStyle}>{t('admin', 'matchedPartnerGenderFieldLabel')}</Text>
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
+              {(['Male', 'Female'] as const).map(g => (
+                <TouchableOpacity
+                  key={g}
+                  onPress={() => setPartnerGender(g)}
+                  style={{
+                    flex: 1, alignItems: 'center', paddingVertical: spacing.md, borderRadius: radius.md,
+                    borderWidth: 1, borderColor: partnerGender === g ? C.primary : C.border,
+                    backgroundColor: partnerGender === g ? C.primary + '15' : C.bg,
+                  }}
+                >
+                  <Text style={{ color: partnerGender === g ? C.primary : C.textMuted, ...typography.body, fontWeight: '700' }}>
+                    {g === 'Male' ? t('admin', 'matrimonyGenderMale') : t('admin', 'matrimonyGenderFemale')}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={labelStyle}>{t('admin', 'matchDateFieldLabel')}</Text>
+            <TextInput
+              value={matchDate}
+              onChangeText={setMatchDate}
+              placeholder={t('admin', 'matchDatePlaceholder')}
+              placeholderTextColor={C.textFaint}
+              style={inputStyle}
+            />
+
+            <Text style={labelStyle}>{t('admin', 'evidenceFieldLabel')}</Text>
+            <Text style={{ color: C.textFaint, marginBottom: spacing.sm, fontFamily: fontRegular, ...typography.caption }}>
+              {t('admin', 'evidenceHelpText')}
+            </Text>
+            {evidence ? (
+              <Image source={{ uri: evidence.uri }} style={{ width: '100%', height: 140, borderRadius: radius.md, marginBottom: spacing.sm }} contentFit="cover" />
+            ) : null}
+            <TouchableOpacity
+              onPress={pickEvidence}
+              style={{
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+                borderWidth: 1, borderColor: C.border, borderRadius: radius.md, paddingVertical: spacing.md, marginBottom: spacing.xl,
+              }}
+            >
+              <Camera size={18} color={C.primary} />
+              <Text style={{ color: C.primary, ...typography.bodyEmphasis }}>{t('admin', 'chooseEvidenceButton')}</Text>
+            </TouchableOpacity>
+
+            <Button
+              label={t('admin', 'confirmMatchSubmitButton')}
+              variant="primary"
+              onPress={handleSubmit}
+              loading={submitting}
+            />
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
   );
 }

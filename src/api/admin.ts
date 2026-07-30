@@ -2,6 +2,21 @@
 // Thin wrapper functions for every /api/admin/* endpoint, using the
 // separate adminClient (admin/staff auth — not the member portal client).
 import adminClient from './adminClient';
+import { API_URL } from '../config/constants';
+
+// Some URL-shaped fields (namely `match_evidence_url` from confirm-match /
+// history) come back from the admin matrimony routes as a host-relative
+// Firebase Storage proxy path (`/api/v1/portal/media?path=...`) rather than
+// a fully resolved HTTPS URL — those routes don't run the field through
+// getSignedMediaUrl before responding, unlike photo/photos/form_url
+// elsewhere. Defensively resolve it against the API host root here so
+// Linking.openURL still works, without needing a backend change.
+export const resolveMediaUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+  const root = API_URL.replace(/\/api\/?$/, '');
+  return `${root}${url.startsWith('/') ? '' : '/'}${url}`;
+};
 
 export interface AdminUser {
   id: number | string;
@@ -211,6 +226,12 @@ export interface MatrimonyCandidate {
   submitted_by?: string | null;
   status: string; // 'approved' | 'banned' | other member-facing statuses
   is_matched?: boolean;
+  matched_partner_name?: string | null;
+  matched_partner_gender?: string | null;
+  matched_partner_member_id?: string | null;
+  matched_status?: string | null;
+  match_date?: string | null;
+  match_evidence_url?: string | null;
   created_at?: string;
   [key: string]: any;
 }
@@ -265,6 +286,97 @@ export const deleteMatrimonyCandidate = async (id: string | number) => {
 export const setMatrimonyCandidateBanned = async (id: string | number, banned: boolean) => {
   const res = await adminClient.put(`/admin/matrimony/${id}/ban`, { banned });
   return res.data as { success: boolean; message?: string; candidate: MatrimonyCandidate };
+};
+
+// ── Matrimony application review queue (admin + superadmin) — the
+// document-upload-and-review side of the redesigned matrimony feature.
+// A member submits a photographed/scanned filled paper registration form;
+// admin approves it (publishing a MatrimonyCandidate), asks for a
+// correction, or rejects it. ──
+
+export interface MatrimonyApplicationHistoryEntry {
+  status: string;
+  remark: string;
+  changed_at: string;
+  changed_by: string;
+}
+
+export interface MatrimonyApplication {
+  id: string | number;
+  member_id: string;
+  membership_no: string;
+  member_name: string;
+  relation_to_hof: string;
+  uploaded_by_name?: string | null;
+  uploaded_by_mobile?: string | null;
+  member_mobile?: string | null;
+  uploaded_file_url: string;
+  file_type?: string | null;
+  status: 'pending' | 'correction_needed' | 'approved' | 'rejected';
+  submitted_at: string;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  admin_remarks?: string | null;
+  version: number;
+  history: MatrimonyApplicationHistoryEntry[];
+  [key: string]: any;
+}
+
+export const fetchAdminMatrimonyApplications = async (
+  params: { status?: 'pending' | 'correction_needed' | 'approved' | 'rejected'; page?: number; limit?: number } = {}
+) => {
+  const res = await adminClient.get('/admin/matrimony/applications', { params });
+  return res.data as {
+    success: boolean; message?: string; applications: MatrimonyApplication[];
+    total: number; page: number; totalPages: number;
+  };
+};
+
+export const fetchAdminMatrimonyApplication = async (id: string | number) => {
+  const res = await adminClient.get(`/admin/matrimony/applications/${id}`);
+  return res.data as { success: boolean; message?: string; application: MatrimonyApplication };
+};
+
+// body.gender is only ever needed as a fallback if the application's
+// stashed gender is somehow missing — normally omit it and let the backend
+// use the gender captured at submission time.
+export const approveMatrimonyApplication = async (id: string | number, gender?: string) => {
+  const res = await adminClient.post(`/admin/matrimony/applications/${id}/approve`, gender ? { gender } : {});
+  return res.data as { success: boolean; message?: string; application: MatrimonyApplication; candidate?: MatrimonyCandidate };
+};
+
+export const requestMatrimonyCorrection = async (id: string | number, remark: string) => {
+  const res = await adminClient.post(`/admin/matrimony/applications/${id}/request-correction`, { remark });
+  return res.data as { success: boolean; message?: string; application: MatrimonyApplication };
+};
+
+export const rejectMatrimonyApplication = async (id: string | number, remark: string) => {
+  const res = await adminClient.post(`/admin/matrimony/applications/${id}/reject`, { remark });
+  return res.data as { success: boolean; message?: string; application: MatrimonyApplication };
+};
+
+// ── Match confirmation & history (admin + superadmin) — marks a candidate
+// matched/married with evidence, removing it from the active directory
+// but preserving it in an archive. ──
+
+// Multipart: text fields matchedPartnerMemberId (optional), matchedPartnerName
+// (required), matchedPartnerGender (required), matchDate (optional,
+// YYYY-MM-DD) + file field `evidence` (required) — built by the caller
+// (mirrors submitMatrimonyApplication in src/api/matrimony.ts) since the
+// screen already assembles the FormData alongside the evidence file picker.
+export const confirmMatrimonyMatch = async (id: string | number, formData: FormData) => {
+  const res = await adminClient.post(`/admin/matrimony/${id}/confirm-match`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data as { success: boolean; message?: string; candidate: MatrimonyCandidate };
+};
+
+export const fetchMatrimonyHistory = async (params: { page?: number; limit?: number } = {}) => {
+  const res = await adminClient.get('/admin/matrimony/history', { params });
+  return res.data as {
+    success: boolean; message?: string; candidates: MatrimonyCandidate[];
+    total: number; page: number; totalPages: number;
+  };
 };
 
 // ── Feed/post moderation — all posts, any status (admin + superadmin) ──
