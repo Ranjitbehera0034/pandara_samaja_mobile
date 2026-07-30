@@ -8,6 +8,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Plus, Trash2, X as XIcon, Wallet, Paperclip } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
 import { ExpenseEntry } from '../../api/admin';
@@ -46,6 +47,8 @@ export default function AdminExpensesScreen() {
   const [formPayee, setFormPayee] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formDate, setFormDate] = useState('');
+  const [existingAttachmentUrl, setExistingAttachmentUrl] = useState<string | null>(null);
+  const [newAttachment, setNewAttachment] = useState<{ uri: string; name: string; type: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
   const fetchEntries = useCallback(async (pageNum: number, replace = false) => {
@@ -89,6 +92,26 @@ export default function AdminExpensesScreen() {
     setFormPayee('');
     setFormDescription('');
     setFormDate('');
+    setExistingAttachmentUrl(null);
+    setNewAttachment(null);
+  };
+
+  const pickAttachment = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(t('common', 'errorTitle'), t('admin', 'expenseAttachmentPermissionError'));
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      const name = asset.fileName || `receipt_${Date.now()}.jpg`;
+      setNewAttachment({ uri: asset.uri, name, type: asset.mimeType || 'image/jpeg' });
+    }
   };
 
   const openCreate = () => {
@@ -105,6 +128,8 @@ export default function AdminExpensesScreen() {
     setFormPayee(item.payee || '');
     setFormDescription(item.description || '');
     setFormDate(item.expense_date ? item.expense_date.slice(0, 10) : '');
+    setExistingAttachmentUrl(item.attachment_url || null);
+    setNewAttachment(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowForm(true);
   };
@@ -132,6 +157,7 @@ export default function AdminExpensesScreen() {
         payee: formPayee.trim() || undefined,
         description: formDescription.trim() || undefined,
         expenseDate: formDate.trim() || undefined,
+        attachment: newAttachment || undefined,
       };
       const data = editing
         ? await adminApi.updateExpense(editing.id, payload)
@@ -376,6 +402,30 @@ export default function AdminExpensesScreen() {
                 onChangeText={setFormDescription}
                 multiline
               />
+
+              <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'expenseAttachmentLabel')}</Text>
+              <TouchableOpacity
+                onPress={pickAttachment}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderWidth: 1, borderStyle: 'dashed',
+                  borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg,
+                  backgroundColor: C.card, borderColor: C.border,
+                }}
+              >
+                <Paperclip size={16} color={C.textMuted} />
+                <Text style={{ color: C.textMuted, fontFamily: fontRegular, flex: 1, ...typography.body }} numberOfLines={1}>
+                  {newAttachment
+                    ? newAttachment.name
+                    : existingAttachmentUrl
+                      ? t('admin', 'expenseAttachmentReplace')
+                      : t('admin', 'expenseAttachmentPlaceholder')}
+                </Text>
+                {existingAttachmentUrl && !newAttachment ? (
+                  <TouchableOpacity onPress={() => Linking.openURL(existingAttachmentUrl)}>
+                    <Text style={{ color: C.primaryLight, ...typography.caption, fontWeight: '700' }}>{t('admin', 'expenseAttachmentView')}</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </TouchableOpacity>
 
               <Button variant="primary" label={t('common', 'save')} onPress={handleSave} loading={saving} />
             </ScrollView>

@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { UserPlus, Users } from 'lucide-react-native';
+import { Users } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
@@ -73,30 +73,6 @@ export default function LoginScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleGetMembershipNo = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const url = 'https://wa.me/918249339238?text=Hello%20Pandara%20Samaja%20Support%2C%20I%20do%20not%20have%20my%20Membership%20Number.%20Please%20help%20me%20find%20it.%20My%20name%20is%3A%20';
-    Linking.openURL(url).catch(() => {
-      Alert.alert(t('common', 'errorTitle'), t('auth', 'whatsappNotInstalled'));
-    });
-  };
-
-  const handleUpdateMobile = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const url = 'https://wa.me/918249339238?text=Hello%20Pandara%20Samaja%20Support%2C%20I%20need%20to%20update%20my%2520registered%2520mobile%2520number.%20My%20Membership%20No%20is%3A%20' + encodeURIComponent(membershipNo);
-    Linking.openURL(url).catch(() => {
-      Alert.alert(t('common', 'errorTitle'), t('auth', 'whatsappNotInstalled'));
-    });
-  };
-
-  const handleContactToRegister = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const url = 'https://wa.me/918249339238?text=Hello%20Pandara%20Samaja%20Support%2C%20I%20am%20not%20a%20registered%20member%20yet%20and%20would%20like%20to%20know%20how%20to%20join.';
-    Linking.openURL(url).catch(() => {
-      Alert.alert(t('common', 'errorTitle'), t('auth', 'whatsappNotInstalled'));
-    });
   };
 
   const handleJoinWhatsappGroup = () => {
@@ -208,78 +184,15 @@ export default function LoginScreen() {
           />
         </View>
 
-        {/* WhatsApp Help & Support Card */}
-        <View style={{ marginTop: spacing.xl, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, backgroundColor: colors.card + '40', borderColor: colors.border + '40' }}>
-          <Text style={{ color: colors.text, fontFamily: fontBold, marginBottom: spacing.md, ...typography.bodyEmphasis }}>
-            {t('auth', 'helpSupportTitle')}
-          </Text>
-
-          {/* Find Membership No */}
-          <TouchableOpacity
-            onPress={handleGetMembershipNo}
-            className="flex-row items-center justify-between border-b"
-            style={{ paddingVertical: spacing.md, borderBottomColor: colors.border }}
-          >
-            <Text style={{ color: colors.textMuted, fontFamily: fontRegular, ...typography.caption }}>
-              {t('auth', 'noMembershipNo')}
-            </Text>
-            <Text style={{ color: colors.primaryLight, fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>
-              {t('auth', 'getOnWhatsapp')}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Update Mobile Number */}
-          <TouchableOpacity
-            onPress={handleUpdateMobile}
-            className="flex-row items-center justify-between"
-            style={{ paddingVertical: spacing.md }}
-          >
-            <Text style={{ color: colors.textMuted, fontFamily: fontRegular, ...typography.caption }}>
-              {t('auth', 'updateMobileNo')}
-            </Text>
-            <Text style={{ color: colors.primaryLight, fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>
-              {t('auth', 'updateOnWhatsapp')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* New Member / Not Registered Yet — WhatsApp Registration Entry */}
-        <TouchableOpacity
-          onPress={handleContactToRegister}
-          className="flex-row items-center"
-          style={{
-            marginTop: spacing.lg,
-            gap: spacing.md,
-            borderRadius: radius.lg,
-            padding: spacing.lg,
-            borderWidth: 1,
-            backgroundColor: colors.success + '15',
-            borderColor: colors.success + '40',
-            ...shadow.card,
-          }}
-        >
-          <View
-            className="items-center justify-center"
-            style={{ width: 40, height: 40, borderRadius: radius.full, backgroundColor: colors.success + '25' }}
-          >
-            <UserPlus size={20} color={colors.success} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.text, fontFamily: fontBold, ...typography.bodyEmphasis }}>
-              {t('auth', 'notAMemberYet')}
-            </Text>
-            <Text style={{ color: colors.success, fontFamily: fontBold, marginTop: 2, ...typography.caption, fontWeight: '700' }}>
-              {t('auth', 'contactToRegister')}
-            </Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Join the community WhatsApp group */}
+        {/* Join the community WhatsApp group — the single consolidated
+            entry point for support, membership-no lookup, mobile updates,
+            and new-member registration questions (all handled inside the
+            group instead of separate 1:1 WhatsApp deep links). */}
         <TouchableOpacity
           onPress={handleJoinWhatsappGroup}
           className="flex-row items-center"
           style={{
-            marginTop: spacing.md,
+            marginTop: spacing.xl,
             gap: spacing.md,
             borderRadius: radius.lg,
             padding: spacing.lg,

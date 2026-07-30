@@ -734,6 +734,11 @@ const translations = {
       expenseNotePlaceholder: 'Additional details…',
       expenseDescriptionLabel: 'Description (optional)',
       expenseDescriptionPlaceholder: 'Additional details…',
+      expenseAttachmentLabel: 'Receipt / Attachment (optional)',
+      expenseAttachmentPlaceholder: 'Attach a receipt photo',
+      expenseAttachmentReplace: 'Tap to replace attachment',
+      expenseAttachmentView: 'View',
+      expenseAttachmentPermissionError: 'Photo library access is needed to attach a receipt',
 
       settingsTitle: 'Admin Settings',
       accountInfoHeader: 'Account Information',
@@ -1478,6 +1483,11 @@ const translations = {
       expenseNotePlaceholder: 'ଅତିରିକ୍ତ ବିବରଣୀ…',
       expenseDescriptionLabel: 'ବିବରଣୀ (ବୈକଳ୍ପିକ)',
       expenseDescriptionPlaceholder: 'ଅତିରିକ୍ତ ବିବରଣୀ…',
+      expenseAttachmentLabel: 'ରସିଦ୍ / ସଂଲଗ୍ନକ (ବୈକଳ୍ପିକ)',
+      expenseAttachmentPlaceholder: 'ଏକ ରସିଦ୍ ଫଟୋ ସଂଲଗ୍ନ କରନ୍ତୁ',
+      expenseAttachmentReplace: 'ସଂଲଗ୍ନକ ବଦଳାଇବାକୁ ଦବାନ୍ତୁ',
+      expenseAttachmentView: 'ଦେଖନ୍ତୁ',
+      expenseAttachmentPermissionError: 'ରସିଦ୍ ସଂଲଗ୍ନ କରିବାକୁ ଫଟୋ ଲାଇବ୍ରେରୀ ପ୍ରବେଶ ଆବଶ୍ୟକ',
 
       settingsTitle: 'ଆଡମିନ ସେଟିଂ',
       accountInfoHeader: 'ଖାତା ସୂଚନା',
