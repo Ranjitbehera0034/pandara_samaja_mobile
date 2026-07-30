@@ -1,5 +1,6 @@
 // src/api/members.ts
 import client from './client';
+import { FamilyMember } from '../types';
 
 export interface MembersParams {
   page?: number;
@@ -58,4 +59,43 @@ export const updateMyProfilePhoto = async (file: { uri: string; name: string; ty
   });
   return res.data;
   // Returns: { success, profile_photo_url }
+};
+
+// ════════════════════════════════════════════════
+//  FAMILY MEMBERS — the logged-in member's own household roster
+//  (member.family_members). One entry always has relation
+//  'Self'/'Self/Head'/'Head' — the household head — which the backend
+//  never allows to be deleted or re-related.
+// ════════════════════════════════════════════════
+
+export interface FamilyMemberInput {
+  name: string;
+  relation: string;
+  gender?: string;
+  age?: number | string;
+  marital_status?: string;
+}
+
+// GET /api/portal/family-members
+export const fetchFamilyMembers = async () => {
+  const res = await client.get('/portal/family-members');
+  return res.data as { success: boolean; message?: string; familyMembers: FamilyMember[] };
+};
+
+// POST /api/portal/family-members — returns the WHOLE updated array, not just the new entry
+export const addFamilyMember = async (data: FamilyMemberInput) => {
+  const res = await client.post('/portal/family-members', data);
+  return res.data as { success: boolean; message?: string; familyMembers: FamilyMember[] };
+};
+
+// PUT /api/portal/family-members/:index — partial update, all fields optional
+export const updateFamilyMember = async (index: number, data: Partial<FamilyMemberInput>) => {
+  const res = await client.put(`/portal/family-members/${index}`, data);
+  return res.data as { success: boolean; message?: string; familyMembers: FamilyMember[] };
+};
+
+// DELETE /api/portal/family-members/:index
+export const deleteFamilyMember = async (index: number) => {
+  const res = await client.delete(`/portal/family-members/${index}`);
+  return res.data as { success: boolean; message?: string; familyMembers: FamilyMember[] };
 };

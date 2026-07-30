@@ -3,6 +3,8 @@
 // separate adminClient (admin/staff auth — not the member portal client).
 import adminClient from './adminClient';
 import { API_URL } from '../config/constants';
+import { FamilyMember } from '../types';
+import { FamilyMemberInput } from './members';
 
 // Some URL-shaped fields (namely `match_evidence_url` from confirm-match /
 // history) come back from the admin matrimony routes as a host-relative
@@ -608,4 +610,52 @@ export const updateLeader = async (id: string | number, data: Partial<LeaderInpu
 export const deleteLeader = async (id: string | number) => {
   const res = await adminClient.delete(`/admin/leaders/${id}`);
   return res.data as { success: boolean; message?: string };
+};
+
+// ── Member household roster (admin + superadmin) — mirrors the
+// member-facing wrappers in src/api/members.ts, scoped by memberId
+// (membership_no) instead of the caller's own token. ──
+
+// GET /api/admin/members/:id/family
+export const fetchAdminMemberFamily = async (memberId: string) => {
+  const res = await adminClient.get(`/admin/members/${memberId}/family`);
+  return res.data as { success: boolean; message?: string; familyMembers: FamilyMember[] };
+};
+
+// POST /api/admin/members/:id/family — returns the WHOLE updated array
+export const addAdminFamilyMember = async (memberId: string, data: FamilyMemberInput) => {
+  const res = await adminClient.post(`/admin/members/${memberId}/family`, data);
+  return res.data as { success: boolean; message?: string; familyMembers: FamilyMember[] };
+};
+
+// PUT /api/admin/members/:id/family/:index — partial update, all fields optional
+export const updateAdminFamilyMember = async (memberId: string, index: number, data: Partial<FamilyMemberInput>) => {
+  const res = await adminClient.put(`/admin/members/${memberId}/family/${index}`, data);
+  return res.data as { success: boolean; message?: string; familyMembers: FamilyMember[] };
+};
+
+// DELETE /api/admin/members/:id/family/:index
+export const deleteAdminFamilyMember = async (memberId: string, index: number) => {
+  const res = await adminClient.delete(`/admin/members/${memberId}/family/${index}`);
+  return res.data as { success: boolean; message?: string; familyMembers: FamilyMember[] };
+};
+
+// ── Community demographics (admin + superadmin) — computed community-wide
+// across every household's family_members roster. ──
+
+export interface Demographics {
+  totalFamilyMembers: number;
+  male: number;
+  female: number;
+  adults: number;
+  children: number;
+  infants: number;
+  married: number;
+  unmarried: number;
+}
+
+// GET /api/admin/members/demographics
+export const fetchDemographics = async () => {
+  const res = await adminClient.get('/admin/members/demographics');
+  return res.data as { success: boolean; message?: string; demographics: Demographics };
 };

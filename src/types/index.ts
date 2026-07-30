@@ -22,6 +22,8 @@ export interface FamilyMember {
   age: number | string;
   gender?: string;
   mobile?: string;
+  marital_status?: string;
+  profile_pic?: string | null;
 }
 
 export interface LoggedUser {

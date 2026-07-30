@@ -2,18 +2,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { ArrowLeft, Ban, CheckCircle2, Phone, MapPin, Pencil } from 'lucide-react-native';
+import { ArrowLeft, Ban, CheckCircle2, Phone, MapPin, Pencil, Plus, Trash2, Users } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
 import { AdminMember, MemberActivity } from '../../api/admin';
 import { AdminStackParams } from '../../navigation/AdminStack';
+import { FamilyMember } from '../../types';
 import Avatar from '../../components/common/Avatar';
 import Button from '../../components/common/Button';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 type DetailRoute = RouteProp<AdminStackParams, 'AdminMemberDetail'>;
+
+// Mirrors the backend's isHeadEntry() (memberModel.ts) exactly — the head
+// of family entry can never be deleted, so its delete action is hidden here.
+function isHeadRelation(relation?: string): boolean {
+  const r = (relation || '').toLowerCase();
+  return r === 'self' || r === 'self/head' || r === 'head';
+}
 
 export default function AdminMemberDetailScreen() {
   const navigation = useNavigation<any>();
@@ -30,6 +38,10 @@ export default function AdminMemberDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [banning, setBanning] = useState(false);
 
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const [familyLoading, setFamilyLoading] = useState(true);
+  const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
+
   const load = useCallback(async () => {
     try {
       const data = await adminApi.fetchAdminMember(id);
@@ -45,12 +57,54 @@ export default function AdminMemberDetailScreen() {
     }
   }, [id, t]);
 
-  useEffect(() => { load(); }, [load]);
+  const loadFamily = useCallback(async () => {
+    try {
+      const data = await adminApi.fetchAdminMemberFamily(id);
+      if (data.success) setFamilyMembers(data.familyMembers || []);
+    } catch (e) {
+      console.error('[ADMIN_MEMBER_DETAIL] Family fetch failed:', e);
+    } finally {
+      setFamilyLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => { load(); loadFamily(); }, [load, loadFamily]);
 
   useEffect(() => {
-    const unsub = navigation.addListener('focus', () => load());
+    const unsub = navigation.addListener('focus', () => { load(); loadFamily(); });
     return unsub;
-  }, [navigation, load]);
+  }, [navigation, load, loadFamily]);
+
+  const doDeleteFamilyMember = async (index: number) => {
+    setDeletingIndex(index);
+    try {
+      const data = await adminApi.deleteAdminFamilyMember(id, index);
+      if (data.success) {
+        setFamilyMembers(data.familyMembers || []);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        throw new Error(data.message || t('admin', 'familyMemberDeleteError'));
+      }
+    } catch (e: any) {
+      console.error('[ADMIN_MEMBER_DETAIL] Family delete failed:', e);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t('common', 'errorTitle'), e.response?.data?.message || e.message || t('admin', 'familyMemberDeleteError'));
+    } finally {
+      setDeletingIndex(null);
+    }
+  };
+
+  const handleDeleteFamilyMemberPress = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Alert.alert(
+      t('admin', 'familyMemberConfirmDeleteTitle'),
+      t('admin', 'familyMemberConfirmDeleteMessage'),
+      [
+        { text: t('common', 'cancel'), style: 'cancel' },
+        { text: t('common', 'delete'), style: 'destructive', onPress: () => doDeleteFamilyMember(index) },
+      ]
+    );
+  };
 
   const isBanned = !!member?.is_banned;
 
@@ -154,6 +208,75 @@ export default function AdminMemberDetailScreen() {
               ))}
             </View>
           )}
+
+          <View style={{ backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.xl, ...shadow.card }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                <Users size={16} color={C.primaryLight} />
+                <Text style={{ color: C.text, fontFamily: fontBold, ...typography.bodyEmphasis }}>
+                  {t('admin', 'familyMembersSectionTitle')}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('AdminMemberFamilyForm', { memberId: id }); }}
+                style={{ width: 30, height: 30, borderRadius: radius.full, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Plus size={16} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            {familyLoading ? (
+              <ActivityIndicator size="small" color={C.primaryLight} />
+            ) : familyMembers.length === 0 ? (
+              <Text style={{ color: C.textFaint, fontFamily: fontRegular, ...typography.caption }}>
+                {t('admin', 'familyMembersEmptyText')}
+              </Text>
+            ) : (
+              <View style={{ gap: spacing.sm }}>
+                {familyMembers.map((fm, idx) => {
+                  const isHead = isHeadRelation(fm.relation);
+                  return (
+                    <View
+                      key={`${fm.name}-${idx}`}
+                      style={{
+                        flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+                        borderColor: C.border, borderWidth: 1, borderRadius: radius.md, padding: spacing.md,
+                      }}
+                    >
+                      <TouchableOpacity
+                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('AdminMemberFamilyForm', { memberId: id, index: idx, member: fm }); }}
+                        style={{ flex: 1 }}
+                      >
+                        <Text style={{ color: C.text, fontFamily: fontBold, ...typography.body }}>{fm.name}</Text>
+                        <Text style={{ color: C.textMuted, marginTop: 2, fontFamily: fontRegular, ...typography.caption }} className="capitalize">
+                          {fm.relation}{fm.gender ? ` · ${fm.gender}` : ''}{fm.age ? ` · ${fm.age} ${t('admin', 'familyMemberAgeSuffix')}` : ''}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('AdminMemberFamilyForm', { memberId: id, index: idx, member: fm }); }}
+                        style={{ padding: spacing.xs, borderRadius: radius.full, backgroundColor: C.bg }}
+                      >
+                        <Pencil size={14} color={C.textMuted} />
+                      </TouchableOpacity>
+                      {!isHead && (
+                        <TouchableOpacity
+                          onPress={() => handleDeleteFamilyMemberPress(idx)}
+                          disabled={deletingIndex === idx}
+                          style={{ padding: spacing.xs, borderRadius: radius.full, backgroundColor: C.error + '15' }}
+                        >
+                          {deletingIndex === idx ? (
+                            <ActivityIndicator size="small" color={C.error} />
+                          ) : (
+                            <Trash2 size={14} color={C.error} />
+                          )}
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
 
           <Button
             variant="primary"

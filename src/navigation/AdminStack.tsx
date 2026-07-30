@@ -18,13 +18,18 @@ import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen';
 import AdminLeadersScreen from '../screens/admin/AdminLeadersScreen';
 import AdminLeaderFormScreen from '../screens/admin/AdminLeaderFormScreen';
 import AdminMemberEditScreen from '../screens/admin/AdminMemberEditScreen';
+import AdminMemberFamilyFormScreen from '../screens/admin/AdminMemberFamilyFormScreen';
+import AdminDemographicsScreen from '../screens/admin/AdminDemographicsScreen';
 import { Leader } from '../api/admin';
+import { FamilyMember } from '../types';
 
 export type AdminStackParams = {
   AdminDashboard: undefined;
   AdminMembers: undefined;
   AdminMemberDetail: { id: string };
   AdminMemberEdit: { id: string };
+  AdminMemberFamilyForm: { memberId: string; index?: number; member?: FamilyMember };
+  AdminDemographics: undefined;
   AdminReports: undefined;
   AdminUsers: undefined;
   AdminTracker: undefined;
@@ -49,6 +54,8 @@ export default function AdminStack() {
       <Stack.Screen name="AdminMembers" component={AdminMembersScreen} />
       <Stack.Screen name="AdminMemberDetail" component={AdminMemberDetailScreen} />
       <Stack.Screen name="AdminMemberEdit" component={AdminMemberEditScreen} />
+      <Stack.Screen name="AdminMemberFamilyForm" component={AdminMemberFamilyFormScreen} />
+      <Stack.Screen name="AdminDemographics" component={AdminDemographicsScreen} />
       <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
       <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
       <Stack.Screen name="AdminTracker" component={AdminTrackerScreen} />
