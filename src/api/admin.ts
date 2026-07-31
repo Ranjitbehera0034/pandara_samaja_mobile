@@ -90,9 +90,24 @@ export const fetchAdminMe = async () => {
 
 // ── Member management (admin + superadmin) ──
 
-export const fetchAdminMembers = async (params: { page?: number; limit?: number; search?: string } = {}) => {
+export const fetchAdminMembers = async (params: {
+  page?: number; limit?: number; search?: string;
+  district?: string; taluka?: string; panchayat?: string; village?: string; gender?: string;
+} = {}) => {
   const res = await adminClient.get('/admin/members', { params });
   return res.data as { success: boolean; members: AdminMember[]; total: number; page: number; totalPages: number };
+};
+
+export interface AdminMemberFilterOptions {
+  districts: string[];
+  talukas: Record<string, string[]>;
+  panchayats: Record<string, string[]>;
+  villages: Record<string, string[]>;
+}
+
+export const fetchAdminMemberFilters = async () => {
+  const res = await adminClient.get('/admin/members/filters');
+  return res.data as { success: boolean; filters: AdminMemberFilterOptions };
 };
 
 export const fetchAdminMember = async (id: string) => {
