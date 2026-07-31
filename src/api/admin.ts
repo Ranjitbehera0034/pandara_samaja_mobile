@@ -674,3 +674,41 @@ export const fetchDemographics = async () => {
   const res = await adminClient.get('/admin/members/demographics');
   return res.data as { success: boolean; message?: string; demographics: Demographics };
 };
+
+// ── Member activity analytics (admin + superadmin) — aggregated stats and
+// trends derived entirely from the existing `activity_log` + `members`
+// tables (see GET /admin/activity for the separate raw-log viewer this
+// screen sits alongside, not replaces). ──
+
+export interface DailyTrendPoint {
+  date: string;
+  count: number;
+}
+
+export interface MostActiveMember {
+  membership_no: string;
+  activity_count: number;
+  name: string | null;
+  village: string | null;
+  district: string | null;
+}
+
+export interface ActionBreakdownEntry {
+  action: string;
+  count: number;
+}
+
+export interface AnalyticsData {
+  activeMembers: { today: number; last7Days: number; last30Days: number };
+  dailyActiveTrend: DailyTrendPoint[];
+  mostActiveMembers: MostActiveMember[];
+  actionBreakdown: ActionBreakdownEntry[];
+  inactiveMembers: number;
+  newSignupsTrend: DailyTrendPoint[];
+}
+
+// GET /api/admin/analytics
+export const fetchAdminAnalytics = async () => {
+  const res = await adminClient.get('/admin/analytics');
+  return res.data as { success: boolean; message?: string; analytics: AnalyticsData; migrationPending?: boolean };
+};
