@@ -18,6 +18,7 @@ import SkeletonBox from '../../components/common/SkeletonBox';
 import EmptyState from '../../components/common/EmptyState';
 import { useSocket } from '../../hooks/useSocket';
 import * as feedApi from '../../api/feed';
+import * as notificationsApi from '../../api/notifications';
 import { mapPost, mapAnnouncement } from '../../utils/feedUtils';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -58,7 +59,7 @@ export default function FeedScreen() {
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(2); // Start with mock unread count
+  const [unreadCount, setUnreadCount] = useState(0);
   
   // Story viewer state
   const [selectedStoryAuthor, setSelectedStoryAuthor] = useState<string | null>(null);
@@ -110,6 +111,12 @@ export default function FeedScreen() {
   useEffect(() => {
     loadFeedData();
   }, [loadFeedData]);
+
+  useEffect(() => {
+    notificationsApi.fetchUnreadCount()
+      .then(res => { if (res.success) setUnreadCount(res.count); })
+      .catch(e => console.error('[NOTIFICATIONS] Failed to load unread count:', e));
+  }, []);
 
   // ── Socket realtime event handlers ──
   useSocket({
