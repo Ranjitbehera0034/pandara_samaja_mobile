@@ -1894,7 +1894,7 @@ interface LangContextType {
 const LanguageContext = createContext<LangContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [lang, setLangState] = useState<Lang>('en');
+  const [lang, setLangState] = useState<Lang>('od');
 
   useEffect(() => {
     storage.getItem(STORAGE_KEYS.LANGUAGE).then((saved) => {
