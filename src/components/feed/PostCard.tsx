@@ -14,6 +14,7 @@ import { timeAgoShort, REACTIONS, mapComment, containsBannedContent, censorText 
 import { urlsToMedia } from '../../utils/media';
 import { useAuth } from '../../context/AuthContext';
 import MediaGrid from './MediaGrid';
+import MediaViewerModal from './MediaViewerModal';
 import RichContent from './RichContent';
 import PollDisplay from './PollDisplay';
 import CommentItem from './CommentItem';
@@ -66,6 +67,9 @@ export default function PostCard({
     post.reactions || { like: post.likes, love: 0, haha: 0, wow: 0, sad: 0, angry: 0 }
   );
   const [likeScale] = useState(new Animated.Value(1));
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
+  const postMedia = post.media?.length ? post.media : urlsToMedia(post.images);
 
   const isAuthor = member && (
     member.membership_no === post.authorId
@@ -280,7 +284,11 @@ export default function PostCard({
       {/* ── Media Grid ── */}
       {((post.media?.length ?? 0) > 0 || (post.images?.length ?? 0) > 0) && (
         <MediaGrid
-          media={post.media?.length ? post.media : urlsToMedia(post.images)}
+          media={postMedia}
+          onMediaPress={(index) => {
+            setViewerIndex(index);
+            setViewerVisible(true);
+          }}
         />
       )}
 
@@ -612,6 +620,14 @@ export default function PostCard({
           </View>
         </Pressable>
       </Modal>
+
+      {/* ── Fullscreen media viewer ── */}
+      <MediaViewerModal
+        visible={viewerVisible}
+        media={postMedia}
+        initialIndex={viewerIndex}
+        onClose={() => setViewerVisible(false)}
+      />
     </View>
   );
 }

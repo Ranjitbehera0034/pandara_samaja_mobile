@@ -1,6 +1,6 @@
 // src/components/feed/MediaGrid.tsx
 import React from 'react';
-import { View, Text, Dimensions } from 'react-native';
+import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Video, ResizeMode } from 'expo-av';
 import { MediaItem } from '../../types';
@@ -13,9 +13,10 @@ const MEDIA_WIDTH = SCREEN_WIDTH - 32; // 16px padding each side
 interface Props {
   media: MediaItem[];
   onVideoPlay?: () => void;
+  onMediaPress?: (index: number) => void;
 }
 
-export default function MediaGrid({ media, onVideoPlay }: Props) {
+export default function MediaGrid({ media, onVideoPlay, onMediaPress }: Props) {
   const { colors, spacing, radius, typography } = useTheme();
   if (!media || media.length === 0) return null;
 
@@ -23,7 +24,11 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
   if (media.length === 1) {
     const item = media[0];
     return (
-      <View style={{ backgroundColor: colors.bg, marginTop: spacing.md, borderRadius: radius.md, overflow: 'hidden' }}>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() => onMediaPress?.(0)}
+        style={{ backgroundColor: colors.bg, marginTop: spacing.md, borderRadius: radius.md, overflow: 'hidden' }}
+      >
         {item.type === 'video' ? (
           <Video
             source={{ uri: cleanPhoto(item.url) || item.url }}
@@ -44,7 +49,7 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
             transition={200}
           />
         )}
-      </View>
+      </TouchableOpacity>
     );
   }
 
@@ -54,13 +59,14 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
     return (
       <View style={{ marginTop: spacing.md, flexDirection: 'row', gap: 2, borderRadius: radius.md, overflow: 'hidden' }}>
         {media.map((item, i) => (
-          <Image
-            key={i}
-            source={{ uri: cleanPhoto(item.url) || item.url }}
-            style={{ width: half, height: half * 0.9 }}
-            contentFit="cover"
-            transition={200}
-          />
+          <TouchableOpacity key={i} activeOpacity={0.9} onPress={() => onMediaPress?.(i)}>
+            <Image
+              source={{ uri: cleanPhoto(item.url) || item.url }}
+              style={{ width: half, height: half * 0.9 }}
+              contentFit="cover"
+              transition={200}
+            />
+          </TouchableOpacity>
         ))}
       </View>
     );
@@ -71,21 +77,24 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
     const half = (MEDIA_WIDTH - 2) / 2;
     return (
       <View style={{ marginTop: spacing.md, borderRadius: radius.md, overflow: 'hidden', gap: 2 }}>
-        <Image
-          source={{ uri: cleanPhoto(media[0].url) || media[0].url }}
-          style={{ width: MEDIA_WIDTH, height: MEDIA_WIDTH * 0.5 }}
-          contentFit="cover"
-          transition={200}
-        />
+        <TouchableOpacity activeOpacity={0.9} onPress={() => onMediaPress?.(0)}>
+          <Image
+            source={{ uri: cleanPhoto(media[0].url) || media[0].url }}
+            style={{ width: MEDIA_WIDTH, height: MEDIA_WIDTH * 0.5 }}
+            contentFit="cover"
+            transition={200}
+          />
+        </TouchableOpacity>
         <View style={{ flexDirection: 'row', gap: 2 }}>
           {media.slice(1, 3).map((item, i) => (
-            <Image
-              key={i}
-              source={{ uri: cleanPhoto(item.url) || item.url }}
-              style={{ width: half, height: half * 0.7 }}
-              contentFit="cover"
-              transition={200}
-            />
+            <TouchableOpacity key={i} activeOpacity={0.9} onPress={() => onMediaPress?.(i + 1)}>
+              <Image
+                source={{ uri: cleanPhoto(item.url) || item.url }}
+                style={{ width: half, height: half * 0.7 }}
+                contentFit="cover"
+                transition={200}
+              />
+            </TouchableOpacity>
           ))}
         </View>
       </View>
@@ -98,18 +107,24 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
     <View style={{ marginTop: spacing.md, borderRadius: radius.md, overflow: 'hidden' }}>
       <View style={{ flexDirection: 'row', gap: 2, marginBottom: 2 }}>
         {media.slice(0, 2).map((item, i) => (
-          <Image
-            key={i}
-            source={{ uri: cleanPhoto(item.url) || item.url }}
-            style={{ width: quarter, height: quarter * 0.8 }}
-            contentFit="cover"
-            transition={200}
-          />
+          <TouchableOpacity key={i} activeOpacity={0.9} onPress={() => onMediaPress?.(i)}>
+            <Image
+              source={{ uri: cleanPhoto(item.url) || item.url }}
+              style={{ width: quarter, height: quarter * 0.8 }}
+              contentFit="cover"
+              transition={200}
+            />
+          </TouchableOpacity>
         ))}
       </View>
       <View style={{ flexDirection: 'row', gap: 2 }}>
         {media.slice(2, 4).map((item, i) => (
-          <View key={i} style={{ width: quarter, height: quarter * 0.8 }}>
+          <TouchableOpacity
+            key={i}
+            activeOpacity={0.9}
+            onPress={() => onMediaPress?.(i + 2)}
+            style={{ width: quarter, height: quarter * 0.8 }}
+          >
             <Image
               source={{ uri: cleanPhoto(item.url) || item.url }}
               style={{ width: quarter, height: quarter * 0.8 }}
@@ -121,7 +136,7 @@ export default function MediaGrid({ media, onVideoPlay }: Props) {
                 <Text style={{ color: '#fff', ...typography.display }}>+{media.length - 4}</Text>
               </View>
             )}
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
     </View>

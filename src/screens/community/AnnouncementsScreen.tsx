@@ -14,6 +14,7 @@ import { ArrowLeft, Calendar, Megaphone, AlertCircle } from 'lucide-react-native
 import * as feedApi from '../../api/feed';
 import { mapAnnouncement } from '../../utils/feedUtils';
 import MediaGrid from '../../components/feed/MediaGrid';
+import MediaViewerModal from '../../components/feed/MediaViewerModal';
 import RichContent from '../../components/feed/RichContent';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -25,6 +26,8 @@ export default function AnnouncementsScreen() {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [viewerMedia, setViewerMedia] = useState<any[] | null>(null);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   const fetchAnnouncementsData = useCallback(async (isRefresh = false) => {
     if (isRefresh) setIsRefreshing(true);
@@ -104,7 +107,10 @@ export default function AnnouncementsScreen() {
         {/* Media Grid */}
         {item.media && item.media.length > 0 && (
           <View style={{ borderTopColor: colors.border + '30', marginTop: spacing.sm, paddingTop: spacing.md }} className="border-t">
-            <MediaGrid media={item.media} />
+            <MediaGrid
+              media={item.media}
+              onMediaPress={(index) => { setViewerMedia(item.media); setViewerIndex(index); }}
+            />
           </View>
         )}
       </View>
@@ -149,6 +155,13 @@ export default function AnnouncementsScreen() {
           }
         />
       )}
+
+      <MediaViewerModal
+        visible={!!viewerMedia}
+        media={viewerMedia || []}
+        initialIndex={viewerIndex}
+        onClose={() => setViewerMedia(null)}
+      />
     </SafeAreaView>
   );
 }

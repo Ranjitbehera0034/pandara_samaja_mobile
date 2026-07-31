@@ -13,6 +13,7 @@ import { ArrowLeft, MapPin, MessageSquare, Users, Image as ImageIcon, LayoutGrid
 import * as membersApi from '../../api/members';
 import { cleanPhoto } from '../../utils/googleDriveUrl';
 import PostCard from '../../components/feed/PostCard';
+import MediaViewerModal from '../../components/feed/MediaViewerModal';
 import EmptyState from '../../components/common/EmptyState';
 import Avatar from '../../components/common/Avatar';
 import { useTheme } from '../../theme/ThemeContext';
@@ -33,6 +34,8 @@ export default function MemberProfileScreen() {
   const [profile, setProfile] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'posts' | 'family' | 'gallery'>('posts');
   const [following, setFollowing] = useState(false);
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -345,13 +348,15 @@ export default function MemberProfileScreen() {
               {galleryItems.length > 0 ? (
                 <View className="flex-row flex-wrap" style={{ gap: spacing.sm }}>
                   {galleryItems.map((item: any, idx: number) => (
-                    <View
+                    <TouchableOpacity
                       key={idx}
+                      activeOpacity={0.9}
+                      onPress={() => { setViewerIndex(idx); setViewerVisible(true); }}
                       style={{ width: (W - 48) / 3, height: (W - 48) / 3, backgroundColor: C.card, borderColor: C.border, borderRadius: radius.md }}
                       className="overflow-hidden border"
                     >
                       <Image source={{ uri: item.url }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} />
-                    </View>
+                    </TouchableOpacity>
                   ))}
                 </View>
               ) : (
@@ -365,6 +370,13 @@ export default function MemberProfileScreen() {
           )}
         </View>
       </ScrollView>
+
+      <MediaViewerModal
+        visible={viewerVisible}
+        media={galleryItems}
+        initialIndex={viewerIndex}
+        onClose={() => setViewerVisible(false)}
+      />
     </View>
   );
 }
