@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
 import Toast from 'react-native-toast-message';
 import { AuthProvider } from './src/context/AuthContext';
 import { AdminAuthProvider } from './src/context/AdminAuthContext';
@@ -13,12 +14,46 @@ import { LanguageProvider } from './src/context/LanguageContext';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import UpdateBanner from './src/components/common/UpdateBanner';
+import { navigateFromNotificationData } from './src/utils/notificationNavigation';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
+// Show notifications with a banner/sound/badge even while the app is in the
+// foreground — by default Expo/OS would otherwise suppress the alert while
+// the app is active. `shouldShowBanner`/`shouldShowList` are the current
+// (non-deprecated) fields on the installed expo-notifications version.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
+
 function AppContent() {
   const { scheme, colors } = useTheme();
+
+  // Tapping a push notification (app backgrounded or fully closed) should
+  // deep-link to the relevant screen — see notificationNavigation.ts for the
+  // type -> screen mapping. Registered once here since AppContent already
+  // mounts near the root, alongside RootNavigator/UpdateBanner.
+  useEffect(() => {
+    // Cold start: the app may have been launched BY tapping a notification —
+    // handle that initial response too, not just ones received while running.
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) {
+        navigateFromNotificationData(response.notification.request.content.data as any);
+      }
+    });
+
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      navigateFromNotificationData(response.notification.request.content.data as any);
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   const toastConfig = {
     success: ({ text1, text2 }: any) => (

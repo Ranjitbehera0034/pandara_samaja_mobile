@@ -1,6 +1,6 @@
 // src/navigation/RootNavigator.tsx
 import React, { useState, useEffect } from 'react';
-import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme, createNavigationContainerRef } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import { useTheme } from '../theme/ThemeContext';
@@ -11,6 +11,15 @@ import LoadingScreen from '../components/common/LoadingScreen';
 import AnimatedSplash from '../screens/SplashScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import { storage } from '../utils/secureStorage';
+
+// Root navigation ref — lets code outside any screen component (e.g. the
+// push-notification tap handler in App.tsx, which fires from an OS event,
+// not a user gesture inside a mounted screen) navigate anywhere in the app.
+// Typed `any` deliberately — this app doesn't declare a global
+// ReactNavigation.RootParamList (nested tab/stack route names are looked up
+// dynamically throughout the codebase via `useRoute<any>()`), so a strict
+// param list here would fight the existing untyped navigation pattern.
+export const navigationRef = createNavigationContainerRef<any>();
 
 export default function RootNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -46,7 +55,7 @@ export default function RootNavigator() {
   }, []);
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer ref={navigationRef} theme={navTheme}>
       {showSplash ? (
         <AnimatedSplash onFinish={() => setShowSplash(false)} />
       ) : showOnboarding === null || isLoading || isAdminLoading ? (

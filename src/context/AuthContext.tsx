@@ -6,6 +6,7 @@ import { storage } from '../utils/secureStorage';
 import { Member, LoggedUser } from '../types';
 import client, { authEventEmitter } from '../api/client';
 import { FirebaseRecaptcha, FirebaseRecaptchaRef } from '../components/common/FirebaseRecaptcha';
+import { registerForPushNotificationsAsync, clearPushToken } from '../utils/pushNotifications';
 
 interface AuthContextType {
   member: Member | null;
@@ -213,6 +214,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading]);
 
+  // Register this device's push token on every app launch where a session
+  // is already restored (not just right after a fresh login below) — quiet,
+  // best-effort, never blocks or shows an error (see pushNotifications.ts).
+  useEffect(() => {
+    if (isLoading || !token) return;
+    registerForPushNotificationsAsync();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
+
   // Listen for forced logout event from API interceptor
   useEffect(() => {
     const handleForcedLogout = () => {
@@ -238,6 +248,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       storage.setItem(STORAGE_KEYS.PORTAL_USER, JSON.stringify(userData)),
       storage.setItem(STORAGE_KEYS.PORTAL_TOKEN, jwtToken),
     ]);
+
+    // Fire-and-forget — quietly register this device for push notifications
+    // right after login. Never blocks the login flow and never surfaces an
+    // error (permission denied is a normal outcome, not a bug).
+    registerForPushNotificationsAsync();
   };
 
   // Step 1: Request OTP (Checks credentials on backend, then starts Firebase if needed)
@@ -302,6 +317,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    // Best-effort — clear the server-side push token so this device stops
+    // receiving pushes for an account it's no longer signed into. Fired
+    // before local state clears so it still has a valid token to authenticate
+    // the request with; failure here must never block logout itself.
+    clearPushToken();
+
     setMember(null);
     setUser(null);
     setToken(null);

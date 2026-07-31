@@ -82,6 +82,19 @@ export const fetchFamilyMembers = async () => {
   return res.data as { success: boolean; message?: string; familyMembers: FamilyMember[] };
 };
 
+// ════════════════════════════════════════════════
+//  PUSH NOTIFICATIONS
+// ════════════════════════════════════════════════
+
+// PUT /api/portal/push-token — register (or clear, if token is falsy) this
+// device's Expo push token against the logged-in member. Failures here are
+// expected to be swallowed by the caller (see AuthContext) — a push-token
+// registration failure must never surface as a user-facing error.
+export const registerPushToken = async (token: string | null) => {
+  const res = await client.put('/portal/push-token', { token: token || '' });
+  return res.data as { success: boolean };
+};
+
 // POST /api/portal/family-members — returns the WHOLE updated array, not just the new entry
 export const addFamilyMember = async (data: FamilyMemberInput) => {
   const res = await client.post('/portal/family-members', data);
