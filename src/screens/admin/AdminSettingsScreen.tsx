@@ -2,20 +2,20 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Lock, UserCircle } from 'lucide-react-native';
+import { ArrowLeft, Lock, UserCircle, Globe } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
 import Button from '../../components/common/Button';
-import { useTheme } from '../../theme/ThemeContext';
+import { useTheme, ThemeMode } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 
 export default function AdminSettingsScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
-  const { colors: C, spacing, radius, typography, shadow } = useTheme();
-  const { lang, t } = useLanguage();
+  const { colors: C, spacing, radius, typography, shadow, mode, setMode } = useTheme();
+  const { lang, setLang, t } = useLanguage();
   const { adminUser } = useAdminAuth();
   const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
   const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
@@ -59,6 +59,20 @@ export default function AdminSettingsScreen() {
     }
   };
 
+  const handleLanguageChange = (selectedLang: 'en' | 'od') => {
+    if (lang !== selectedLang) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setLang(selectedLang);
+    }
+  };
+
+  const handleThemeChange = (selectedMode: ThemeMode) => {
+    if (mode !== selectedMode) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setMode(selectedMode);
+    }
+  };
+
   const inputStyle = {
     borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
     marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text, ...typography.body,
@@ -91,6 +105,82 @@ export default function AdminSettingsScreen() {
           <Text style={{ color: C.text, fontFamily: fontRegular, ...typography.body }}>
             {adminUser?.role === 'superadmin' ? t('admin', 'roleSuperadmin') : t('admin', 'roleAdmin')}
           </Text>
+        </View>
+
+        {/* Appearance + Language card */}
+        <View style={{ backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg, ...shadow.card }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg }}>
+            <Globe size={18} color={C.primary} />
+            <Text style={{ color: C.text, fontFamily: fontBold, ...typography.bodyEmphasis }}>{t('settings', 'appearanceHeader')}</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: spacing.sm + 2, marginBottom: spacing.lg }}>
+            {([
+              { value: 'light' as ThemeMode, emoji: '☀️' },
+              { value: 'dark' as ThemeMode, emoji: '🌙' },
+              { value: 'system' as ThemeMode, emoji: '⚙️' },
+            ]).map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                onPress={() => handleThemeChange(opt.value)}
+                style={{
+                  flex: 1,
+                  backgroundColor: mode === opt.value ? C.primary + '15' : C.bg,
+                  borderWidth: 2,
+                  borderColor: mode === opt.value ? C.primary : C.border,
+                  borderRadius: radius.lg,
+                  paddingVertical: spacing.md + 2,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: spacing.xs + 2,
+                }}
+              >
+                <Text style={{ fontSize: 20 }}>{opt.emoji}</Text>
+                <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, ...typography.caption, fontWeight: '700' }}>
+                  {t('settings', `theme${opt.value.charAt(0).toUpperCase()}${opt.value.slice(1)}`)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={labelStyle}>{t('settings', 'languageHeader')}</Text>
+          <View style={{ flexDirection: 'row', gap: spacing.md }}>
+            <TouchableOpacity
+              onPress={() => handleLanguageChange('en')}
+              style={{
+                flex: 1,
+                backgroundColor: lang === 'en' ? C.primary + '15' : C.bg,
+                borderWidth: 2,
+                borderColor: lang === 'en' ? C.primary : C.border,
+                borderRadius: radius.lg,
+                paddingVertical: spacing.md + 2,
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: spacing.xs,
+              }}
+            >
+              <Text style={{ fontSize: 20 }}>🇬🇧</Text>
+              <Text style={{ color: C.text, ...typography.label, fontWeight: '700' }}>English</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => handleLanguageChange('od')}
+              style={{
+                flex: 1,
+                backgroundColor: lang === 'od' ? C.primary + '15' : C.bg,
+                borderWidth: 2,
+                borderColor: lang === 'od' ? C.primary : C.border,
+                borderRadius: radius.lg,
+                paddingVertical: spacing.md + 2,
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: spacing.xs,
+              }}
+            >
+              <Text style={{ fontSize: 20 }}>🇮🇳</Text>
+              <Text style={{ color: C.text, fontFamily: 'NotoSansOriya-Bold', ...typography.label, fontWeight: '700' }}>ଓଡ଼ିଆ</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={{ backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, ...shadow.card }}>

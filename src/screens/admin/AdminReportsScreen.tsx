@@ -1,6 +1,6 @@
 // src/screens/admin/AdminReportsScreen.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Check, X as XIcon } from 'lucide-react-native';
@@ -11,6 +11,9 @@ import { ReportedPost } from '../../api/admin';
 import Avatar from '../../components/common/Avatar';
 import EmptyState from '../../components/common/EmptyState';
 import Button from '../../components/common/Button';
+import MediaGrid from '../../components/feed/MediaGrid';
+import MediaViewerModal from '../../components/feed/MediaViewerModal';
+import { urlsToMedia } from '../../utils/media';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -26,6 +29,8 @@ export default function AdminReportsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actingId, setActingId] = useState<string | null>(null);
+  const [viewerPostId, setViewerPostId] = useState<string | null>(null);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
@@ -106,7 +111,15 @@ export default function AdminReportsScreen() {
         )}
 
         {Array.isArray(item.images) && item.images.length > 0 && (
-          <Image source={{ uri: item.images[0] }} style={{ width: '100%', height: 160, borderRadius: radius.md, marginBottom: spacing.md, backgroundColor: C.bg }} resizeMode="cover" />
+          <View style={{ marginBottom: spacing.md }}>
+            <MediaGrid
+              media={urlsToMedia(item.images)}
+              onMediaPress={(index) => {
+                setViewerPostId(item.id);
+                setViewerIndex(index);
+              }}
+            />
+          </View>
         )}
 
         <View style={{ backgroundColor: C.bg, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md, gap: spacing.sm }}>
@@ -177,6 +190,13 @@ export default function AdminReportsScreen() {
           />
         </View>
       )}
+
+      <MediaViewerModal
+        visible={!!viewerPostId}
+        media={urlsToMedia(posts.find(p => p.id === viewerPostId)?.images)}
+        initialIndex={viewerIndex}
+        onClose={() => setViewerPostId(null)}
+      />
     </View>
   );
 }
