@@ -136,7 +136,7 @@ export default function AdminDashboardScreen() {
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.xl }}>
         <View style={{ marginBottom: spacing.xl }}>
           <Text style={{ color: C.text, fontFamily: fontBold, ...typography.display }}>
-            {t('admin', 'dashboardTitle')}
+            {isSuperAdmin ? t('admin', 'superDashboardTitle') : t('admin', 'dashboardTitle')}
           </Text>
           <View
             style={{

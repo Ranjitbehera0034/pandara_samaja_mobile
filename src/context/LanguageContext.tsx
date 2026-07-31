@@ -532,6 +532,7 @@ const translations = {
       loginError: 'Invalid username or password',
 
       dashboardTitle: 'Admin Dashboard',
+      superDashboardTitle: 'Super Admin Dashboard',
       roleAdmin: 'Admin',
       roleSuperadmin: 'Super Admin',
       membersCardTitle: 'Members',
@@ -1464,6 +1465,7 @@ const translations = {
       loginError: 'ଅବୈଧ ୟୁଜରନେମ କିମ୍ବା ପାସୱାର୍ଡ',
 
       dashboardTitle: 'ଆଡମିନ ଡ୍ୟାସବୋର୍ଡ',
+      superDashboardTitle: 'ସୁପର ଆଡମିନ ଡ୍ୟାସବୋର୍ଡ',
       roleAdmin: 'ଆଡମିନ',
       roleSuperadmin: 'ସୁପର ଆଡମିନ',
       membersCardTitle: 'ସଦସ୍ୟ',
