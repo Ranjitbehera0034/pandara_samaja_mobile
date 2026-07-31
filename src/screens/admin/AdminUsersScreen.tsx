@@ -33,6 +33,7 @@ export default function AdminUsersScreen() {
   const [showCreate, setShowCreate] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState<'admin' | 'superadmin'>('admin');
   const [creating, setCreating] = useState(false);
 
@@ -62,6 +63,7 @@ export default function AdminUsersScreen() {
   const resetCreateForm = () => {
     setNewUsername('');
     setNewPassword('');
+    setNewEmail('');
     setNewRole('admin');
   };
 
@@ -77,7 +79,7 @@ export default function AdminUsersScreen() {
     setCreating(true);
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const data = await adminApi.createAdminAccount(newUsername.trim(), newPassword, newRole);
+      const data = await adminApi.createAdminAccount(newUsername.trim(), newPassword, newRole, newEmail.trim());
       if (data.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowCreate(false);
@@ -314,6 +316,19 @@ export default function AdminUsersScreen() {
               autoCapitalize="none"
               autoCorrect={false}
             />
+
+            <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'emailLabel')}</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.xs, backgroundColor: C.card, borderColor: C.border, color: C.text, ...typography.body }}
+              placeholder={t('admin', 'emailPlaceholder')}
+              placeholderTextColor={C.textFaint}
+              value={newEmail}
+              onChangeText={setNewEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Text style={{ color: C.textFaint, marginBottom: spacing.lg, ...typography.caption }}>{t('admin', 'emailCaption')}</Text>
 
             <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'roleFieldLabel')}</Text>
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xl }}>

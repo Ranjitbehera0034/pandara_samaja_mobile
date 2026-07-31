@@ -35,6 +35,9 @@ export interface AdminAccountRow {
   // Only present once the `users.is_active` migration has run (and only
   // ever returned from the ban/unban response) — treat undefined as active.
   is_active?: boolean;
+  // Optional — used only to notify the admin by email on account
+  // create/remove.
+  email?: string | null;
 }
 
 export interface AdminMember {
@@ -160,8 +163,8 @@ export const fetchAdminAccounts = async () => {
   return res.data as { success: boolean; users: AdminAccountRow[] };
 };
 
-export const createAdminAccount = async (username: string, password: string, role: 'admin' | 'superadmin') => {
-  const res = await adminClient.post('/admin/users', { username, password, role });
+export const createAdminAccount = async (username: string, password: string, role: 'admin' | 'superadmin', email?: string) => {
+  const res = await adminClient.post('/admin/users', { username, password, role, email: email || undefined });
   return res.data as { success: boolean; message?: string; user?: AdminAccountRow };
 };
 
