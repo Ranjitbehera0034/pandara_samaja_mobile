@@ -430,6 +430,7 @@ export default function FeedScreen() {
         <StoryViewer
           visible={showStoryViewer}
           stories={selectedAuthorStories}
+          currentMemberId={member?.membership_no}
           onClose={() => {
             setShowStoryViewer(false);
             setSelectedStoryAuthor(null);
@@ -439,6 +440,9 @@ export default function FeedScreen() {
             setStories(prev =>
               prev.map(s => s.id === storyId ? { ...s, viewed: true } : s)
             );
+          }}
+          onStoryDeleted={(storyId) => {
+            setStories(prev => prev.filter(s => s.id !== storyId));
           }}
         />
       )}

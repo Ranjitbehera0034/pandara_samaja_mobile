@@ -88,3 +88,28 @@ export const createStory = async (formData: FormData) => {
   });
   return res.data;
 };
+
+// ── Delete your own story ──
+export const deleteStory = async (storyId: string) => {
+  const res = await client.delete(`/portal/stories/${storyId}`);
+  return res.data as { success: boolean; message?: string };
+};
+
+// ── Record that you viewed a story (no-ops server-side if it's your own) ──
+export const recordStoryView = async (storyId: string) => {
+  const res = await client.post(`/portal/stories/${storyId}/view`);
+  return res.data as { success: boolean };
+};
+
+export interface StoryViewer {
+  membershipNo: string;
+  name: string;
+  photo: string | null;
+  viewedAt: string;
+}
+
+// ── Who has viewed your story (author-only) ──
+export const fetchStoryViewers = async (storyId: string) => {
+  const res = await client.get(`/portal/stories/${storyId}/views`);
+  return res.data as { success: boolean; message?: string; count: number; viewers: StoryViewer[] };
+};

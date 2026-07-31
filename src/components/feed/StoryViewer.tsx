@@ -2,15 +2,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, Image, Modal, TouchableOpacity,
-  Dimensions, Animated, Pressable
+  Dimensions, Animated, Pressable, FlatList, Alert, ActivityIndicator
 } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
-import { X } from 'lucide-react-native';
+import { X, Trash2, Eye } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 import { Story } from '../../types';
 import { cleanPhoto } from '../../utils/googleDriveUrl';
 import { timeAgoShort } from '../../utils/feedUtils';
+import * as feedApi from '../../api/feed';
+import { StoryViewer as StoryViewerRow } from '../../api/feed';
 import Avatar from '../common/Avatar';
+import EmptyState from '../common/EmptyState';
 import { useTheme } from '../../theme/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const STORY_DURATION = 5000; // 5 seconds per story
@@ -18,16 +23,26 @@ const STORY_DURATION = 5000; // 5 seconds per story
 interface Props {
   visible: boolean;
   stories: Story[];
+  currentMemberId?: string;
   onClose: () => void;
   onStoryViewed?: (storyId: string) => void;
+  onStoryDeleted?: (storyId: string) => void;
 }
 
-export default function StoryViewer({ visible, stories, onClose, onStoryViewed }: Props) {
-  const { spacing, radius, typography } = useTheme();
+export default function StoryViewer({ visible, stories, currentMemberId, onClose, onStoryViewed, onStoryDeleted }: Props) {
+  const { colors: C, spacing, radius, typography } = useTheme();
+  const { lang, t } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showViewers, setShowViewers] = useState(false);
+  const [viewersLoading, setViewersLoading] = useState(false);
+  const [viewers, setViewers] = useState<StoryViewerRow[]>([]);
   const progressAnim = useRef(new Animated.Value(0)).current;
   const activeStory = stories[currentIndex];
+  const isOwnStory = !!activeStory && !!currentMemberId && activeStory.authorId === currentMemberId;
+  const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
+  const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
 
   const timerRef = useRef<any>(null);
   const startTimeRef = useRef<number>(0);
@@ -37,9 +52,14 @@ export default function StoryViewer({ visible, stories, onClose, onStoryViewed }
   useEffect(() => {
     if (!visible || stories.length === 0) return;
 
-    // Mark story as viewed
-    if (activeStory && onStoryViewed && !activeStory.viewed) {
-      onStoryViewed(activeStory.id);
+    // Mark story as viewed — locally (for the ring/indicator) and, unless
+    // this is your own story, record it server-side so the author can see
+    // who viewed it.
+    if (activeStory && !activeStory.viewed) {
+      if (onStoryViewed) onStoryViewed(activeStory.id);
+      if (!isOwnStory) {
+        feedApi.recordStoryView(activeStory.id).catch(() => { /* best-effort, non-blocking */ });
+      }
     }
 
     startProgress();
@@ -112,6 +132,70 @@ export default function StoryViewer({ visible, stories, onClose, onStoryViewed }
     } else {
       handleNext();
     }
+  };
+
+  const doDelete = async () => {
+    if (!activeStory) return;
+    setDeleting(true);
+    try {
+      const data = await feedApi.deleteStory(activeStory.id);
+      if (data.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        onStoryDeleted?.(activeStory.id);
+        // The parent will remove this story from the `stories` array it
+        // passes back down, which shifts every later index down by one —
+        // so the item that will end up AT `currentIndex` after that
+        // re-render is already the correct "next" story. Don't also
+        // advance the index (that would skip one), and only close/clamp
+        // for the edge case of deleting the last item in the list.
+        if (stories.length <= 1) {
+          onClose();
+        } else if (currentIndex >= stories.length - 1) {
+          setCurrentIndex(currentIndex - 1);
+        }
+      } else {
+        throw new Error(data.message);
+      }
+    } catch {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t('common', 'errorTitle'), t('feed', 'storyDeleteError'));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeletePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    pauseProgress();
+    Alert.alert(
+      t('feed', 'confirmDeleteStoryTitle'),
+      t('feed', 'confirmDeleteStoryMessage'),
+      [
+        { text: t('common', 'cancel'), style: 'cancel', onPress: resumeProgress },
+        { text: t('common', 'delete'), style: 'destructive', onPress: doDelete },
+      ]
+    );
+  };
+
+  const openViewers = async () => {
+    if (!activeStory) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    pauseProgress();
+    setShowViewers(true);
+    setViewersLoading(true);
+    try {
+      const data = await feedApi.fetchStoryViewers(activeStory.id);
+      if (data.success) setViewers(data.viewers);
+    } catch {
+      setViewers([]);
+    } finally {
+      setViewersLoading(false);
+    }
+  };
+
+  const closeViewers = () => {
+    setShowViewers(false);
+    resumeProgress();
   };
 
   if (!visible || !activeStory) return null;
@@ -197,9 +281,16 @@ export default function StoryViewer({ visible, stories, onClose, onStoryViewed }
               </View>
             </View>
 
-            <TouchableOpacity onPress={onClose} className="z-40" style={{ padding: spacing.sm }}>
-              <X size={20} color="white" />
-            </TouchableOpacity>
+            <View className="flex-row items-center" style={{ gap: spacing.xs }}>
+              {isOwnStory && (
+                <TouchableOpacity onPress={handleDeletePress} disabled={deleting} className="z-40" style={{ padding: spacing.sm }}>
+                  {deleting ? <ActivityIndicator size="small" color="white" /> : <Trash2 size={18} color="white" />}
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity onPress={onClose} className="z-40" style={{ padding: spacing.sm }}>
+                <X size={20} color="white" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -221,7 +312,64 @@ export default function StoryViewer({ visible, stories, onClose, onStoryViewed }
             </Text>
           </View>
         ) : null}
+
+        {/* "Seen by" bar — own story only, tap to see who viewed it */}
+        {isOwnStory && (
+          <TouchableOpacity
+            onPress={openViewers}
+            className="absolute z-30 flex-row items-center"
+            style={{ left: spacing.lg, bottom: spacing.xxl, gap: spacing.xs, paddingVertical: spacing.sm }}
+          >
+            <Eye size={16} color="white" />
+            <Text className="text-white" style={{ fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>
+              {t('feed', 'seenByPrefix')}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
+
+      {/* Viewers list bottom sheet */}
+      <Modal visible={showViewers} transparent animationType="slide" onRequestClose={closeViewers}>
+        <Pressable style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={closeViewers}>
+          <Pressable
+            style={{
+              backgroundColor: C.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
+              maxHeight: SCREEN_HEIGHT * 0.6, padding: spacing.xl,
+            }}
+          >
+            <View className="flex-row items-center justify-between" style={{ marginBottom: spacing.lg }}>
+              <Text style={{ color: C.text, fontFamily: fontBold, ...typography.title }}>
+                {viewersLoading ? t('feed', 'viewersTitle') : `${t('feed', 'viewersTitle')} (${viewers.length})`}
+              </Text>
+              <TouchableOpacity onPress={closeViewers}>
+                <X size={20} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {viewersLoading ? (
+              <ActivityIndicator size="large" color={C.primary} style={{ paddingVertical: spacing.xl }} />
+            ) : viewers.length === 0 ? (
+              <EmptyState emoji="👀" title={t('feed', 'noViewersTitle')} subtitle={t('feed', 'noViewersSubtitle')} />
+            ) : (
+              <FlatList
+                data={viewers}
+                keyExtractor={(v) => v.membershipNo}
+                renderItem={({ item }) => (
+                  <View className="flex-row items-center" style={{ gap: spacing.md, paddingVertical: spacing.sm }}>
+                    <Avatar name={item.name} photoUrl={item.photo} size={40} />
+                    <View className="flex-1">
+                      <Text style={{ color: C.text, fontFamily: fontBold, ...typography.bodyEmphasis }}>{item.name}</Text>
+                    </View>
+                    <Text style={{ color: C.textFaint, fontFamily: fontRegular, ...typography.caption }}>
+                      {timeAgoShort(item.viewedAt)}
+                    </Text>
+                  </View>
+                )}
+              />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Modal>
   );
 }
