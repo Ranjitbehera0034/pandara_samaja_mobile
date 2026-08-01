@@ -113,3 +113,36 @@ export const fetchStoryViewers = async (storyId: string) => {
   const res = await client.get(`/portal/stories/${storyId}/views`);
   return res.data as { success: boolean; message?: string; count: number; viewers: StoryViewer[] };
 };
+
+// ── Like / unlike a story ──
+export const likeStory = async (storyId: string) => {
+  const res = await client.post(`/portal/stories/${storyId}/like`);
+  return res.data as { success: boolean; message?: string; liked: boolean; likes_count: number };
+};
+
+export interface StoryComment {
+  id: string;
+  memberId: string;
+  authorName: string;
+  authorPhoto: string | null;
+  text: string;
+  createdAt: string;
+}
+
+// ── Fetch comments for a story ──
+export const fetchStoryComments = async (storyId: string) => {
+  const res = await client.get(`/portal/stories/${storyId}/comments`);
+  return res.data as { success: boolean; message?: string; comments: StoryComment[] };
+};
+
+// ── Add a comment to a story ──
+export const addStoryComment = async (storyId: string, text: string) => {
+  const res = await client.post(`/portal/stories/${storyId}/comments`, { text });
+  return res.data as { success: boolean; message?: string; comment: StoryComment };
+};
+
+// ── Report a story (auto-hides it pending admin review) ──
+export const reportStory = async (storyId: string, reason: string) => {
+  const res = await client.post(`/portal/stories/${storyId}/report`, { reason });
+  return res.data as { success: boolean; message?: string };
+};

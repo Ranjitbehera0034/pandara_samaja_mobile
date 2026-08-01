@@ -1,23 +1,25 @@
-// src/screens/admin/AdminReportsScreen.tsx
+// src/screens/admin/AdminStoryReportsScreen.tsx
+// Mirrors AdminReportsScreen.tsx exactly, for reported STORIES instead of
+// posts — separate screen since stories have a different shape (one
+// media item, no text_content) and their own moderation endpoints.
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Check, X as XIcon, Clapperboard } from 'lucide-react-native';
+import { ArrowLeft, Check, X as XIcon } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
-import { ReportedPost } from '../../api/admin';
+import { ReportedStory } from '../../api/admin';
 import Avatar from '../../components/common/Avatar';
 import EmptyState from '../../components/common/EmptyState';
 import Button from '../../components/common/Button';
 import MediaGrid from '../../components/feed/MediaGrid';
 import MediaViewerModal from '../../components/feed/MediaViewerModal';
-import { urlsToMedia } from '../../utils/media';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
-export default function AdminReportsScreen() {
+export default function AdminStoryReportsScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { colors: C, spacing, radius, typography, shadow } = useTheme();
@@ -25,20 +27,19 @@ export default function AdminReportsScreen() {
   const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
   const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
 
-  const [posts, setPosts] = useState<ReportedPost[]>([]);
+  const [stories, setStories] = useState<ReportedStory[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actingId, setActingId] = useState<string | null>(null);
-  const [viewerPostId, setViewerPostId] = useState<string | null>(null);
-  const [viewerIndex, setViewerIndex] = useState(0);
+  const [viewerStoryId, setViewerStoryId] = useState<string | null>(null);
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
     try {
-      const data = await adminApi.fetchReportedPosts();
-      if (data.success) setPosts(data.posts);
+      const data = await adminApi.fetchReportedStories();
+      if (data.success) setStories(data.stories);
     } catch (e) {
-      console.error('[ADMIN_REPORTS] Fetch failed:', e);
+      console.error('[ADMIN_STORY_REPORTS] Fetch failed:', e);
       Alert.alert(t('common', 'errorTitle'), t('admin', 'reportsLoadError'));
     } finally {
       setLoading(false);
@@ -48,17 +49,17 @@ export default function AdminReportsScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleApprove = async (postId: string) => {
+  const handleApprove = async (storyId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setActingId(postId);
+    setActingId(storyId);
     try {
-      const data = await adminApi.approveReportedPost(postId);
+      const data = await adminApi.approveReportedStory(storyId);
       if (data.success) {
-        setPosts(prev => prev.filter(p => p.id !== postId));
+        setStories(prev => prev.filter(s => s.id !== storyId));
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (e) {
-      console.error('[ADMIN_REPORTS] Approve failed:', e);
+      console.error('[ADMIN_STORY_REPORTS] Approve failed:', e);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert(t('common', 'errorTitle'), t('admin', 'moderationActionError'));
     } finally {
@@ -66,16 +67,16 @@ export default function AdminReportsScreen() {
     }
   };
 
-  const doReject = async (postId: string) => {
-    setActingId(postId);
+  const doReject = async (storyId: string) => {
+    setActingId(storyId);
     try {
-      const data = await adminApi.rejectReportedPost(postId);
+      const data = await adminApi.rejectReportedStory(storyId);
       if (data.success) {
-        setPosts(prev => prev.filter(p => p.id !== postId));
+        setStories(prev => prev.filter(s => s.id !== storyId));
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (e) {
-      console.error('[ADMIN_REPORTS] Reject failed:', e);
+      console.error('[ADMIN_STORY_REPORTS] Reject failed:', e);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert(t('common', 'errorTitle'), t('admin', 'moderationActionError'));
     } finally {
@@ -83,44 +84,39 @@ export default function AdminReportsScreen() {
     }
   };
 
-  const handleReject = (postId: string) => {
+  const handleReject = (storyId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     Alert.alert(
       t('admin', 'confirmRejectTitle'),
       t('admin', 'confirmRejectMessage'),
       [
         { text: t('common', 'cancel'), style: 'cancel' },
-        { text: t('admin', 'rejectButton'), style: 'destructive', onPress: () => doReject(postId) },
+        { text: t('admin', 'rejectButton'), style: 'destructive', onPress: () => doReject(storyId) },
       ]
     );
   };
 
-  const renderPost = useCallback(({ item }: { item: ReportedPost }) => {
+  const renderStory = useCallback(({ item }: { item: ReportedStory }) => {
     const isActing = actingId === item.id;
     return (
       <View style={{ backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg, ...shadow.card }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
-          <Avatar name={item.author_name} photoUrl={item.author_photo} size={36} />
-          <Text style={{ color: C.text, fontFamily: fontBold, flex: 1, ...typography.bodyEmphasis }} numberOfLines={1}>{item.author_name}</Text>
+          <Avatar name={item.authorName} photoUrl={item.authorAvatar} size={36} />
+          <Text style={{ color: C.text, fontFamily: fontBold, flex: 1, ...typography.bodyEmphasis }} numberOfLines={1}>{item.authorName}</Text>
         </View>
 
-        {!!item.text_content && (
+        {!!item.textOverlay && (
           <Text style={{ color: C.text, fontFamily: fontRegular, marginBottom: spacing.md, ...typography.body }}>
-            {item.text_content}
+            {item.textOverlay}
           </Text>
         )}
 
-        {Array.isArray(item.images) && item.images.length > 0 && (
-          <View style={{ marginBottom: spacing.md }}>
-            <MediaGrid
-              media={urlsToMedia(item.images)}
-              onMediaPress={(index) => {
-                setViewerPostId(item.id);
-                setViewerIndex(index);
-              }}
-            />
-          </View>
-        )}
+        <View style={{ marginBottom: spacing.md }}>
+          <MediaGrid
+            media={[{ url: item.mediaUrl, type: item.mediaType }]}
+            onMediaPress={() => setViewerStoryId(item.id)}
+          />
+        </View>
 
         <View style={{ backgroundColor: C.bg, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md, gap: spacing.sm }}>
           <Text style={{ color: C.textMuted, fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>
@@ -159,7 +155,8 @@ export default function AdminReportsScreen() {
     );
   }, [actingId, C, spacing, radius, typography, shadow, fontBold, fontRegular, t]);
 
-  const keyExtractor = useCallback((item: ReportedPost) => item.id, []);
+  const keyExtractor = useCallback((item: ReportedStory) => item.id, []);
+  const viewerStory = stories.find(s => s.id === viewerStoryId);
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top }}>
@@ -167,14 +164,7 @@ export default function AdminReportsScreen() {
         <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.goBack(); }} style={{ padding: spacing.xs, borderRadius: radius.full, backgroundColor: C.card }}>
           <ArrowLeft size={20} color={C.text} />
         </TouchableOpacity>
-        <Text style={{ color: C.text, fontFamily: fontBold, flex: 1, ...typography.heading }}>{t('admin', 'reportsTitle')}</Text>
-        <TouchableOpacity
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('AdminStoryReports'); }}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, backgroundColor: C.primary + '15', borderRadius: radius.full, borderWidth: 1, borderColor: C.primary + '30' }}
-        >
-          <Clapperboard size={14} color={C.primary} />
-          <Text style={{ color: C.primary, fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>{t('admin', 'storyReportsLinkLabel')}</Text>
-        </TouchableOpacity>
+        <Text style={{ color: C.text, fontFamily: fontBold, ...typography.heading }}>{t('admin', 'storyReportsTitle')}</Text>
       </View>
 
       {loading ? (
@@ -184,9 +174,9 @@ export default function AdminReportsScreen() {
       ) : (
         <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
           <FlashList
-            data={posts}
+            data={stories}
             keyExtractor={keyExtractor}
-            renderItem={renderPost}
+            renderItem={renderStory}
             ListEmptyComponent={
               <EmptyState emoji="✅" title={t('admin', 'reportsEmptyTitle')} subtitle={t('admin', 'reportsEmptySubtitle')} />
             }
@@ -199,10 +189,10 @@ export default function AdminReportsScreen() {
       )}
 
       <MediaViewerModal
-        visible={!!viewerPostId}
-        media={urlsToMedia(posts.find(p => p.id === viewerPostId)?.images)}
-        initialIndex={viewerIndex}
-        onClose={() => setViewerPostId(null)}
+        visible={!!viewerStoryId}
+        media={viewerStory ? [{ url: viewerStory.mediaUrl, type: viewerStory.mediaType }] : []}
+        initialIndex={0}
+        onClose={() => setViewerStoryId(null)}
       />
     </View>
   );

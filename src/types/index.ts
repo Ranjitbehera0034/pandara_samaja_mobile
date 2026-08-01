@@ -120,5 +120,8 @@ export interface Story {
   textOverlay?: string;
   textPosition?: 'top' | 'center' | 'bottom';
   textColor?: string;
+  likesCount?: number;
+  commentsCount?: number;
+  isLiked?: boolean;
 }
 

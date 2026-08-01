@@ -50,16 +50,39 @@ export default function AdminDemographicsScreen() {
     load().finally(() => setRefreshing(false));
   };
 
-  const stats = demographics ? [
+  const totalStats = demographics ? [
     { key: 'total', icon: <Users size={22} color={C.primary} />, label: t('admin', 'demographicsTotalLabel'), value: demographics.totalFamilyMembers, color: C.primary },
     { key: 'male', icon: <Mars size={22} color={C.male} />, label: t('admin', 'demographicsMaleLabel'), value: demographics.male, color: C.male },
     { key: 'female', icon: <Venus size={22} color={C.female} />, label: t('admin', 'demographicsFemaleLabel'), value: demographics.female, color: C.female },
+  ] : [];
+
+  const detailStats = demographics ? [
     { key: 'adults', icon: <UserCheck size={22} color={C.accent} />, label: t('admin', 'demographicsAdultsLabel'), value: demographics.adults, color: C.accent },
     { key: 'children', icon: <Smile size={22} color={C.warning} />, label: t('admin', 'demographicsChildrenLabel'), value: demographics.children, color: C.warning },
     { key: 'infants', icon: <Baby size={22} color={C.amber} />, label: t('admin', 'demographicsInfantsLabel'), value: demographics.infants, color: C.amber },
     { key: 'married', icon: <Heart size={22} color={C.success} />, label: t('admin', 'demographicsMarriedLabel'), value: demographics.married, color: C.success },
     { key: 'unmarried', icon: <User size={22} color={C.textMuted} />, label: t('admin', 'demographicsUnmarriedLabel'), value: demographics.unmarried, color: C.textMuted },
   ] : [];
+
+  const renderGrid = (stats: typeof totalStats) => (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
+      {stats.map(stat => (
+        <View
+          key={stat.key}
+          style={{
+            width: '47%', backgroundColor: C.card, borderColor: C.border, borderWidth: 1,
+            borderRadius: radius.lg, padding: spacing.lg, ...shadow.card,
+          }}
+        >
+          <View style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: stat.color + '15', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md }}>
+            {stat.icon}
+          </View>
+          <Text style={{ color: C.text, fontFamily: fontBold, ...typography.display }}>{stat.value}</Text>
+          <Text style={{ color: C.textMuted, marginTop: 2, fontFamily: fontRegular, ...typography.caption }}>{stat.label}</Text>
+        </View>
+      ))}
+    </View>
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top }}>
@@ -83,23 +106,18 @@ export default function AdminDemographicsScreen() {
             {t('admin', 'demographicsSubtitle')}
           </Text>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
-            {stats.map(stat => (
-              <View
-                key={stat.key}
-                style={{
-                  width: '47%', backgroundColor: C.card, borderColor: C.border, borderWidth: 1,
-                  borderRadius: radius.lg, padding: spacing.lg, ...shadow.card,
-                }}
-              >
-                <View style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: stat.color + '15', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md }}>
-                  {stat.icon}
-                </View>
-                <Text style={{ color: C.text, fontFamily: fontBold, ...typography.display }}>{stat.value}</Text>
-                <Text style={{ color: C.textMuted, marginTop: 2, fontFamily: fontRegular, ...typography.caption }}>{stat.label}</Text>
-              </View>
-            ))}
-          </View>
+          {renderGrid(totalStats)}
+
+          <Text style={{ color: C.text, fontFamily: fontBold, marginTop: spacing.xl, marginBottom: spacing.xs, ...typography.title }}>
+            {t('admin', 'demographicsDetailHeader')}
+          </Text>
+          {!!demographics && (
+            <Text style={{ color: C.textFaint, marginBottom: spacing.lg, fontFamily: fontRegular, ...typography.caption }}>
+              {`${t('admin', 'demographicsDetailHintPrefix')} ${demographics.householdsWithDetailedData.toLocaleString()} ${t('admin', 'demographicsDetailHintOf')} ${demographics.householdsTotal.toLocaleString()} ${t('admin', 'demographicsDetailHintSuffix')}`}
+            </Text>
+          )}
+
+          {renderGrid(detailStats)}
         </ScrollView>
       )}
     </View>

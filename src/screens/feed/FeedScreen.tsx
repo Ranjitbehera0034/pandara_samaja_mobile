@@ -20,6 +20,7 @@ import { useSocket } from '../../hooks/useSocket';
 import * as feedApi from '../../api/feed';
 import * as notificationsApi from '../../api/notifications';
 import { mapPost, mapAnnouncement } from '../../utils/feedUtils';
+import { compressImage } from '../../utils/imageCompression';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -283,14 +284,19 @@ export default function FeedScreen() {
   // ── Story actions ──
   const handleAddStory = useCallback(async (mediaUri: string, mediaType: 'image' | 'video') => {
     try {
+      // Story photos come straight from the camera/library uncompressed
+      // (often several MB) — downscale before upload so stories load
+      // quickly for everyone viewing them. Video isn't compressed here.
+      const uploadUri = mediaType === 'image' ? await compressImage(mediaUri) : mediaUri;
+
       const formData = new FormData();
-      const uriParts = mediaUri.split('/');
+      const uriParts = uploadUri.split('/');
       const fileName = uriParts[uriParts.length - 1];
       const fileType = mediaType === 'video' ? 'video/mp4' : 'image/jpeg';
       
       // @ts-ignore
       formData.append('media', {
-        uri: mediaUri,
+        uri: uploadUri,
         name: fileName,
         type: fileType,
       });

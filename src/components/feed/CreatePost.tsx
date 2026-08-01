@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  Image, Modal, ScrollView, Alert
+  Image, Modal, ScrollView, Alert, ActivityIndicator
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react-native';
 import { MediaItem, Poll } from '../../types';
 import { containsBannedContent } from '../../utils/feedUtils';
+import { compressImage } from '../../utils/imageCompression';
 import { useAuth } from '../../context/AuthContext';
 import PollCreator from './PollCreator';
 import Avatar from '../common/Avatar';
@@ -31,6 +32,7 @@ export default function CreatePost({ onPostCreate }: Props) {
   const [location, setLocation] = useState('');
   const [showLocationInput, setShowLocationInput] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [posting, setPosting] = useState(false);
 
   const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;
   const displayName = user?.name || member?.name || 'Me';
@@ -62,7 +64,8 @@ export default function CreatePost({ onPostCreate }: Props) {
     setPreviews(previews.filter((_, i) => i !== index));
   };
 
-  const handlePost = () => {
+  const handlePost = async () => {
+    if (posting) return;
     if (!content.trim() && previews.length === 0 && !poll) {
       Alert.alert(t('feedComponents', 'genericErrorTitle'), t('feedComponents', 'postValidationErrorMessage'));
       return;
@@ -73,32 +76,45 @@ export default function CreatePost({ onPostCreate }: Props) {
       return;
     }
 
-    // Convert previews to files if needed (for multipart upload)
-    const files = previews.map((p) => {
-      const uriParts = p.uri.split('/');
-      const fileName = uriParts[uriParts.length - 1];
-      const fileType = p.type === 'video' ? 'video/mp4' : 'image/jpeg';
-      return {
-        uri: p.uri,
-        name: fileName,
-        type: fileType,
-      };
-    });
+    setPosting(true);
+    try {
+      // Photos come straight from the camera/library uncompressed (often
+      // several MB at full resolution) — downscale before upload so the
+      // feed loads quickly for everyone. Video isn't compressed here.
+      const uploadUris = await Promise.all(
+        previews.map((p) => (p.type === 'image' ? compressImage(p.uri) : Promise.resolve(p.uri)))
+      );
 
-    const mediaItems: MediaItem[] = previews.map(p => ({
-      url: p.uri,
-      type: p.type,
-    }));
+      // Convert previews to files if needed (for multipart upload)
+      const files = previews.map((p, i) => {
+        const uploadUri = uploadUris[i];
+        const uriParts = uploadUri.split('/');
+        const fileName = uriParts[uriParts.length - 1];
+        const fileType = p.type === 'video' ? 'video/mp4' : 'image/jpeg';
+        return {
+          uri: uploadUri,
+          name: fileName,
+          type: fileType,
+        };
+      });
 
-    onPostCreate(content, mediaItems, files, poll, location || undefined);
+      const mediaItems: MediaItem[] = previews.map(p => ({
+        url: p.uri,
+        type: p.type,
+      }));
 
-    // Reset form
-    setContent('');
-    setPreviews([]);
-    setPoll(undefined);
-    setLocation('');
-    setShowLocationInput(false);
-    setShowModal(false);
+      onPostCreate(content, mediaItems, files, poll, location || undefined);
+
+      // Reset form
+      setContent('');
+      setPreviews([]);
+      setPoll(undefined);
+      setLocation('');
+      setShowLocationInput(false);
+      setShowModal(false);
+    } finally {
+      setPosting(false);
+    }
   };
 
   return (
@@ -159,9 +175,14 @@ export default function CreatePost({ onPostCreate }: Props) {
               <Text style={{ color: colors.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, ...typography.title }}>{t('feedComponents', 'createPostTitle')}</Text>
               <TouchableOpacity
                 onPress={handlePost}
-                style={{ backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: spacing.xs, borderRadius: radius.full }}
+                disabled={posting}
+                style={{ backgroundColor: colors.primary, paddingHorizontal: spacing.lg, paddingVertical: spacing.xs, borderRadius: radius.full, opacity: posting ? 0.6 : 1 }}
               >
-                <Text style={{ fontFamily, color: '#fff', ...typography.bodyEmphasis }}>{t('feedComponents', 'postButtonLabel')}</Text>
+                {posting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={{ fontFamily, color: '#fff', ...typography.bodyEmphasis }}>{t('feedComponents', 'postButtonLabel')}</Text>
+                )}
               </TouchableOpacity>
             </View>
 
@@ -296,9 +317,10 @@ export default function CreatePost({ onPostCreate }: Props) {
 
               <TouchableOpacity
                 onPress={handlePost}
-                style={{ backgroundColor: colors.primary, width: 40, height: 40, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' }}
+                disabled={posting}
+                style={{ backgroundColor: colors.primary, width: 40, height: 40, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', opacity: posting ? 0.6 : 1 }}
               >
-                <Send size={20} color="white" />
+                {posting ? <ActivityIndicator size="small" color="#fff" /> : <Send size={20} color="white" />}
               </TouchableOpacity>
             </View>
           </View>

@@ -1,17 +1,18 @@
 // src/components/feed/StoryViewer.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, Image, Modal, TouchableOpacity,
-  Dimensions, Animated, Pressable, FlatList, Alert, ActivityIndicator
+  View, Text, Image, Modal, TouchableOpacity, TextInput,
+  Dimensions, Animated, Pressable, FlatList, Alert, ActivityIndicator,
+  KeyboardAvoidingView, Platform
 } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
-import { X, Trash2, Eye } from 'lucide-react-native';
+import { X, Trash2, Eye, Heart, MessageCircle, Flag, Send } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { Story } from '../../types';
 import { cleanPhoto } from '../../utils/googleDriveUrl';
 import { timeAgoShort } from '../../utils/feedUtils';
 import * as feedApi from '../../api/feed';
-import { StoryViewer as StoryViewerRow } from '../../api/feed';
+import { StoryViewer as StoryViewerRow, StoryComment } from '../../api/feed';
 import Avatar from '../common/Avatar';
 import EmptyState from '../common/EmptyState';
 import { useTheme } from '../../theme/ThemeContext';
@@ -38,6 +39,14 @@ export default function StoryViewer({ visible, stories, currentMemberId, onClose
   const [showViewers, setShowViewers] = useState(false);
   const [viewersLoading, setViewersLoading] = useState(false);
   const [viewers, setViewers] = useState<StoryViewerRow[]>([]);
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [commentsCount, setCommentsCount] = useState(0);
+  const [commentText, setCommentText] = useState('');
+  const [sendingComment, setSendingComment] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [comments, setComments] = useState<StoryComment[]>([]);
   const progressAnim = useRef(new Animated.Value(0)).current;
   const activeStory = stories[currentIndex];
   const isOwnStory = !!activeStory && !!currentMemberId && activeStory.authorId === currentMemberId;
@@ -68,6 +77,16 @@ export default function StoryViewer({ visible, stories, currentMemberId, onClose
       clearTimer();
     };
   }, [currentIndex, visible, stories]);
+
+  // Reset local like/comment state to match whichever story is now active
+  useEffect(() => {
+    if (!activeStory) return;
+    setLiked(!!activeStory.isLiked);
+    setLikesCount(activeStory.likesCount || 0);
+    setCommentsCount(activeStory.commentsCount || 0);
+    setShowComments(false);
+    setCommentText('');
+  }, [activeStory?.id]);
 
   const startProgress = (resumeFrom = 0) => {
     clearTimer();
@@ -198,6 +217,96 @@ export default function StoryViewer({ visible, stories, currentMemberId, onClose
     resumeProgress();
   };
 
+  const handleToggleLike = async () => {
+    if (!activeStory) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const wasLiked = liked;
+    // Optimistic update
+    setLiked(!wasLiked);
+    setLikesCount((c) => Math.max(0, c + (wasLiked ? -1 : 1)));
+    try {
+      const data = await feedApi.likeStory(activeStory.id);
+      if (data.success) {
+        setLiked(data.liked);
+        setLikesCount(data.likes_count);
+      }
+    } catch {
+      // Revert on failure
+      setLiked(wasLiked);
+      setLikesCount((c) => Math.max(0, c + (wasLiked ? 1 : -1)));
+    }
+  };
+
+  const openComments = async () => {
+    if (!activeStory) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    pauseProgress();
+    setShowComments(true);
+    setCommentsLoading(true);
+    try {
+      const data = await feedApi.fetchStoryComments(activeStory.id);
+      if (data.success) setComments(data.comments);
+    } catch {
+      setComments([]);
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  const closeComments = () => {
+    setShowComments(false);
+    resumeProgress();
+  };
+
+  const handleSendComment = async () => {
+    if (!activeStory || !commentText.trim() || sendingComment) return;
+    const text = commentText.trim();
+    setSendingComment(true);
+    try {
+      const data = await feedApi.addStoryComment(activeStory.id, text);
+      if (data.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setCommentText('');
+        setCommentsCount((c) => c + 1);
+        setComments((prev) => [...prev, data.comment]);
+      }
+    } catch {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t('common', 'errorTitle'), t('feed', 'storyCommentError'));
+    } finally {
+      setSendingComment(false);
+    }
+  };
+
+  const handleReportPress = () => {
+    if (!activeStory) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    pauseProgress();
+    Alert.alert(
+      t('feed', 'confirmReportStoryTitle'),
+      t('feed', 'confirmReportStoryMessage'),
+      [
+        { text: t('common', 'cancel'), style: 'cancel', onPress: resumeProgress },
+        {
+          text: t('feed', 'reportButton'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await feedApi.reportStory(activeStory.id, 'Reported from story viewer');
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert(t('common', 'successTitle'), t('feed', 'reportSuccessMessage'));
+              onClose();
+            } catch {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert(t('common', 'errorTitle'), t('feed', 'storyReportError'));
+              resumeProgress();
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (!visible || !activeStory) return null;
 
   const mediaUrl = cleanPhoto(activeStory.mediaUrl) || activeStory.mediaUrl;
@@ -282,9 +391,13 @@ export default function StoryViewer({ visible, stories, currentMemberId, onClose
             </View>
 
             <View className="flex-row items-center" style={{ gap: spacing.xs }}>
-              {isOwnStory && (
+              {isOwnStory ? (
                 <TouchableOpacity onPress={handleDeletePress} disabled={deleting} className="z-40" style={{ padding: spacing.sm }}>
                   {deleting ? <ActivityIndicator size="small" color="white" /> : <Trash2 size={18} color="white" />}
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity onPress={handleReportPress} className="z-40" style={{ padding: spacing.sm }}>
+                  <Flag size={18} color="white" />
                 </TouchableOpacity>
               )}
               <TouchableOpacity onPress={onClose} className="z-40" style={{ padding: spacing.sm }}>
@@ -313,19 +426,59 @@ export default function StoryViewer({ visible, stories, currentMemberId, onClose
           </View>
         ) : null}
 
-        {/* "Seen by" bar — own story only, tap to see who viewed it */}
-        {isOwnStory && (
-          <TouchableOpacity
-            onPress={openViewers}
-            className="absolute z-30 flex-row items-center"
-            style={{ left: spacing.lg, bottom: spacing.xxl, gap: spacing.xs, paddingVertical: spacing.sm }}
-          >
-            <Eye size={16} color="white" />
-            <Text className="text-white" style={{ fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>
-              {t('feed', 'seenByPrefix')}
-            </Text>
-          </TouchableOpacity>
-        )}
+        {/* Like / comment-count row + "Seen by" (own story only) */}
+        <View className="absolute z-30" style={{ left: 0, right: 0, bottom: 78, paddingHorizontal: spacing.lg }}>
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center" style={{ gap: spacing.xl }}>
+              <TouchableOpacity onPress={handleToggleLike} className="flex-row items-center" style={{ gap: spacing.xs }}>
+                <Heart size={24} color={liked ? '#ef4444' : 'white'} fill={liked ? '#ef4444' : 'transparent'} />
+                {likesCount > 0 && (
+                  <Text className="text-white" style={{ fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>{likesCount}</Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={openComments} className="flex-row items-center" style={{ gap: spacing.xs }}>
+                <MessageCircle size={24} color="white" />
+                {commentsCount > 0 && (
+                  <Text className="text-white" style={{ fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>{commentsCount}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {isOwnStory && (
+              <TouchableOpacity onPress={openViewers} className="flex-row items-center" style={{ gap: spacing.xs }}>
+                <Eye size={16} color="white" />
+                <Text className="text-white" style={{ fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>
+                  {t('feed', 'seenByPrefix')}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Comment input bar, pinned to the bottom */}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          className="absolute z-30"
+          style={{ left: 0, right: 0, bottom: 0 }}
+        >
+          <View className="flex-row items-center" style={{ gap: spacing.sm, padding: spacing.lg }}>
+            <TextInput
+              value={commentText}
+              onChangeText={setCommentText}
+              onFocus={pauseProgress}
+              onBlur={resumeProgress}
+              placeholder={t('feed', 'storyCommentPlaceholder')}
+              placeholderTextColor="rgba(255,255,255,0.6)"
+              style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: radius.full, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, color: '#fff' }}
+              onSubmitEditing={handleSendComment}
+            />
+            {!!commentText.trim() && (
+              <TouchableOpacity onPress={handleSendComment} disabled={sendingComment} style={{ backgroundColor: C.primary, borderRadius: radius.full, padding: spacing.sm + 2 }}>
+                {sendingComment ? <ActivityIndicator size="small" color="#fff" /> : <Send size={18} color="#fff" />}
+              </TouchableOpacity>
+            )}
+          </View>
+        </KeyboardAvoidingView>
       </View>
 
       {/* Viewers list bottom sheet */}
@@ -363,6 +516,48 @@ export default function StoryViewer({ visible, stories, currentMemberId, onClose
                     <Text style={{ color: C.textFaint, fontFamily: fontRegular, ...typography.caption }}>
                       {timeAgoShort(item.viewedAt)}
                     </Text>
+                  </View>
+                )}
+              />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Comments list bottom sheet */}
+      <Modal visible={showComments} transparent animationType="slide" onRequestClose={closeComments}>
+        <Pressable style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={closeComments}>
+          <Pressable
+            style={{
+              backgroundColor: C.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
+              maxHeight: SCREEN_HEIGHT * 0.6, padding: spacing.xl,
+            }}
+          >
+            <View className="flex-row items-center justify-between" style={{ marginBottom: spacing.lg }}>
+              <Text style={{ color: C.text, fontFamily: fontBold, ...typography.title }}>
+                {commentsLoading ? t('feed', 'commentsTitle') : `${t('feed', 'commentsTitle')} (${comments.length})`}
+              </Text>
+              <TouchableOpacity onPress={closeComments}>
+                <X size={20} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {commentsLoading ? (
+              <ActivityIndicator size="large" color={C.primary} style={{ paddingVertical: spacing.xl }} />
+            ) : comments.length === 0 ? (
+              <EmptyState emoji="💬" title={t('feed', 'noStoryCommentsTitle')} subtitle={t('feed', 'noStoryCommentsSubtitle')} />
+            ) : (
+              <FlatList
+                data={comments}
+                keyExtractor={(c) => c.id}
+                renderItem={({ item }) => (
+                  <View className="flex-row items-start" style={{ gap: spacing.md, paddingVertical: spacing.sm }}>
+                    <Avatar name={item.authorName} photoUrl={item.authorPhoto} size={36} />
+                    <View className="flex-1">
+                      <Text style={{ color: C.text, fontFamily: fontBold, ...typography.bodyEmphasis }}>{item.authorName}</Text>
+                      <Text style={{ color: C.textMuted, fontFamily: fontRegular, marginTop: 2, ...typography.body }}>{item.text}</Text>
+                      <Text style={{ color: C.textFaint, marginTop: 2, ...typography.caption }}>{timeAgoShort(item.createdAt)}</Text>
+                    </View>
                   </View>
                 )}
               />

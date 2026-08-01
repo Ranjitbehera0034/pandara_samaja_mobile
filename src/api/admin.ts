@@ -671,6 +671,8 @@ export interface Demographics {
   infants: number;
   married: number;
   unmarried: number;
+  householdsTotal: number;
+  householdsWithDetailedData: number;
 }
 
 // GET /api/admin/members/demographics
@@ -756,4 +758,44 @@ export const exportData = async (kind: ExportKind, filters: ExportLocationFilter
     transformResponse: (data) => data, // keep raw CSV text, skip axios's default JSON.parse attempt
   });
   return res.data as string;
+};
+
+// ── Story moderation (admin/superadmin) ──
+export interface ReportedStoryReport {
+  reporter_id: string;
+  reason: string;
+  created_at: string;
+}
+
+export interface ReportedStory {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string | null;
+  mediaUrl: string;
+  mediaType: 'image' | 'video';
+  textOverlay?: string | null;
+  createdAt: string;
+  reports: ReportedStoryReport[];
+}
+
+export const fetchReportedStories = async () => {
+  const res = await adminClient.get('/admin/story-reports');
+  return res.data as { success: boolean; stories: ReportedStory[] };
+};
+
+export const approveReportedStory = async (storyId: string) => {
+  const res = await adminClient.post(`/admin/story-reports/${storyId}/approve`);
+  return res.data as { success: boolean; message?: string };
+};
+
+export const rejectReportedStory = async (storyId: string) => {
+  const res = await adminClient.post(`/admin/story-reports/${storyId}/reject`);
+  return res.data as { success: boolean; message?: string };
+};
+
+// Direct admin delete — moderation power, not tied to a prior report.
+export const adminDeleteStory = async (storyId: string) => {
+  const res = await adminClient.delete(`/admin/stories/${storyId}`);
+  return res.data as { success: boolean; message?: string };
 };
