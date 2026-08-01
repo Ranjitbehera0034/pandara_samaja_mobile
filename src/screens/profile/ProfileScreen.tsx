@@ -7,7 +7,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { Edit2, Check, X, Camera, ChevronDown, ChevronUp, Users, Heart, Image as ImageIcon, Calendar, ShieldAlert, Award } from 'lucide-react-native';
+import { Edit2, Check, X, Camera, ChevronDown, ChevronUp, Users, Heart, Image as ImageIcon, Calendar, ShieldAlert, Award, Radio } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
@@ -232,6 +232,7 @@ export default function ProfileScreen() {
               { label: t('profile', 'familyAlbumsLabel'), icon: <ImageIcon size={20} color={C.accent} />, screen: 'FamilyAlbums', desc: t('profile', 'familyAlbumsDesc') },
               { label: t('profile', 'familyEventsLabel'), icon: <Calendar size={20} color={C.success} />, screen: 'FamilyEvents', desc: t('profile', 'familyEventsDesc') },
               { label: t('profile', 'leadersLabel'), icon: <Award size={20} color={C.warning} />, screen: 'Leaders', desc: t('profile', 'leadersDesc') },
+              { label: t('profile', 'liveStreamLabel'), icon: <Radio size={20} color={C.error} />, screen: 'LiveStream', desc: t('profile', 'liveStreamDesc') },
             ].map(hub => (
               <TouchableOpacity
                 key={hub.label}

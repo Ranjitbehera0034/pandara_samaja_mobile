@@ -24,6 +24,8 @@ import GroupsScreen from '../screens/community/GroupsScreen';
 import LeadersScreen from '../screens/community/LeadersScreen';
 import MatrimonyScreen from '../screens/community/MatrimonyScreen';
 import LiveStreamScreen from '../screens/community/LiveStreamScreen';
+import GoLiveScreen from '../screens/live/GoLiveScreen';
+import LiveViewerScreen from '../screens/live/LiveViewerScreen';
 import FamilyTreeScreen from '../screens/family/FamilyTreeScreen';
 import FamilyMemberFormScreen from '../screens/family/FamilyMemberFormScreen';
 import FamilyAlbumsScreen from '../screens/family/FamilyAlbumsScreen';
@@ -44,6 +46,8 @@ function FeedStack() {
       <S.Screen name="Groups" component={GroupsScreen} />
       <S.Screen name="Matrimony" component={MatrimonyScreen} />
       <S.Screen name="LiveStream" component={LiveStreamScreen} />
+      <S.Screen name="GoLive" component={GoLiveScreen} options={{ presentation: 'modal' }} />
+      <S.Screen name="LiveViewer" component={LiveViewerScreen} options={{ presentation: 'modal' }} />
       <S.Screen name="FamilyTree" component={FamilyTreeScreen} />
       <S.Screen name="FamilyMemberForm" component={FamilyMemberFormScreen} />
       <S.Screen name="FamilyAlbums" component={FamilyAlbumsScreen} />

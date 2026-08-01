@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "main": "index.tsx",
   "dependencies": {
+    "@config-plugins/react-native-webrtc": "^13.0.0",
+    "@livekit/react-native": "^2.12.0",
+    "@livekit/react-native-expo-plugin": "^1.0.2",
+    "@livekit/react-native-webrtc": "^144.1.2",
     "@react-native-picker/picker": "2.11.1",
     "@react-navigation/bottom-tabs": "^7.16.1",
     "@react-navigation/native": "^7.2.4",
@@ -27,6 +31,7 @@
     "expo-status-bar": "~3.0.9",
     "expo-updates": "~29.0.18",
     "firebase": "^12.13.0",
+    "livekit-client": "^2.21.0",
     "lucide-react-native": "^1.16.0",
     "nativewind": "^4.2.4",
     "react": "19.1.0",

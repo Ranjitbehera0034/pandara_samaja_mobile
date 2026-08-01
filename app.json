@@ -58,7 +58,15 @@
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to take a profile picture or share a photo."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to go live.",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone to go live."
+        }
+      ],
+      "@livekit/react-native-expo-plugin"
     ],
     "extra": {
       "eas": {

@@ -5,6 +5,7 @@ import adminClient from './adminClient';
 import { API_URL } from '../config/constants';
 import { FamilyMember } from '../types';
 import { FamilyMemberInput } from './members';
+import { LiveStream, LiveTokenResponse } from './live';
 
 // Some URL-shaped fields (namely `match_evidence_url` from confirm-match /
 // history) come back from the admin matrimony routes as a host-relative
@@ -714,4 +715,26 @@ export interface AnalyticsData {
 export const fetchAdminAnalytics = async () => {
   const res = await adminClient.get('/admin/analytics');
   return res.data as { success: boolean; message?: string; analytics: AnalyticsData; migrationPending?: boolean };
+};
+
+// ── Live streaming (admin/superadmin) ──
+export const adminStartLiveStream = async (title?: string) => {
+  const res = await adminClient.post('/admin/live/start', { title });
+  return res.data as LiveTokenResponse;
+};
+
+export const adminEndLiveStream = async (roomName: string) => {
+  const res = await adminClient.post(`/admin/live/${roomName}/end`);
+  return res.data as { success: boolean; message?: string };
+};
+
+// Moderation: force-end any stream, member or admin-hosted
+export const adminForceEndLiveStream = async (roomName: string) => {
+  const res = await adminClient.delete(`/admin/live/${roomName}`);
+  return res.data as { success: boolean; message?: string };
+};
+
+export const adminFetchActiveLiveStreams = async () => {
+  const res = await adminClient.get('/admin/live/active');
+  return res.data as { success: boolean; streams: LiveStream[] };
 };

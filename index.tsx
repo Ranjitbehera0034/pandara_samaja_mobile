@@ -1,7 +1,11 @@
 import { registerRootComponent } from 'expo';
 import React from 'react';
 import { SafeAreaView, ScrollView, Text } from 'react-native';
+import { registerGlobals } from '@livekit/react-native';
 import App from './App';
+
+// Required once at startup before any LiveKit room connection is made.
+registerGlobals();
 
 // Root error boundary: without this, an uncaught error during initial render
 // crashes the whole process with no on-screen feedback in a release build

@@ -21,16 +21,27 @@ interface SocketHandlers {
   onTypingStart?: (data: { senderId: string }) => void;
   onTypingStop?: (data: { senderId: string }) => void;
   onMessagesRead?: (data: { readerId: string }) => void;
+  onLiveStarted?: (stream: any) => void;
+  onLiveEnded?: (data: { roomName: string }) => void;
+  onLiveViewerCount?: (data: { roomName: string; count: number }) => void;
+  onLiveComment?: (data: { id: string; senderId: string; senderName: string; text: string; at: string }) => void;
 }
 
-export const useSocket = (handlers: SocketHandlers) => {
+interface UseSocketOptions {
+  // Which stored token to authenticate the socket with — member portal
+  // (default) or admin/superadmin. Admin screens (e.g. Go Live) pass 'admin'.
+  tokenType?: 'member' | 'admin';
+}
+
+export const useSocket = (handlers: SocketHandlers, options: UseSocketOptions = {}) => {
   const socketRef = useRef<Socket | null>(null);
+  const tokenType = options.tokenType || 'member';
 
   useEffect(() => {
     let socket: Socket;
 
     const connectSocket = async () => {
-      const token = await storage.getItem(STORAGE_KEYS.PORTAL_TOKEN);
+      const token = await storage.getItem(tokenType === 'admin' ? STORAGE_KEYS.ADMIN_TOKEN : STORAGE_KEYS.PORTAL_TOKEN);
       if (!token) return;
 
       socket = io(SOCKET_URL, {
@@ -75,6 +86,12 @@ export const useSocket = (handlers: SocketHandlers) => {
       if (handlers.onTypingStart) socket.on('typing_start', handlers.onTypingStart);
       if (handlers.onTypingStop) socket.on('typing_stop', handlers.onTypingStop);
       if (handlers.onMessagesRead) socket.on('messages_read', handlers.onMessagesRead);
+
+      // Live streaming events
+      if (handlers.onLiveStarted) socket.on('live_started', handlers.onLiveStarted);
+      if (handlers.onLiveEnded) socket.on('live_ended', handlers.onLiveEnded);
+      if (handlers.onLiveViewerCount) socket.on('live_viewer_count', handlers.onLiveViewerCount);
+      if (handlers.onLiveComment) socket.on('live_comment', handlers.onLiveComment);
     };
 
     connectSocket();
@@ -82,7 +99,7 @@ export const useSocket = (handlers: SocketHandlers) => {
     return () => {
       if (socket) socket.disconnect();
     };
-  }, [handlers.onNewPost, handlers.onLikeUpdated, handlers.onNewComment, handlers.onCommentLikeUpdated, handlers.onNotificationCount, handlers.onUserOnline, handlers.onUserOffline, handlers.onReceiveMessage, handlers.onMessageSent, handlers.onMessageError, handlers.onTypingStart, handlers.onTypingStop, handlers.onMessagesRead]);
+  }, [tokenType, handlers.onNewPost, handlers.onLikeUpdated, handlers.onNewComment, handlers.onCommentLikeUpdated, handlers.onNotificationCount, handlers.onUserOnline, handlers.onUserOffline, handlers.onReceiveMessage, handlers.onMessageSent, handlers.onMessageError, handlers.onTypingStart, handlers.onTypingStop, handlers.onMessagesRead, handlers.onLiveStarted, handlers.onLiveEnded, handlers.onLiveViewerCount, handlers.onLiveComment]);
 
   const emit = (event: string, data?: any) => {
     socketRef.current?.emit(event, data);
@@ -108,5 +125,17 @@ export const useSocket = (handlers: SocketHandlers) => {
     socketRef.current?.emit('mark_read', { senderId });
   };
 
-  return { emit, joinChat, sendMessage, typingStart, typingStop, markRead, socket: socketRef.current };
+  const joinLive = (roomName: string) => {
+    socketRef.current?.emit('join_live', { roomName });
+  };
+
+  const leaveLive = (roomName: string) => {
+    socketRef.current?.emit('leave_live', { roomName });
+  };
+
+  const sendLiveComment = (roomName: string, text: string) => {
+    socketRef.current?.emit('live_comment', { roomName, text });
+  };
+
+  return { emit, joinChat, sendMessage, typingStart, typingStop, markRead, joinLive, leaveLive, sendLiveComment, socket: socketRef.current };
 };
