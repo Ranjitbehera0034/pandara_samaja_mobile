@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
-  Platform
+  Platform,
+  Linking
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -69,10 +70,10 @@ export default function SettingsScreen() {
 
   const handleSupportPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert(
-      t('settings', 'whatsappSupport'),
-      t('settings', 'supportAlertMessage')
-    );
+    const url = 'https://chat.whatsapp.com/BiBlBOpYMKi2qCSzkM4aPJ';
+    Linking.openURL(url).catch(() => {
+      Alert.alert(t('common', 'errorTitle'), t('settings', 'whatsappNotInstalled'));
+    });
   };
 
   return (

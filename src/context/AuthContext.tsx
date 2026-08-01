@@ -201,6 +201,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setMember(res.data.member);
           await storage.setItem(STORAGE_KEYS.PORTAL_MEMBER, JSON.stringify(res.data.member));
         }
+        // loggedInUser reflects the SPECIFIC logged-in person (name/photo),
+        // which for a non-head family member differs from `member` (the
+        // household record) — without this, a family member's own avatar
+        // could only ever change via their own device's upload, never pick
+        // up an admin-side edit or a change made from another device.
+        if (res.data.loggedInUser) {
+          setUser(res.data.loggedInUser);
+          await storage.setItem(STORAGE_KEYS.PORTAL_USER, JSON.stringify(res.data.loggedInUser));
+        }
       })
       .catch((err) => {
         const status = err?.response?.status;

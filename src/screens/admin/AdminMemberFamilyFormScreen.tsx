@@ -85,6 +85,7 @@ export default function AdminMemberFamilyFormScreen() {
   const [relationOther, setRelationOther] = useState<string>(initialRelation.other);
   const [gender, setGender] = useState<'Male' | 'Female' | ''>(resolveGender(existing?.gender));
   const [age, setAge] = useState(existing?.age != null ? String(existing.age) : '');
+  const [mobile, setMobile] = useState(existing?.mobile || '');
   const [maritalStatus, setMaritalStatus] = useState<string>(resolveMarital(existing?.marital_status));
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -100,10 +101,17 @@ export default function AdminMemberFamilyFormScreen() {
       return;
     }
 
+    const cleanMobile = mobile.replace(/\D/g, '');
+    if (cleanMobile && cleanMobile.length !== 10) {
+      Alert.alert(t('common', 'errorTitle'), t('admin', 'familyMemberMobileInvalidError'));
+      return;
+    }
+
     const payload: FamilyMemberInput = { name: name.trim(), relation: relationValue };
     if (gender) payload.gender = gender;
     if (age.trim()) payload.age = age.trim();
     if (maritalStatus) payload.marital_status = maritalStatus;
+    if (cleanMobile) payload.mobile = cleanMobile;
 
     setSaving(true);
     try {
@@ -183,6 +191,17 @@ export default function AdminMemberFamilyFormScreen() {
           placeholderTextColor={C.textFaint}
           value={name}
           onChangeText={setName}
+        />
+
+        <Text style={labelStyle}>{t('admin', 'familyMemberMobileLabel')}</Text>
+        <TextInput
+          style={inputStyle}
+          placeholder={t('admin', 'familyMemberMobilePlaceholder')}
+          placeholderTextColor={C.textFaint}
+          value={mobile}
+          onChangeText={setMobile}
+          keyboardType="phone-pad"
+          maxLength={10}
         />
 
         <Text style={labelStyle}>{t('admin', 'familyMemberRelationLabel')}</Text>

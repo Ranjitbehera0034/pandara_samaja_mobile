@@ -63,6 +63,10 @@ export default function AdminTrackerScreen() {
 
   useEffect(() => {
     setLoading(true);
+    // Clear immediately (not just after the fetch resolves) — otherwise the
+    // previous tab's rows stay on screen during the fetch, since the
+    // skeleton loader only shows when activities is already empty.
+    setActivities([]);
     fetchPage(1, true).finally(() => setLoading(false));
   }, [fetchPage]);
 

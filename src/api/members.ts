@@ -74,6 +74,7 @@ export interface FamilyMemberInput {
   gender?: string;
   age?: number | string;
   marital_status?: string;
+  mobile?: string;
 }
 
 // GET /api/portal/family-members

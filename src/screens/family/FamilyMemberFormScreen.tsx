@@ -66,6 +66,7 @@ export default function FamilyMemberFormScreen() {
   const [relationOther, setRelationOther] = useState<string>(initialRelation.other);
   const [gender, setGender] = useState<'Male' | 'Female' | ''>(resolveGender(existing?.gender));
   const [age, setAge] = useState(existing?.age != null ? String(existing.age) : '');
+  const [mobile, setMobile] = useState(existing?.mobile || '');
   const [maritalStatus, setMaritalStatus] = useState<string>(resolveMarital(existing?.marital_status));
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -81,10 +82,17 @@ export default function FamilyMemberFormScreen() {
       return;
     }
 
+    const cleanMobile = mobile.replace(/\D/g, '');
+    if (cleanMobile && cleanMobile.length !== 10) {
+      Alert.alert(t('common', 'errorTitle'), t('familyTree', 'mobileInvalidError'));
+      return;
+    }
+
     const payload: FamilyMemberInput = { name: name.trim(), relation: relationValue };
     if (gender) payload.gender = gender;
     if (age.trim()) payload.age = age.trim();
     if (maritalStatus) payload.marital_status = maritalStatus;
+    if (cleanMobile) payload.mobile = cleanMobile;
 
     setSaving(true);
     try {
@@ -164,6 +172,17 @@ export default function FamilyMemberFormScreen() {
           placeholderTextColor={C.textFaint}
           value={name}
           onChangeText={setName}
+        />
+
+        <Text style={labelStyle}>{t('familyTree', 'mobileLabel')}</Text>
+        <TextInput
+          style={inputStyle}
+          placeholder={t('familyTree', 'mobilePlaceholder')}
+          placeholderTextColor={C.textFaint}
+          value={mobile}
+          onChangeText={setMobile}
+          keyboardType="phone-pad"
+          maxLength={10}
         />
 
         <Text style={labelStyle}>{t('familyTree', 'relationLabel')}</Text>
