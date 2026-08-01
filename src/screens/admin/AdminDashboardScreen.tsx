@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Users, Flag, ShieldCheck, LogOut, ChevronRight, History, Heart, Newspaper, Megaphone, Wallet, Settings as SettingsIcon, Award, PieChart, TrendingUp, Radio } from 'lucide-react-native';
+import { Users, Flag, ShieldCheck, LogOut, ChevronRight, History, Heart, Newspaper, Megaphone, Wallet, Settings as SettingsIcon, Award, PieChart, TrendingUp, Radio, Download } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAdminAuth } from '../../context/AdminAuthContext';
@@ -121,6 +121,13 @@ export default function AdminDashboardScreen() {
       title: t('admin', 'liveCardTitle'),
       desc: t('admin', 'liveCardDesc'),
       onPress: () => navigateTo('AdminLive'),
+    },
+    {
+      key: 'export',
+      icon: <Download size={24} color={C.accent} />,
+      title: t('admin', 'exportCardTitle'),
+      desc: t('admin', 'exportCardDesc'),
+      onPress: () => navigateTo('AdminExport'),
     },
     {
       key: 'settings',

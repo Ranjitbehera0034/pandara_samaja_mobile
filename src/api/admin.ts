@@ -738,3 +738,22 @@ export const adminFetchActiveLiveStreams = async () => {
   const res = await adminClient.get('/admin/live/active');
   return res.data as { success: boolean; streams: LiveStream[] };
 };
+
+// ── CSV export (admin/superadmin) ──
+export interface ExportLocationFilters {
+  district?: string;
+  taluka?: string;
+  panchayat?: string;
+  village?: string;
+}
+
+export type ExportKind = 'members' | 'leaders' | 'matrimony';
+
+export const exportData = async (kind: ExportKind, filters: ExportLocationFilters) => {
+  const res = await adminClient.get(`/admin/export/${kind}`, {
+    params: filters,
+    responseType: 'text',
+    transformResponse: (data) => data, // keep raw CSV text, skip axios's default JSON.parse attempt
+  });
+  return res.data as string;
+};

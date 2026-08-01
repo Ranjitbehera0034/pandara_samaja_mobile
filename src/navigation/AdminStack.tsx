@@ -22,6 +22,7 @@ import AdminMemberFamilyFormScreen from '../screens/admin/AdminMemberFamilyFormS
 import AdminDemographicsScreen from '../screens/admin/AdminDemographicsScreen';
 import AdminAnalyticsScreen from '../screens/admin/AdminAnalyticsScreen';
 import GoLiveScreen from '../screens/live/GoLiveScreen';
+import AdminExportScreen from '../screens/admin/AdminExportScreen';
 import { Leader } from '../api/admin';
 import { FamilyMember } from '../types';
 
@@ -47,6 +48,7 @@ export type AdminStackParams = {
   AdminLeaders: undefined;
   AdminLeaderForm: { id?: string | number; leader?: Leader };
   AdminLive: undefined;
+  AdminExport: undefined;
 };
 
 const Stack = createStackNavigator<AdminStackParams>();
@@ -75,6 +77,7 @@ export default function AdminStack() {
       <Stack.Screen name="AdminLeaders" component={AdminLeadersScreen} />
       <Stack.Screen name="AdminLeaderForm" component={AdminLeaderFormScreen} />
       <Stack.Screen name="AdminLive" component={GoLiveScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="AdminExport" component={AdminExportScreen} />
     </Stack.Navigator>
   );
 }
