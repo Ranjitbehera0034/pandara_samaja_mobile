@@ -17,6 +17,7 @@ import { ChevronRight, LogOut, Globe, Bell, Shield, Info, HelpCircle } from 'luc
 import { useTheme, ThemeMode } from '../../theme/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from '../../config/constants';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -73,6 +74,13 @@ export default function SettingsScreen() {
     const url = 'https://chat.whatsapp.com/BiBlBOpYMKi2qCSzkM4aPJ';
     Linking.openURL(url).catch(() => {
       Alert.alert(t('common', 'errorTitle'), t('settings', 'whatsappNotInstalled'));
+    });
+  };
+
+  const handleOpenLegalUrl = (url: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Linking.openURL(url).catch(() => {
+      Alert.alert(t('common', 'errorTitle'), t('common', 'linkOpenError'));
     });
   };
 
@@ -321,14 +329,17 @@ export default function SettingsScreen() {
           </TouchableOpacity>
 
           {/* Privacy Policy */}
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingVertical: spacing.md + 2,
-            borderBottomWidth: 1,
-            borderBottomColor: C.border,
-          }}>
+          <TouchableOpacity
+            onPress={() => handleOpenLegalUrl(PRIVACY_POLICY_URL)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingVertical: spacing.md + 2,
+              borderBottomWidth: 1,
+              borderBottomColor: C.border,
+            }}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
               <Globe size={20} color={C.textMuted} />
               <Text style={{ color: C.text, ...typography.label }}>
@@ -336,15 +347,18 @@ export default function SettingsScreen() {
               </Text>
             </View>
             <ChevronRight size={16} color={C.textFaint} />
-          </View>
+          </TouchableOpacity>
 
           {/* Terms of Service */}
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingVertical: spacing.md + 2,
-          }}>
+          <TouchableOpacity
+            onPress={() => handleOpenLegalUrl(TERMS_OF_SERVICE_URL)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingVertical: spacing.md + 2,
+            }}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
               <Info size={20} color={C.textMuted} />
               <Text style={{ color: C.text, ...typography.label }}>
@@ -352,7 +366,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
             <ChevronRight size={16} color={C.textFaint} />
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* SECTION 4: ACCOUNT */}
