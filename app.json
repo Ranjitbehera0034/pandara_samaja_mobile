@@ -66,7 +66,15 @@
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone to go live."
         }
       ],
-      "@livekit/react-native-expo-plugin"
+      "@livekit/react-native-expo-plugin",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "buildArchs": ["arm64-v8a", "armeabi-v7a"]
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {
