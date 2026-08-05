@@ -11,6 +11,7 @@ import {
 import { MediaItem, Poll } from '../../types';
 import { containsBannedContent } from '../../utils/feedUtils';
 import { compressImage } from '../../utils/imageCompression';
+import { compressVideo } from '../../utils/videoCompression';
 import { useAuth } from '../../context/AuthContext';
 import PollCreator from './PollCreator';
 import Avatar from '../common/Avatar';
@@ -78,11 +79,11 @@ export default function CreatePost({ onPostCreate }: Props) {
 
     setPosting(true);
     try {
-      // Photos come straight from the camera/library uncompressed (often
-      // several MB at full resolution) — downscale before upload so the
-      // feed loads quickly for everyone. Video isn't compressed here.
+      // Media comes straight from the camera/library uncompressed (often
+      // several MB, video much more) — downscale/compress before upload so
+      // the feed loads quickly and cheaply for everyone.
       const uploadUris = await Promise.all(
-        previews.map((p) => (p.type === 'image' ? compressImage(p.uri) : Promise.resolve(p.uri)))
+        previews.map((p) => (p.type === 'image' ? compressImage(p.uri) : compressVideo(p.uri)))
       );
 
       // Convert previews to files if needed (for multipart upload)
