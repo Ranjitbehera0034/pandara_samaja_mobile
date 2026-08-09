@@ -19,7 +19,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface Props {
-  onPostCreate: (content: string, media?: MediaItem[], files?: any[], poll?: Poll, location?: string) => void;
+  onPostCreate: (content: string, media?: MediaItem[], files?: any[], poll?: Poll, location?: string, tempFilesToClean?: string[]) => void;
 }
 
 export default function CreatePost({ onPostCreate }: Props) {
@@ -104,7 +104,11 @@ export default function CreatePost({ onPostCreate }: Props) {
         type: p.type,
       }));
 
-      onPostCreate(content, mediaItems, files, poll, location || undefined);
+      // Only the compressed copies need cleanup — never the original if
+      // compression fell back to returning it unchanged.
+      const tempFilesToClean = uploadUris.filter((uri, i) => uri !== previews[i].uri);
+
+      onPostCreate(content, mediaItems, files, poll, location || undefined, tempFilesToClean);
 
       // Reset form
       setContent('');

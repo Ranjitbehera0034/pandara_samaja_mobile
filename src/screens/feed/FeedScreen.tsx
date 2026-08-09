@@ -22,6 +22,7 @@ import * as notificationsApi from '../../api/notifications';
 import { mapPost, mapAnnouncement } from '../../utils/feedUtils';
 import { compressImage } from '../../utils/imageCompression';
 import { compressVideo } from '../../utils/videoCompression';
+import { deleteTempFile } from '../../utils/tempFiles';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -189,7 +190,7 @@ export default function FeedScreen() {
     }
   }, []);
 
-  const handleCreatePost = useCallback(async (content: string, media?: MediaItem[], files?: any[], poll?: Poll, location?: string) => {
+  const handleCreatePost = useCallback(async (content: string, media?: MediaItem[], files?: any[], poll?: Poll, location?: string, tempFilesToClean?: string[]) => {
     try {
       const formData = new FormData();
       formData.append('text_content', content);
@@ -212,6 +213,8 @@ export default function FeedScreen() {
     } catch (e: any) {
       console.error('[CREATE_POST] Error:', e);
       Alert.alert(t('common', 'errorTitle'), e.message || t('feed', 'postError'));
+    } finally {
+      tempFilesToClean?.forEach(deleteTempFile);
     }
   }, []);
 
@@ -284,11 +287,12 @@ export default function FeedScreen() {
 
   // ── Story actions ──
   const handleAddStory = useCallback(async (mediaUri: string, mediaType: 'image' | 'video') => {
+    let uploadUri = mediaUri;
     try {
       // Story media comes straight from the camera/library uncompressed
       // (often several MB) — downscale/compress before upload so stories
       // load quickly and cheaply for everyone viewing them.
-      const uploadUri = mediaType === 'image' ? await compressImage(mediaUri) : await compressVideo(mediaUri);
+      uploadUri = mediaType === 'image' ? await compressImage(mediaUri) : await compressVideo(mediaUri);
 
       const formData = new FormData();
       const uriParts = uploadUri.split('/');
@@ -311,6 +315,10 @@ export default function FeedScreen() {
     } catch (e) {
       console.error('[ADD_STORY] Error:', e);
       Alert.alert(t('common', 'errorTitle'), t('feed', 'storyError'));
+    } finally {
+      // Only delete the compressed copy — never the original if
+      // compression fell back to returning it unchanged.
+      if (uploadUri !== mediaUri) deleteTempFile(uploadUri);
     }
   }, [loadFeedData]);
 
