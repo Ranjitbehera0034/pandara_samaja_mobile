@@ -9,7 +9,6 @@ import {
   Platform,
   FlatList,
   Modal,
-  SafeAreaView,
   Animated,
   Dimensions,
   Alert,
@@ -439,7 +438,7 @@ export default function ChatScreen() {
           animationType="slide"
           onRequestClose={handleCloseThread}
         >
-          <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
+          <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top, paddingBottom: insets.bottom }}>
             {/* Header */}
             <View style={{
               flexDirection: 'row',
@@ -588,7 +587,7 @@ export default function ChatScreen() {
                 </TouchableOpacity>
               </View>
             </KeyboardAvoidingView>
-          </SafeAreaView>
+          </View>
         </Modal>
       )}
     </View>

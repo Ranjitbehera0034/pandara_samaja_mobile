@@ -6,9 +6,9 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   TouchableOpacity
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Calendar, Megaphone, AlertCircle } from 'lucide-react-native';
 import * as feedApi from '../../api/feed';
@@ -23,6 +23,7 @@ export default function AnnouncementsScreen() {
   const navigation = useNavigation<any>();
   const { colors, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -118,7 +119,7 @@ export default function AnnouncementsScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} className="flex-1">
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }} className="flex-1">
       {/* Top Header */}
       <View style={{ borderBottomColor: colors.border, backgroundColor: colors.bg, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.md }} className="border-b flex-row items-center">
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ backgroundColor: colors.card + '80', padding: spacing.xs, borderRadius: radius.full }}>
@@ -162,6 +163,6 @@ export default function AnnouncementsScreen() {
         initialIndex={viewerIndex}
         onClose={() => setViewerMedia(null)}
       />
-    </SafeAreaView>
+    </View>
   );
 }

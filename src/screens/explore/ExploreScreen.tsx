@@ -1,6 +1,7 @@
 // src/screens/explore/ExploreScreen.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Compass, TrendingUp, Users, Hash } from 'lucide-react-native';
 import { fetchExploreStats } from '../../api/explore';
 import GlobalSearch from '../../components/common/GlobalSearch';
@@ -12,6 +13,7 @@ type Tab = 'trending' | 'popular' | 'tags';
 export default function ExploreScreen() {
   const { colors: C, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<Tab>('trending');
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -30,7 +32,7 @@ export default function ExploreScreen() {
   ];
 
   return (
-    <SafeAreaView style={{ backgroundColor: C.bg }} className="flex-1">
+    <View style={{ backgroundColor: C.bg, paddingTop: insets.top }} className="flex-1">
       {/* Header Title */}
       <View
         style={{ gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm }}
@@ -139,6 +141,6 @@ export default function ExploreScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

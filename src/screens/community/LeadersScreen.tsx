@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  ActivityIndicator, SafeAreaView, Dimensions, Modal, Pressable
+  ActivityIndicator, Dimensions, Modal, Pressable
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useNavigation } from '@react-navigation/native';
