@@ -458,6 +458,11 @@ export default function FeedScreen() {
           onStoryDeleted={(storyId) => {
             setStories(prev => prev.filter(s => s.id !== storyId));
           }}
+          onStoryLiked={(storyId, liked, likesCount) => {
+            setStories(prev =>
+              prev.map(s => s.id === storyId ? { ...s, isLiked: liked, likesCount } : s)
+            );
+          }}
         />
       )}
     </View>

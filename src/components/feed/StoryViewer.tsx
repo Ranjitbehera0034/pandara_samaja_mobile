@@ -28,9 +28,10 @@ interface Props {
   onClose: () => void;
   onStoryViewed?: (storyId: string) => void;
   onStoryDeleted?: (storyId: string) => void;
+  onStoryLiked?: (storyId: string, liked: boolean, likesCount: number) => void;
 }
 
-export default function StoryViewer({ visible, stories, currentMemberId, onClose, onStoryViewed, onStoryDeleted }: Props) {
+export default function StoryViewer({ visible, stories, currentMemberId, onClose, onStoryViewed, onStoryDeleted, onStoryLiked }: Props) {
   const { colors: C, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -222,18 +223,23 @@ export default function StoryViewer({ visible, stories, currentMemberId, onClose
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const wasLiked = liked;
     // Optimistic update
-    setLiked(!wasLiked);
-    setLikesCount((c) => Math.max(0, c + (wasLiked ? -1 : 1)));
+    const optimisticLiked = !wasLiked;
+    const optimisticCount = Math.max(0, likesCount + (wasLiked ? -1 : 1));
+    setLiked(optimisticLiked);
+    setLikesCount(optimisticCount);
+    onStoryLiked?.(activeStory.id, optimisticLiked, optimisticCount);
     try {
       const data = await feedApi.likeStory(activeStory.id);
       if (data.success) {
         setLiked(data.liked);
         setLikesCount(data.likes_count);
+        onStoryLiked?.(activeStory.id, data.liked, data.likes_count);
       }
     } catch {
       // Revert on failure
       setLiked(wasLiked);
-      setLikesCount((c) => Math.max(0, c + (wasLiked ? 1 : -1)));
+      setLikesCount(likesCount);
+      onStoryLiked?.(activeStory.id, wasLiked, likesCount);
     }
   };
 
