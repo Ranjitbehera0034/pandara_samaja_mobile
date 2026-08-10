@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
+import { Audio } from 'expo-av';
 import Toast from 'react-native-toast-message';
 import { AuthProvider } from './src/context/AuthContext';
 import { AdminAuthProvider } from './src/context/AdminAuthContext';
@@ -53,6 +54,38 @@ function AppContent() {
     });
 
     return () => subscription.remove();
+  }, []);
+
+  // Plays once per app launch, like Netflix's "ta-dum" — starts as soon as
+  // AppContent mounts (during the splash animation) and keeps playing
+  // through the transition into the login/main screen, since it isn't tied
+  // to the splash screen's own mount lifecycle. Cut short at 6s regardless
+  // of the source clip's actual length. Respects the device's silent/mute
+  // setting by design — this is a branding touch, not essential audio.
+  useEffect(() => {
+    let sound: Audio.Sound | null = null;
+    let cancelled = false;
+
+    Audio.Sound.createAsync(require('./assets/sounds/jagannath-ghanta.mp3'), { shouldPlay: true })
+      .then(({ sound: loadedSound }) => {
+        if (cancelled) {
+          loadedSound.unloadAsync().catch(() => {});
+          return;
+        }
+        sound = loadedSound;
+      })
+      .catch((e) => console.warn('[LaunchSound] Failed to play:', e));
+
+    const stopTimer = setTimeout(() => {
+      sound?.stopAsync().catch(() => {});
+      sound?.unloadAsync().catch(() => {});
+    }, 6000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(stopTimer);
+      sound?.unloadAsync().catch(() => {});
+    };
   }, []);
 
   const toastConfig = {
