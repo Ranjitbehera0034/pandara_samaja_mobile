@@ -10,6 +10,7 @@ import AdminStack from './AdminStack';
 import LoadingScreen from '../components/common/LoadingScreen';
 import AnimatedSplash from '../screens/SplashScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
+import WelcomeModal from '../components/common/WelcomeModal';
 import { storage } from '../utils/secureStorage';
 
 // Root navigation ref — lets code outside any screen component (e.g. the
@@ -69,7 +70,10 @@ export default function RootNavigator() {
         // more privileged/intentional session.
         <AdminStack />
       ) : isAuthenticated ? (
-        <MainTabs />
+        <>
+          <MainTabs />
+          <WelcomeModal />
+        </>
       ) : (
         <AuthStack />
       )}
