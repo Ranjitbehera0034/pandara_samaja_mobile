@@ -483,6 +483,7 @@ const translations = {
       noNews: 'No news available right now.',
       readFullArticle: 'Read full article',
       allCategories: 'All',
+      newsLoadError: 'Could not load news. The service may be waking up — try again in a moment.',
     },
     feedComponents: {
       warningTitle: 'Warning',
@@ -1464,6 +1465,7 @@ const translations = {
       noNews: 'ବର୍ତ୍ତମାନ କୌଣସି ସମାଚାର ଉପଲବ୍ଧ ନାହିଁ।',
       readFullArticle: 'ପୂରା ଖବର ପଢ଼ନ୍ତୁ',
       allCategories: 'ସବୁ',
+      newsLoadError: 'ସମାଚାର ଲୋଡ୍ ହୋଇପାରିଲା ନାହିଁ। ସେବା ଚାଲୁ ହେଉଥିବ — ଟିକିଏ ପରେ ପୁନର୍ବାର ଚେଷ୍ଟା କରନ୍ତୁ।',
     },
     feedComponents: {
       warningTitle: 'ଚେତାବନୀ',

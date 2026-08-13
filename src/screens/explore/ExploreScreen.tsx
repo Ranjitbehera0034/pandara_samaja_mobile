@@ -41,6 +41,7 @@ export default function ExploreScreen() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsLoaded, setNewsLoaded] = useState(false);
+  const [newsError, setNewsError] = useState(false);
 
   useEffect(() => {
     fetchExploreStats()
@@ -49,15 +50,23 @@ export default function ExploreScreen() {
       .finally(() => setLoading(false));
   }, []);
 
+  const loadNews = () => {
+    setNewsLoading(true);
+    setNewsError(false);
+    fetchNews()
+      .then(d => { if (d.success) setNews(d.items); })
+      .catch((err) => {
+        console.error('[EXPLORE NEWS]', err);
+        setNewsError(true);
+      })
+      .finally(() => { setNewsLoading(false); setNewsLoaded(true); });
+  };
+
   // Fetched lazily on first visit to the News tab rather than on mount —
   // it's a separate backend call most sessions won't need.
   useEffect(() => {
     if (activeTab !== 'news' || newsLoaded) return;
-    setNewsLoading(true);
-    fetchNews()
-      .then(d => { if (d.success) setNews(d.items); })
-      .catch((err) => console.error('[EXPLORE NEWS]', err))
-      .finally(() => { setNewsLoading(false); setNewsLoaded(true); });
+    loadNews();
   }, [activeTab, newsLoaded]);
 
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
@@ -261,9 +270,19 @@ export default function ExploreScreen() {
               ) : (
                 <View style={{ backgroundColor: C.card + '80', borderColor: C.border + '80', borderRadius: radius.lg, padding: spacing.xxl }} className="items-center border">
                   <Newspaper size={40} color={C.textFaint} style={{ marginBottom: spacing.lg }} />
-                  <Text style={{ color: C.textMuted, textAlign: 'center', fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.body }}>
-                    {t('explore', 'noNews')}
+                  <Text style={{ color: C.textMuted, textAlign: 'center', fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, marginBottom: newsError ? spacing.lg : 0, ...typography.body }}>
+                    {newsError ? t('explore', 'newsLoadError') : t('explore', 'noNews')}
                   </Text>
+                  {newsError && (
+                    <TouchableOpacity
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); loadNews(); }}
+                      style={{ backgroundColor: C.primary, paddingHorizontal: spacing.xl, paddingVertical: spacing.sm + 2, borderRadius: radius.md }}
+                    >
+                      <Text style={{ color: '#fff', fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, ...typography.bodyEmphasis, fontWeight: '600' }}>
+                        {t('common', 'retry')}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
               <NewsViewer
