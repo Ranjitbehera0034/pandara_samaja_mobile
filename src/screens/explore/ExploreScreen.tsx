@@ -16,7 +16,7 @@ export default function ExploreScreen() {
   const { colors: C, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<Tab>('trending');
+  const [activeTab, setActiveTab] = useState<Tab>('news');
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -49,10 +49,10 @@ export default function ExploreScreen() {
   };
 
   const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
+    { key: 'news', label: t('explore', 'tabNews'), icon: <Newspaper size={16} /> },
     { key: 'trending', label: t('explore', 'tabTrending'), icon: <TrendingUp size={16} /> },
     { key: 'popular', label: t('explore', 'tabMembers'), icon: <Users size={16} /> },
     { key: 'tags', label: t('explore', 'tabHashtags'), icon: <Hash size={16} /> },
-    { key: 'news', label: t('explore', 'tabNews'), icon: <Newspaper size={16} /> },
   ];
 
   return (
