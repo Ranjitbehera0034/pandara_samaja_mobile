@@ -1,14 +1,16 @@
 // src/screens/explore/ExploreScreen.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Linking, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Compass, TrendingUp, Users, Hash } from 'lucide-react-native';
+import { Compass, TrendingUp, Users, Hash, Newspaper } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 import { fetchExploreStats } from '../../api/explore';
+import { fetchNews, NewsItem } from '../../api/news';
 import GlobalSearch from '../../components/common/GlobalSearch';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
-type Tab = 'trending' | 'popular' | 'tags';
+type Tab = 'trending' | 'popular' | 'tags' | 'news';
 
 export default function ExploreScreen() {
   const { colors: C, spacing, radius, typography } = useTheme();
@@ -17,6 +19,9 @@ export default function ExploreScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('trending');
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [newsLoaded, setNewsLoaded] = useState(false);
 
   useEffect(() => {
     fetchExploreStats()
@@ -25,10 +30,29 @@ export default function ExploreScreen() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Fetched lazily on first visit to the News tab rather than on mount —
+  // it's a separate backend call most sessions won't need.
+  useEffect(() => {
+    if (activeTab !== 'news' || newsLoaded) return;
+    setNewsLoading(true);
+    fetchNews()
+      .then(d => { if (d.success) setNews(d.items); })
+      .catch((err) => console.error('[EXPLORE NEWS]', err))
+      .finally(() => { setNewsLoading(false); setNewsLoaded(true); });
+  }, [activeTab, newsLoaded]);
+
+  const openNewsLink = (url: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Linking.openURL(url).catch(() => {
+      Alert.alert(t('common', 'errorTitle'), t('common', 'linkOpenError'));
+    });
+  };
+
   const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'trending', label: t('explore', 'tabTrending'), icon: <TrendingUp size={16} /> },
     { key: 'popular', label: t('explore', 'tabMembers'), icon: <Users size={16} /> },
     { key: 'tags', label: t('explore', 'tabHashtags'), icon: <Hash size={16} /> },
+    { key: 'news', label: t('explore', 'tabNews'), icon: <Newspaper size={16} /> },
   ];
 
   return (
@@ -134,6 +158,45 @@ export default function ExploreScreen() {
                   <Hash size={40} color={C.textFaint} style={{ marginBottom: spacing.lg }} />
                   <Text style={{ color: C.textMuted, textAlign: 'center', fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.body }}>
                     {t('explore', 'noTags')}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* News Tab Content */}
+          {activeTab === 'news' && (
+            <View>
+              {newsLoading ? (
+                <ActivityIndicator color={C.primaryLight} size="large" style={{ paddingVertical: spacing.xxl + spacing.sm }} />
+              ) : news.length > 0 ? (
+                <View style={{ gap: spacing.md }}>
+                  {news.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      onPress={() => openNewsLink(item.link)}
+                      style={{ backgroundColor: C.card, borderColor: C.border, borderRadius: radius.lg, padding: spacing.lg }}
+                      className="border"
+                    >
+                      <Text style={{ color: C.text, fontFamily: 'NotoSansOriya-Bold', marginBottom: spacing.xs, ...typography.bodyEmphasis }}>
+                        {item.title}
+                      </Text>
+                      {!!item.snippet && (
+                        <Text numberOfLines={3} style={{ color: C.textMuted, fontFamily: 'NotoSansOriya', marginBottom: spacing.sm, ...typography.body }}>
+                          {item.snippet}
+                        </Text>
+                      )}
+                      <Text style={{ color: C.primaryLight, ...typography.caption, fontWeight: '600' }}>
+                        {item.sourceName}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : (
+                <View style={{ backgroundColor: C.card + '80', borderColor: C.border + '80', borderRadius: radius.lg, padding: spacing.xxl }} className="items-center border">
+                  <Newspaper size={40} color={C.textFaint} style={{ marginBottom: spacing.lg }} />
+                  <Text style={{ color: C.textMuted, textAlign: 'center', fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.body }}>
+                    {t('explore', 'noNews')}
                   </Text>
                 </View>
               )}

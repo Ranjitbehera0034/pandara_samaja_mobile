@@ -8,6 +8,9 @@ const SERVER_ROOT_URL = API_URL.replace(/\/api\/?$/, '');
 export const PRIVACY_POLICY_URL = `${SERVER_ROOT_URL}/privacy-policy`;
 export const TERMS_OF_SERVICE_URL = `${SERVER_ROOT_URL}/terms-of-service`;
 
+// Separate service (own repo/deployment) — not part of the main backend.
+export const NEWS_API_URL = process.env.EXPO_PUBLIC_NEWS_API_URL || 'http://localhost:7000';
+
 // Secure storage keys — match web localStorage keys exactly
 export const STORAGE_KEYS = {
   PORTAL_TOKEN: 'portalToken',

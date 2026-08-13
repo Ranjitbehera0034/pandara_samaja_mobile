@@ -474,12 +474,13 @@ const translations = {
     },
     explore: {
       title: 'Explore',
-      tabTrending: 'Trending', tabMembers: 'Members', tabHashtags: 'Hashtags',
+      tabTrending: 'Trending', tabMembers: 'Members', tabHashtags: 'Hashtags', tabNews: 'News',
       trendingPostsTitle: 'Trending Posts',
       trendingPostsSubtitle: 'Posts with the most engagement across the community. (Coming Soon)',
       activeMembersLabel: 'Total Members Active Today',
       noPopularMembers: 'No popular members data available.',
       noTags: 'No tags available at the moment.',
+      noNews: 'No news available right now.',
     },
     feedComponents: {
       warningTitle: 'Warning',
@@ -1452,12 +1453,13 @@ const translations = {
     },
     explore: {
       title: 'ଅନ୍ୱେଷଣ',
-      tabTrending: 'ଟ୍ରେଣ୍ଡିଂ', tabMembers: 'ସଦସ୍ୟ', tabHashtags: 'ହ୍ୟାସ୍‌ଟାଗ୍',
+      tabTrending: 'ଟ୍ରେଣ୍ଡିଂ', tabMembers: 'ସଦସ୍ୟ', tabHashtags: 'ହ୍ୟାସ୍‌ଟାଗ୍', tabNews: 'ସମାଚାର',
       trendingPostsTitle: 'ଟ୍ରେଣ୍ଡିଂ ପୋଷ୍ଟ',
       trendingPostsSubtitle: 'ସମାଜରେ ସର୍ବାଧିକ ଆଲୋଚିତ ପୋଷ୍ଟ। (ଶୀଘ୍ର ଆସୁଛି)',
       activeMembersLabel: 'ଆଜି ସକ୍ରିୟ ମୋଟ ସଦସ୍ୟ',
       noPopularMembers: 'କୌଣସି ଲୋକପ୍ରିୟ ସଦସ୍ୟ ତଥ୍ୟ ଉପଲବ୍ଧ ନାହିଁ।',
       noTags: 'ବର୍ତ୍ତମାନ କୌଣସି ଟ୍ୟାଗ୍ ଉପଲବ୍ଧ ନାହିଁ।',
+      noNews: 'ବର୍ତ୍ତମାନ କୌଣସି ସମାଚାର ଉପଲବ୍ଧ ନାହିଁ।',
     },
     feedComponents: {
       warningTitle: 'ଚେତାବନୀ',
