@@ -482,6 +482,7 @@ const translations = {
       noTags: 'No tags available at the moment.',
       noNews: 'No news available right now.',
       readFullArticle: 'Read full article',
+      allCategories: 'All',
     },
     feedComponents: {
       warningTitle: 'Warning',
@@ -1462,6 +1463,7 @@ const translations = {
       noTags: 'ବର୍ତ୍ତମାନ କୌଣସି ଟ୍ୟାଗ୍ ଉପଲବ୍ଧ ନାହିଁ।',
       noNews: 'ବର୍ତ୍ତମାନ କୌଣସି ସମାଚାର ଉପଲବ୍ଧ ନାହିଁ।',
       readFullArticle: 'ପୂରା ଖବର ପଢ଼ନ୍ତୁ',
+      allCategories: 'ସବୁ',
     },
     feedComponents: {
       warningTitle: 'ଚେତାବନୀ',

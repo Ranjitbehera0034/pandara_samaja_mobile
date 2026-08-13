@@ -14,6 +14,23 @@ import { useLanguage } from '../../context/LanguageContext';
 
 type Tab = 'trending' | 'popular' | 'tags' | 'news';
 
+// Curated allowlist of the raw category values worth showing as filter
+// chips — Dharitri's feed also carries WordPress placement noise ("Home
+// Left", "Home Middle") and one-off auto-generated keyword tags that
+// aren't meaningful filters, so this is deliberately not "show every
+// category we see." District tags (Ganjam, Cuttack, etc.) are a separate
+// filter dimension, left for a later step.
+const NEWS_CATEGORIES: { raw: string; label: string }[] = [
+  { raw: 'ରାଜ୍ୟ', label: 'ରାଜ୍ୟ' },
+  { raw: 'ଜାତୀୟ', label: 'ଜାତୀୟ' },
+  { raw: 'ଅନ୍ତର୍ଜାତୀୟ', label: 'ଅନ୍ତର୍ଜାତୀୟ' },
+  { raw: 'ବାଣିଜ୍ୟ', label: 'ବାଣିଜ୍ୟ' },
+  { raw: 'ଜୀବନଚର୍ଯ୍ୟା', label: 'ଜୀବନଚର୍ଯ୍ୟା' },
+  { raw: 'rashiphala', label: 'ରାଶିଫଳ' },
+  { raw: 'ମେଟ୍ରୋ', label: 'ମେଟ୍ରୋ' },
+  { raw: 'ସମ୍ପାଦକୀୟ', label: 'ସମ୍ପାଦକୀୟ' },
+];
+
 export default function ExploreScreen() {
   const { colors: C, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
@@ -44,11 +61,21 @@ export default function ExploreScreen() {
   }, [activeTab, newsLoaded]);
 
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null); // null = All
 
   const openNewsAt = (index: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setViewerIndex(index);
   };
+
+  // Only show chips for categories that actually have at least one
+  // currently-loaded article — no point offering an empty filter.
+  const availableCategories = NEWS_CATEGORIES.filter((c) =>
+    news.some((item) => item.categories.includes(c.raw))
+  );
+  const filteredNews = selectedCategory
+    ? news.filter((item) => item.categories.includes(selectedCategory))
+    : news;
 
   const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'news', label: t('explore', 'tabNews'), icon: <Newspaper size={16} /> },
@@ -169,11 +196,43 @@ export default function ExploreScreen() {
           {/* News Tab Content */}
           {activeTab === 'news' && (
             <View>
+              {!newsLoading && availableCategories.length > 0 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }} contentContainerStyle={{ gap: spacing.sm }}>
+                  <TouchableOpacity
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSelectedCategory(null); }}
+                    style={{
+                      paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
+                      backgroundColor: selectedCategory === null ? C.primary : C.card,
+                      borderWidth: 1, borderColor: selectedCategory === null ? C.primary : C.border,
+                    }}
+                  >
+                    <Text style={{ color: selectedCategory === null ? '#fff' : C.textMuted, fontFamily: 'NotoSansOriya', ...typography.caption, fontWeight: '600' }}>
+                      {t('explore', 'allCategories')}
+                    </Text>
+                  </TouchableOpacity>
+                  {availableCategories.map((cat) => (
+                    <TouchableOpacity
+                      key={cat.raw}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSelectedCategory(cat.raw); }}
+                      style={{
+                        paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
+                        backgroundColor: selectedCategory === cat.raw ? C.primary : C.card,
+                        borderWidth: 1, borderColor: selectedCategory === cat.raw ? C.primary : C.border,
+                      }}
+                    >
+                      <Text style={{ color: selectedCategory === cat.raw ? '#fff' : C.textMuted, fontFamily: 'NotoSansOriya', ...typography.caption, fontWeight: '600' }}>
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+
               {newsLoading ? (
                 <ActivityIndicator color={C.primaryLight} size="large" style={{ paddingVertical: spacing.xxl + spacing.sm }} />
-              ) : news.length > 0 ? (
+              ) : filteredNews.length > 0 ? (
                 <View style={{ gap: spacing.md }}>
-                  {news.map((item, index) => (
+                  {filteredNews.map((item, index) => (
                     <TouchableOpacity
                       key={item.id}
                       onPress={() => openNewsAt(index)}
@@ -209,7 +268,7 @@ export default function ExploreScreen() {
               )}
               <NewsViewer
                 visible={viewerIndex !== null}
-                items={news}
+                items={filteredNews}
                 initialIndex={viewerIndex ?? 0}
                 onClose={() => setViewerIndex(null)}
               />

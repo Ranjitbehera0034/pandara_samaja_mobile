@@ -14,6 +14,7 @@ export interface NewsItem {
   imageUrl: string | null;
   link: string;
   publishedAt: string | null;
+  categories: string[];
 }
 
 const newsClient = axios.create({ baseURL: NEWS_API_URL, timeout: 15000 });
