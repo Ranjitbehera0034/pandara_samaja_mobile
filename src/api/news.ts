@@ -11,6 +11,7 @@ export interface NewsItem {
   language: string;
   title: string;
   snippet: string;
+  imageUrl: string | null;
   link: string;
   publishedAt: string | null;
 }

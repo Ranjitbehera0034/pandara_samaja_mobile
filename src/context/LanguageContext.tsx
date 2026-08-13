@@ -481,6 +481,7 @@ const translations = {
       noPopularMembers: 'No popular members data available.',
       noTags: 'No tags available at the moment.',
       noNews: 'No news available right now.',
+      readFullArticle: 'Read full article',
     },
     feedComponents: {
       warningTitle: 'Warning',
@@ -1460,6 +1461,7 @@ const translations = {
       noPopularMembers: 'କୌଣସି ଲୋକପ୍ରିୟ ସଦସ୍ୟ ତଥ୍ୟ ଉପଲବ୍ଧ ନାହିଁ।',
       noTags: 'ବର୍ତ୍ତମାନ କୌଣସି ଟ୍ୟାଗ୍ ଉପଲବ୍ଧ ନାହିଁ।',
       noNews: 'ବର୍ତ୍ତମାନ କୌଣସି ସମାଚାର ଉପଲବ୍ଧ ନାହିଁ।',
+      readFullArticle: 'ପୂରା ଖବର ପଢ଼ନ୍ତୁ',
     },
     feedComponents: {
       warningTitle: 'ଚେତାବନୀ',

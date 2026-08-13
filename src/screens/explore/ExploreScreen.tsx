@@ -1,11 +1,13 @@
 // src/screens/explore/ExploreScreen.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Linking, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Compass, TrendingUp, Users, Hash, Newspaper } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { fetchExploreStats } from '../../api/explore';
 import { fetchNews, NewsItem } from '../../api/news';
+import NewsViewer from '../../components/explore/NewsViewer';
 import GlobalSearch from '../../components/common/GlobalSearch';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -41,11 +43,11 @@ export default function ExploreScreen() {
       .finally(() => { setNewsLoading(false); setNewsLoaded(true); });
   }, [activeTab, newsLoaded]);
 
-  const openNewsLink = (url: string) => {
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+
+  const openNewsAt = (index: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Linking.openURL(url).catch(() => {
-      Alert.alert(t('common', 'errorTitle'), t('common', 'linkOpenError'));
-    });
+    setViewerIndex(index);
   };
 
   const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
@@ -171,24 +173,29 @@ export default function ExploreScreen() {
                 <ActivityIndicator color={C.primaryLight} size="large" style={{ paddingVertical: spacing.xxl + spacing.sm }} />
               ) : news.length > 0 ? (
                 <View style={{ gap: spacing.md }}>
-                  {news.map((item) => (
+                  {news.map((item, index) => (
                     <TouchableOpacity
                       key={item.id}
-                      onPress={() => openNewsLink(item.link)}
-                      style={{ backgroundColor: C.card, borderColor: C.border, borderRadius: radius.lg, padding: spacing.lg }}
+                      onPress={() => openNewsAt(index)}
+                      style={{ backgroundColor: C.card, borderColor: C.border, borderRadius: radius.lg, overflow: 'hidden' }}
                       className="border"
                     >
-                      <Text style={{ color: C.text, fontFamily: 'NotoSansOriya-Bold', marginBottom: spacing.xs, ...typography.bodyEmphasis }}>
-                        {item.title}
-                      </Text>
-                      {!!item.snippet && (
-                        <Text numberOfLines={3} style={{ color: C.textMuted, fontFamily: 'NotoSansOriya', marginBottom: spacing.sm, ...typography.body }}>
-                          {item.snippet}
-                        </Text>
+                      {item.imageUrl && (
+                        <Image source={{ uri: item.imageUrl }} style={{ width: '100%', height: 160, backgroundColor: C.bg }} contentFit="cover" />
                       )}
-                      <Text style={{ color: C.primaryLight, ...typography.caption, fontWeight: '600' }}>
-                        {item.sourceName}
-                      </Text>
+                      <View style={{ padding: spacing.lg }}>
+                        <Text style={{ color: C.text, fontFamily: 'NotoSansOriya-Bold', marginBottom: spacing.xs, ...typography.bodyEmphasis }}>
+                          {item.title}
+                        </Text>
+                        {!!item.snippet && (
+                          <Text numberOfLines={2} style={{ color: C.textMuted, fontFamily: 'NotoSansOriya', marginBottom: spacing.sm, ...typography.body }}>
+                            {item.snippet}
+                          </Text>
+                        )}
+                        <Text style={{ color: C.primaryLight, ...typography.caption, fontWeight: '600' }}>
+                          {item.sourceName}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -200,6 +207,12 @@ export default function ExploreScreen() {
                   </Text>
                 </View>
               )}
+              <NewsViewer
+                visible={viewerIndex !== null}
+                items={news}
+                initialIndex={viewerIndex ?? 0}
+                onClose={() => setViewerIndex(null)}
+              />
             </View>
           )}
         </View>
