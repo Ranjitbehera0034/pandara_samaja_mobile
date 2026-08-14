@@ -1,9 +1,9 @@
 // src/screens/explore/ExploreScreen.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Compass, TrendingUp, Users, Hash, Newspaper } from 'lucide-react-native';
+import { Compass, TrendingUp, Users, Hash, Newspaper, RefreshCw } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { fetchExploreStats } from '../../api/explore';
 import { fetchNews, NewsItem } from '../../api/news';
@@ -42,18 +42,22 @@ export default function ExploreScreen() {
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsLoaded, setNewsLoaded] = useState(false);
   const [newsError, setNewsError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadStats = () => {
+    return fetchExploreStats()
+      .then(d => { if (d.success) setStats(d.stats); })
+      .catch((err) => console.error('[EXPLORE STATS]', err));
+  };
 
   useEffect(() => {
-    fetchExploreStats()
-      .then(d => { if (d.success) setStats(d.stats); })
-      .catch((err) => console.error('[EXPLORE STATS]', err))
-      .finally(() => setLoading(false));
+    loadStats().finally(() => setLoading(false));
   }, []);
 
   const loadNews = () => {
     setNewsLoading(true);
     setNewsError(false);
-    fetchNews()
+    return fetchNews()
       .then(d => { if (d.success) setNews(d.items); })
       .catch((err) => {
         console.error('[EXPLORE NEWS]', err);
@@ -68,6 +72,16 @@ export default function ExploreScreen() {
     if (activeTab !== 'news' || newsLoaded) return;
     loadNews();
   }, [activeTab, newsLoaded]);
+
+  // Both pull-to-refresh and the explicit refresh button (News tab) land
+  // here — always hits the network fresh, ignoring the "already loaded
+  // once" guard that lazy-loading normally relies on.
+  const handleRefresh = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setRefreshing(true);
+    Promise.all([loadStats(), activeTab === 'news' ? loadNews() : Promise.resolve()])
+      .finally(() => setRefreshing(false));
+  };
 
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null); // null = All
@@ -101,12 +115,25 @@ export default function ExploreScreen() {
         className="flex-row items-center"
       >
         <Compass size={24} color={C.primaryLight} />
-        <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, ...typography.heading }}>
+        <Text style={{ color: C.text, fontFamily: lang === 'od' ? 'NotoSansOriya-Bold' : undefined, flex: 1, ...typography.heading }}>
           {t('explore', 'title')}
         </Text>
+        <TouchableOpacity
+          onPress={handleRefresh}
+          disabled={refreshing}
+          style={{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center', opacity: refreshing ? 0.5 : 1 }}
+        >
+          <RefreshCw size={18} color={C.textMuted} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: 80 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: 80 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={C.primary} colors={[C.primary]} progressBackgroundColor={C.card} />
+        }
+      >
         {/* Global Search Component */}
         <GlobalSearch />
 
@@ -205,7 +232,7 @@ export default function ExploreScreen() {
           {/* News Tab Content */}
           {activeTab === 'news' && (
             <View>
-              {!newsLoading && availableCategories.length > 0 && (
+              {(!newsLoading || newsLoaded) && availableCategories.length > 0 && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }} contentContainerStyle={{ gap: spacing.sm }}>
                   <TouchableOpacity
                     onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSelectedCategory(null); }}
@@ -237,7 +264,10 @@ export default function ExploreScreen() {
                 </ScrollView>
               )}
 
-              {newsLoading ? (
+              {newsLoading && !newsLoaded ? (
+                // Only the very first load takes over the screen — a
+                // refresh (pull-to-refresh or the button) keeps existing
+                // content visible, same as everywhere else refresh exists.
                 <ActivityIndicator color={C.primaryLight} size="large" style={{ paddingVertical: spacing.xxl + spacing.sm }} />
               ) : filteredNews.length > 0 ? (
                 <View style={{ gap: spacing.md }}>
