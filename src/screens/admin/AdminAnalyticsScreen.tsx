@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Zap, CalendarDays, Calendar, UserX, TrendingUp, ChevronRight } from 'lucide-react-native';
+import { ArrowLeft, Zap, CalendarDays, Calendar, UserX, TrendingUp, ChevronRight, LogIn, Eye, MousePointerClick } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
@@ -109,6 +109,9 @@ export default function AdminAnalyticsScreen() {
     { key: 'week', icon: <Calendar size={22} color={C.accent} />, label: t('admin', 'analyticsActiveWeekLabel'), value: analytics.activeMembers.last7Days, color: C.accent },
     { key: 'month', icon: <CalendarDays size={22} color={C.success} />, label: t('admin', 'analyticsActiveMonthLabel'), value: analytics.activeMembers.last30Days, color: C.success },
     { key: 'inactive', icon: <UserX size={22} color={C.warning} />, label: t('admin', 'analyticsInactiveLabel'), value: analytics.inactiveMembers, color: C.warning },
+    { key: 'neverLoggedIn', icon: <LogIn size={22} color={C.error} />, label: t('admin', 'analyticsNeverLoggedInLabel'), value: analytics.neverLoggedIn, color: C.error },
+    { key: 'justOpened', icon: <Eye size={22} color={C.textMuted} />, label: t('admin', 'analyticsJustOpenedLabel'), value: analytics.engagementDepthToday.justOpened, color: C.textMuted },
+    { key: 'engaged', icon: <MousePointerClick size={22} color={C.accent} />, label: t('admin', 'analyticsEngagedLabel'), value: analytics.engagementDepthToday.engaged, color: C.accent },
   ] : [];
 
   const newSignupsTotal = analytics ? analytics.newSignupsTrend.reduce((sum, d) => sum + d.count, 0) : 0;

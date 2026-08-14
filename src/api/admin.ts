@@ -711,6 +711,8 @@ export interface AnalyticsData {
   actionBreakdown: ActionBreakdownEntry[];
   inactiveMembers: number;
   newSignupsTrend: DailyTrendPoint[];
+  neverLoggedIn: number;
+  engagementDepthToday: { justOpened: number; engaged: number };
 }
 
 // GET /api/admin/analytics
