@@ -18,6 +18,9 @@
       "splash": {
         "backgroundColor": "#0f172a",
         "image": "./assets/splash.png"
+      },
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow Pandara Samaja to access your camera to add filtered photos to your story."
       }
     },
     "android": {
@@ -25,6 +28,7 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundColor": "#0f172a"
       },
+      "permissions": ["CAMERA"],
       "package": "in.nikhilaodishapandarasamaja.app",
       "googleServicesFile": "./google-services.json",
       "splash": {

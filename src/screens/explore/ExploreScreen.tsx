@@ -3,16 +3,17 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Compass, TrendingUp, Users, Hash, Newspaper, RefreshCw } from 'lucide-react-native';
+import { Compass, TrendingUp, Users, Hash, Newspaper, RefreshCw, CalendarDays } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { fetchExploreStats } from '../../api/explore';
 import { fetchNews, NewsItem } from '../../api/news';
 import NewsViewer from '../../components/explore/NewsViewer';
+import OdiaCalendarView from '../../components/explore/OdiaCalendarView';
 import GlobalSearch from '../../components/common/GlobalSearch';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
-type Tab = 'trending' | 'popular' | 'tags' | 'news';
+type Tab = 'trending' | 'popular' | 'tags' | 'news' | 'calendar';
 
 // Curated allowlist of the raw category values worth showing as filter
 // chips — Dharitri's feed also carries WordPress placement noise ("Home
@@ -102,6 +103,7 @@ export default function ExploreScreen() {
 
   const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'news', label: t('explore', 'tabNews'), icon: <Newspaper size={16} /> },
+    { key: 'calendar', label: t('explore', 'tabCalendar'), icon: <CalendarDays size={16} /> },
     { key: 'trending', label: t('explore', 'tabTrending'), icon: <TrendingUp size={16} /> },
     { key: 'popular', label: t('explore', 'tabMembers'), icon: <Users size={16} /> },
     { key: 'tags', label: t('explore', 'tabHashtags'), icon: <Hash size={16} /> },
@@ -172,6 +174,9 @@ export default function ExploreScreen() {
               </Text>
             </View>
           )}
+
+          {/* Odia Calendar Tab Content */}
+          {activeTab === 'calendar' && <OdiaCalendarView />}
 
           {/* Popular Members Tab Content */}
           {activeTab === 'popular' && (
