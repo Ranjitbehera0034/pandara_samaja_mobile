@@ -193,14 +193,14 @@ export default function FeedScreen() {
   const handleCreatePost = useCallback(async (content: string, media?: MediaItem[], files?: any[], poll?: Poll, location?: string, tempFilesToClean?: string[]) => {
     try {
       const formData = new FormData();
-      formData.append('text_content', content);
+      formData.append('text', content);
       if (location) formData.append('location', location);
       if (poll) formData.append('poll', JSON.stringify(poll));
-      
+
       if (files && files.length > 0) {
         files.forEach((file) => {
           // @ts-ignore
-          formData.append('media', file);
+          formData.append('images', file);
         });
       }
 
