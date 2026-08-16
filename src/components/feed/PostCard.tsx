@@ -12,10 +12,12 @@ import {
 import { Post, Comment, ReactionType } from '../../types';
 import { timeAgoShort, REACTIONS, mapComment, containsBannedContent, censorText } from '../../utils/feedUtils';
 import { urlsToMedia } from '../../utils/media';
+import { extractYouTubeId } from '../../utils/youtube';
 import { useAuth } from '../../context/AuthContext';
 import MediaGrid from './MediaGrid';
 import MediaViewerModal from './MediaViewerModal';
 import RichContent from './RichContent';
+import YouTubeEmbed from './YouTubeEmbed';
 import PollDisplay from './PollDisplay';
 import CommentItem from './CommentItem';
 import Avatar from '../common/Avatar';
@@ -70,6 +72,7 @@ export default function PostCard({
   const [viewerVisible, setViewerVisible] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
   const postMedia = post.media?.length ? post.media : urlsToMedia(post.images);
+  const youtubeId = extractYouTubeId(post.content);
 
   const isAuthor = member && (
     member.membership_no === post.authorId
@@ -279,6 +282,7 @@ export default function PostCard({
         ) : (
           <RichContent text={post.content} />
         )}
+        {!isEditing && youtubeId && <YouTubeEmbed videoId={youtubeId} />}
       </View>
 
       {/* ── Media Grid ── */}
