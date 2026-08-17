@@ -139,26 +139,40 @@ export default function ExploreScreen() {
         {/* Global Search Component */}
         <GlobalSearch />
 
-        {/* Tab Selector Bar */}
-        <View style={{ borderColor: C.border + '80', marginBottom: spacing.xl }} className="flex-row border-b">
-          {TABS.map(tab => (
-            <TouchableOpacity
-              key={tab.key}
-              onPress={() => setActiveTab(tab.key)}
-              style={{ borderBottomColor: activeTab === tab.key ? C.primaryLight : 'transparent', gap: spacing.sm, paddingVertical: spacing.md }}
-              className="flex-1 flex-row items-center justify-center border-b-2"
-            >
-              <View style={{ opacity: activeTab === tab.key ? 1 : 0.5 }}>
+        {/* Tab Selector Bar — horizontal scrollable pills, scales cleanly
+            regardless of how many tabs exist (was a 5-way equal-width
+            squeeze before, cramped on smaller screens) */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: spacing.sm, paddingBottom: 4 }}
+          style={{ marginBottom: spacing.lg }}
+        >
+          {TABS.map(tab => {
+            const active = activeTab === tab.key;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                onPress={() => setActiveTab(tab.key)}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+                  paddingHorizontal: spacing.lg, paddingVertical: spacing.sm + 2,
+                  borderRadius: radius.full,
+                  backgroundColor: active ? C.primary : 'transparent',
+                  borderWidth: active ? 0 : 1,
+                  borderColor: C.border,
+                }}
+              >
                 {React.cloneElement(tab.icon as any, {
-                  color: activeTab === tab.key ? C.primaryLight : C.textMuted
+                  color: active ? '#fff' : C.textMuted
                 })}
-              </View>
-              <Text style={{ color: activeTab === tab.key ? C.primaryLight : C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, ...typography.bodyEmphasis }}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+                <Text style={{ ...typography.caption, color: active ? '#fff' : C.textMuted, fontFamily: lang === 'od' ? 'NotoSansOriya' : undefined, fontWeight: active ? '600' : '400' }}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
 
         {/* Tab Content Display Areas */}
         <View>
