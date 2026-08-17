@@ -1,12 +1,14 @@
 // src/components/feed/StoryRing.tsx
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import { Plus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useCameraPermission } from 'react-native-vision-camera';
 import { Story } from '../../types';
 import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
 import { useAuth } from '../../context/AuthContext';
 import Avatar from '../common/Avatar';
+import StoryCameraScreen from './StoryCameraScreen';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -20,6 +22,8 @@ export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
   const { member, user } = useAuth();
   const { colors, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const [showCamera, setShowCamera] = useState(false);
   const displayName = user?.name || member?.name || 'Me';
   const photo = cleanPhoto(user?.profile_photo_url);
 
@@ -44,6 +48,29 @@ export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
     }
   };
 
+  const handleOpenCamera = async () => {
+    if (!hasPermission) {
+      const granted = await requestPermission();
+      if (!granted) {
+        Alert.alert(t('feed', 'storyCameraPermissionDeniedTitle'), t('feed', 'storyCameraPermissionDeniedMessage'));
+        return;
+      }
+    }
+    setShowCamera(true);
+  };
+
+  const handleAddStoryPress = () => {
+    Alert.alert(
+      t('feed', 'addStoryChooseTitle'),
+      t('feed', 'addStoryChooseMessage'),
+      [
+        { text: t('feedComponents', 'cancelButtonLabel'), style: 'cancel' },
+        { text: t('feed', 'addStoryCameraOption'), onPress: handleOpenCamera },
+        { text: t('feed', 'addStoryGalleryOption'), onPress: handlePickStory },
+      ]
+    );
+  };
+
   return (
     <View style={{ marginBottom: spacing.lg }}>
       <ScrollView
@@ -54,7 +81,7 @@ export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
         {/* Add Story Circle */}
         <View style={{ alignItems: 'center', marginRight: spacing.lg }}>
           <TouchableOpacity
-            onPress={handlePickStory}
+            onPress={handleAddStoryPress}
             style={{
               backgroundColor: colors.card,
               borderColor: colors.border,
@@ -119,6 +146,11 @@ export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
           );
         })}
       </ScrollView>
+      <StoryCameraScreen
+        visible={showCamera}
+        onClose={() => setShowCamera(false)}
+        onCapture={onAddStory}
+      />
     </View>
   );
 }
