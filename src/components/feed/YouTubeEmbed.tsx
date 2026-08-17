@@ -1,8 +1,8 @@
 // src/components/feed/YouTubeEmbed.tsx
 import React, { useState } from 'react';
-import { View, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { Play } from 'lucide-react-native';
+import { Play, ExternalLink } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeContext';
 
 interface Props {
@@ -31,6 +31,15 @@ export default function YouTubeEmbed({ videoId }: Props) {
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Some videos have embedding disabled by their owner — no client-side
+  // fix can play those inline, that's YouTube enforcing the uploader's
+  // choice server-side. Rather than leave someone staring at a broken
+  // player with no way forward, always offer a guaranteed-working path
+  // to the real video.
+  const openInYouTube = () => {
+    Linking.openURL(`https://www.youtube.com/watch?v=${videoId}`).catch(() => {});
+  };
+
   return (
     <View
       style={{
@@ -58,6 +67,18 @@ export default function YouTubeEmbed({ videoId }: Props) {
               <ActivityIndicator color="#fff" />
             </View>
           )}
+          <TouchableOpacity
+            onPress={openInYouTube}
+            style={{
+              position: 'absolute', top: 8, right: 8,
+              flexDirection: 'row', alignItems: 'center', gap: 4,
+              backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 8, paddingVertical: 5,
+              borderRadius: 6,
+            }}
+          >
+            <ExternalLink size={12} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>YouTube</Text>
+          </TouchableOpacity>
         </>
       ) : (
         <TouchableOpacity
