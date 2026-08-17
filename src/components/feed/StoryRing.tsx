@@ -1,6 +1,6 @@
 // src/components/feed/StoryRing.tsx
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Alert, Linking, Platform } from 'react-native';
 import { Plus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useCameraPermission } from 'react-native-vision-camera';
@@ -23,7 +23,7 @@ export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
   const { member, user } = useAuth();
   const { colors, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
-  const { hasPermission, requestPermission } = useCameraPermission();
+  const { hasPermission, canRequestPermission, requestPermission } = useCameraPermission();
   const [showCamera, setShowCamera] = useState(false);
   const displayName = user?.name || member?.name || 'Me';
   const photo = cleanPhoto(user?.profile_photo_url);
@@ -49,13 +49,45 @@ export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
     }
   };
 
+  // Once a permission has been denied, iOS never shows the system dialog
+  // again, and Android stops re-prompting after "don't ask again" or (on
+  // many OEM builds) after just one denial — every further call to
+  // requestPermission() silently resolves to "denied" with no dialog ever
+  // appearing again. Repeating the same "please allow" alert in that state
+  // is a dead end with no way forward; the only real fix is sending the
+  // person to the OS Settings screen for this app.
+  const showOpenSettingsAlert = () => {
+    Alert.alert(
+      t('feed', 'storyCameraPermissionDeniedTitle'),
+      t('feed', 'storyCameraOpenSettingsMessage'),
+      [
+        { text: t('feedComponents', 'cancelButtonLabel'), style: 'cancel' },
+        {
+          text: t('feed', 'storyCameraOpenSettingsAction'),
+          onPress: () => {
+            if (Platform.OS === 'ios') Linking.openURL('app-settings:');
+            else Linking.openSettings();
+          },
+        },
+      ]
+    );
+  };
+
   const handleOpenCamera = async () => {
-    if (!hasPermission) {
-      const granted = await requestPermission();
-      if (!granted) {
-        Alert.alert(t('feed', 'storyCameraPermissionDeniedTitle'), t('feed', 'storyCameraPermissionDeniedMessage'));
-        return;
-      }
+    if (hasPermission) {
+      setShowCamera(true);
+      return;
+    }
+    if (!canRequestPermission) {
+      // Already permanently denied — calling requestPermission() here
+      // would just silently no-op, so go straight to the real fix.
+      showOpenSettingsAlert();
+      return;
+    }
+    const granted = await requestPermission();
+    if (!granted) {
+      showOpenSettingsAlert();
+      return;
     }
     setShowCamera(true);
   };

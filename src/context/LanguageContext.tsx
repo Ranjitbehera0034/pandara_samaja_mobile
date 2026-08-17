@@ -54,6 +54,8 @@ const translations = {
       storyCameraPermissionDeniedTitle: 'Camera Access Needed',
       storyCameraPermissionDeniedMessage: 'Allow camera access to take filtered story photos, or choose one from your gallery instead.',
       storyCameraCrashedMessage: 'The camera couldn\'t open. Please choose a photo from your gallery instead for now.',
+      storyCameraOpenSettingsMessage: 'Camera access was denied and can\'t be re-requested from here. Open Settings and turn on Camera for this app.',
+      storyCameraOpenSettingsAction: 'Open Settings',
       filterNormal: 'Normal', filterBw: 'B&W', filterVintage: 'Vintage', filterWarm: 'Warm', filterCool: 'Cool', filterVivid: 'Vivid',
     },
     notifications: {
@@ -1057,6 +1059,8 @@ const translations = {
       storyCameraPermissionDeniedTitle: 'କ୍ୟାମେରା ଅନୁମତି ଆବଶ୍ୟକ',
       storyCameraPermissionDeniedMessage: 'ଫିଲ୍ଟର ସହିତ ଫଟୋ ଉଠାଇବାକୁ କ୍ୟାମେରା ଅନୁମତି ଦିଅନ୍ତୁ, କିମ୍ବା ଗ୍ୟାଲେରୀରୁ ଏକ ଫଟୋ ବାଛନ୍ତୁ।',
       storyCameraCrashedMessage: 'କ୍ୟାମେରା ଖୋଲିପାରିଲା ନାହିଁ। ଦୟାକରି ଏବେ ପାଇଁ ଗ୍ୟାଲେରୀରୁ ଏକ ଫଟୋ ବାଛନ୍ତୁ।',
+      storyCameraOpenSettingsMessage: 'କ୍ୟାମେରା ଅନୁମତି ଅସ୍ଵୀକୃତ ହୋଇଛି ଏବଂ ଏଠାରୁ ପୁନଃ ମାଗିହେବ ନାହିଁ। ସେଟିଂସ୍ ଖୋଲି ଏହି ଆପ୍ ପାଇଁ କ୍ୟାମେରା ଅନ୍ କରନ୍ତୁ।',
+      storyCameraOpenSettingsAction: 'ସେଟିଂସ୍ ଖୋଲନ୍ତୁ',
       filterNormal: 'ସାଧାରଣ', filterBw: 'ବ୍ଲାକ୍ ଆଣ୍ଡ ହ୍ଵାଇଟ୍', filterVintage: 'ଭିନ୍ଟେଜ', filterWarm: 'ୱାର୍ମ', filterCool: 'କୁଲ୍', filterVivid: 'ଭିଭିଡ୍',
     },
     notifications: {
