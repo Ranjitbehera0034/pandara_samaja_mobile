@@ -53,6 +53,7 @@ const translations = {
       addStoryCameraOption: 'Camera', addStoryGalleryOption: 'Choose from Gallery',
       storyCameraPermissionDeniedTitle: 'Camera Access Needed',
       storyCameraPermissionDeniedMessage: 'Allow camera access to take filtered story photos, or choose one from your gallery instead.',
+      storyCameraCrashedMessage: 'The camera couldn\'t open. Please choose a photo from your gallery instead for now.',
       filterNormal: 'Normal', filterBw: 'B&W', filterVintage: 'Vintage', filterWarm: 'Warm', filterCool: 'Cool', filterVivid: 'Vivid',
     },
     notifications: {
@@ -1055,6 +1056,7 @@ const translations = {
       addStoryCameraOption: 'କ୍ୟାମେରା', addStoryGalleryOption: 'ଗ୍ୟାଲେରୀରୁ ବାଛନ୍ତୁ',
       storyCameraPermissionDeniedTitle: 'କ୍ୟାମେରା ଅନୁମତି ଆବଶ୍ୟକ',
       storyCameraPermissionDeniedMessage: 'ଫିଲ୍ଟର ସହିତ ଫଟୋ ଉଠାଇବାକୁ କ୍ୟାମେରା ଅନୁମତି ଦିଅନ୍ତୁ, କିମ୍ବା ଗ୍ୟାଲେରୀରୁ ଏକ ଫଟୋ ବାଛନ୍ତୁ।',
+      storyCameraCrashedMessage: 'କ୍ୟାମେରା ଖୋଲିପାରିଲା ନାହିଁ। ଦୟାକରି ଏବେ ପାଇଁ ଗ୍ୟାଲେରୀରୁ ଏକ ଫଟୋ ବାଛନ୍ତୁ।',
       filterNormal: 'ସାଧାରଣ', filterBw: 'ବ୍ଲାକ୍ ଆଣ୍ଡ ହ୍ଵାଇଟ୍', filterVintage: 'ଭିନ୍ଟେଜ', filterWarm: 'ୱାର୍ମ', filterCool: 'କୁଲ୍', filterVivid: 'ଭିଭିଡ୍',
     },
     notifications: {

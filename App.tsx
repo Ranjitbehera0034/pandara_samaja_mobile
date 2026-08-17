@@ -15,6 +15,7 @@ import { LanguageProvider } from './src/context/LanguageContext';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import UpdateBanner from './src/components/common/UpdateBanner';
+import ErrorBoundary from './src/components/common/ErrorBoundary';
 import { navigateFromNotificationData } from './src/utils/notificationNavigation';
 
 // Prevent splash screen from auto-hiding
@@ -154,7 +155,9 @@ export default function App() {
         <LanguageProvider>
           <AuthProvider>
             <AdminAuthProvider>
-              <AppContent />
+              <ErrorBoundary>
+                <AppContent />
+              </ErrorBoundary>
             </AdminAuthProvider>
           </AuthProvider>
         </LanguageProvider>

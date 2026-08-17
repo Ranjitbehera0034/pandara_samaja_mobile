@@ -9,6 +9,7 @@ import { cleanPhoto, getInitial } from '../../utils/googleDriveUrl';
 import { useAuth } from '../../context/AuthContext';
 import Avatar from '../common/Avatar';
 import StoryCameraScreen from './StoryCameraScreen';
+import ErrorBoundary from '../common/ErrorBoundary';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -146,11 +147,21 @@ export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
           );
         })}
       </ScrollView>
-      <StoryCameraScreen
-        visible={showCamera}
-        onClose={() => setShowCamera(false)}
-        onCapture={onAddStory}
-      />
+      {showCamera && (
+        <ErrorBoundary
+          fallback={() => null}
+          onError={() => {
+            setShowCamera(false);
+            Alert.alert(t('feed', 'storyCameraPermissionDeniedTitle'), t('feed', 'storyCameraCrashedMessage'));
+          }}
+        >
+          <StoryCameraScreen
+            visible={showCamera}
+            onClose={() => setShowCamera(false)}
+            onCapture={onAddStory}
+          />
+        </ErrorBoundary>
+      )}
     </View>
   );
 }
