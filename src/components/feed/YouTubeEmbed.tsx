@@ -10,12 +10,16 @@ interface Props {
 }
 
 // Navigating a WebView's top-level page directly to youtube.com/embed/ID
-// (source={{ uri: ... }}) leaves it with no referrer, and YouTube's player
-// rejects that with "Error 153 / video player configuration error" — a
-// known react-native-webview issue. Wrapping the iframe in a minimal local
-// HTML page with an explicit referrer policy avoids it.
-function embedHtml(videoId: string): string {
-  return `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><style>html,body{margin:0;padding:0;background:#000;height:100%}iframe{width:100%;height:100%;border:0}</style></head><body><iframe src="https://www.youtube.com/embed/${videoId}?playsinline=1&autoplay=1&rel=0" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></body></html>`;
+// with no Referer header gets rejected by YouTube's player (error 153).
+// Wrapping it in a local HTML page with a referrerpolicy attribute
+// (tried first) downgrades that to error 152-4 ("video not available")
+// instead of fixing it — a synthetic HTML string loaded via source.html
+// has no real origin of its own for a referrer policy to inherit from,
+// so the browser still sends no Referer. Forcing a genuine Referer
+// header via source.headers on a direct URI request is the fix that
+// actually produces a real HTTP header on the request YouTube checks.
+function embedUri(videoId: string): string {
+  return `https://www.youtube.com/embed/${videoId}?playsinline=1&autoplay=1&rel=0`;
 }
 
 // Embeds the real youtube.com/embed iframe player (via WebView) rather than
@@ -40,8 +44,7 @@ export default function YouTubeEmbed({ videoId }: Props) {
       {playing ? (
         <>
           <WebView
-            source={{ html: embedHtml(videoId), baseUrl: 'https://www.youtube.com' }}
-            originWhitelist={['*']}
+            source={{ uri: embedUri(videoId), headers: { Referer: 'https://www.youtube.com/' } }}
             style={{ flex: 1, backgroundColor: '#000' }}
             allowsFullscreenVideo
             allowsInlineMediaPlayback
