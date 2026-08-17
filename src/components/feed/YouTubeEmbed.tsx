@@ -9,6 +9,15 @@ interface Props {
   videoId: string;
 }
 
+// Navigating a WebView's top-level page directly to youtube.com/embed/ID
+// (source={{ uri: ... }}) leaves it with no referrer, and YouTube's player
+// rejects that with "Error 153 / video player configuration error" — a
+// known react-native-webview issue. Wrapping the iframe in a minimal local
+// HTML page with an explicit referrer policy avoids it.
+function embedHtml(videoId: string): string {
+  return `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><style>html,body{margin:0;padding:0;background:#000;height:100%}iframe{width:100%;height:100%;border:0}</style></head><body><iframe src="https://www.youtube.com/embed/${videoId}?playsinline=1&autoplay=1&rel=0" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></body></html>`;
+}
+
 // Embeds the real youtube.com/embed iframe player (via WebView) rather than
 // a custom-built one, so seek bar, captions, quality and fullscreen are all
 // genuinely YouTube's own controls. Thumbnail-first so a feed full of posts
@@ -31,7 +40,8 @@ export default function YouTubeEmbed({ videoId }: Props) {
       {playing ? (
         <>
           <WebView
-            source={{ uri: `https://www.youtube.com/embed/${videoId}?playsinline=1&autoplay=1&rel=0` }}
+            source={{ html: embedHtml(videoId), baseUrl: 'https://www.youtube.com' }}
+            originWhitelist={['*']}
             style={{ flex: 1, backgroundColor: '#000' }}
             allowsFullscreenVideo
             allowsInlineMediaPlayback
