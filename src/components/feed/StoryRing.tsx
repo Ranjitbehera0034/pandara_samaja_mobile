@@ -23,7 +23,7 @@ export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
   const { member, user } = useAuth();
   const { colors, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
-  const { hasPermission, canRequestPermission, requestPermission } = useCameraPermission();
+  const { hasPermission, requestPermission } = useCameraPermission();
   const [showCamera, setShowCamera] = useState(false);
   const displayName = user?.name || member?.name || 'Me';
   const photo = cleanPhoto(user?.profile_photo_url);
@@ -74,17 +74,16 @@ export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
   };
 
   const handleOpenCamera = async () => {
-    if (hasPermission) {
-      setShowCamera(true);
-      return;
-    }
-    if (!canRequestPermission) {
-      // Already permanently denied — calling requestPermission() here
-      // would just silently no-op, so go straight to the real fix.
-      showOpenSettingsAlert();
-      return;
-    }
-    const granted = await requestPermission();
+    // Always defer to a fresh check rather than the cached hasPermission/
+    // canRequestPermission state — that cache can go stale (e.g. it was
+    // read before the user granted access in OS Settings and never got
+    // re-synced), which was causing "OS says Allowed, app still says no
+    // permission" for people who'd already granted it. Calling
+    // requestPermission() when the OS already has it granted is a safe
+    // no-op on both platforms — it resolves true immediately with no
+    // dialog — so this is never worse than the cached check, only more
+    // reliable.
+    const granted = hasPermission || (await requestPermission());
     if (!granted) {
       showOpenSettingsAlert();
       return;
