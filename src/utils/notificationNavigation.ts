@@ -42,6 +42,17 @@ export function navigateFromNotificationData(data: NotificationData | undefined 
         navigationRef.navigate('Feed', { screen: 'Announcements' });
         break;
 
+      case 'news':
+        // News is the default/first pill on the Explore tab (not a
+        // separate route) — no per-article deep link exists, same
+        // "land on the section" fallback as like/comment/new_post above.
+        navigationRef.navigate('Explore', { screen: 'ExploreMain' });
+        break;
+
+      case 'new_job':
+        navigationRef.navigate('Feed', { screen: 'Jobs' });
+        break;
+
       default:
         break;
     }

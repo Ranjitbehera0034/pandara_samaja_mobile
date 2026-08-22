@@ -1,5 +1,5 @@
 // src/components/feed/CreatePost.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   Image, Modal, ScrollView, Alert, ActivityIndicator
@@ -20,9 +20,10 @@ import { useLanguage } from '../../context/LanguageContext';
 
 interface Props {
   onPostCreate: (content: string, media?: MediaItem[], files?: any[], poll?: Poll, location?: string, tempFilesToClean?: string[]) => void;
+  initialContent?: string;
 }
 
-export default function CreatePost({ onPostCreate }: Props) {
+export default function CreatePost({ onPostCreate, initialContent }: Props) {
   const { member, user } = useAuth();
   const { colors, spacing, radius, typography, shadow } = useTheme();
   const { lang, t } = useLanguage();
@@ -37,6 +38,17 @@ export default function CreatePost({ onPostCreate }: Props) {
 
   const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;
   const displayName = user?.name || member?.name || 'Me';
+
+  // Content shared in from another app (e.g. a Facebook/YouTube/Instagram
+  // link via the OS share sheet) arrives here as a prop rather than user
+  // typing — pre-fill and auto-open the composer so the member just adds
+  // context and posts.
+  useEffect(() => {
+    if (initialContent) {
+      setContent(initialContent);
+      setShowModal(true);
+    }
+  }, [initialContent]);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({

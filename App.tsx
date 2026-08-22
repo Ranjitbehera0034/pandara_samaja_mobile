@@ -9,11 +9,12 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { Audio } from 'expo-av';
 import Toast from 'react-native-toast-message';
+import { ShareIntentProvider, useShareIntentContext } from 'expo-share-intent';
 import { AuthProvider } from './src/context/AuthContext';
 import { AdminAuthProvider } from './src/context/AdminAuthContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
-import RootNavigator from './src/navigation/RootNavigator';
+import RootNavigator, { navigationRef } from './src/navigation/RootNavigator';
 import UpdateBanner from './src/components/common/UpdateBanner';
 import ErrorBoundary from './src/components/common/ErrorBoundary';
 import { navigateFromNotificationData } from './src/utils/notificationNavigation';
@@ -36,6 +37,23 @@ Notifications.setNotificationHandler({
 
 function AppContent() {
   const { scheme, colors } = useTheme();
+  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntentContext();
+
+  // Sharing a link into the app from Facebook/YouTube/Instagram/etc (OS
+  // share sheet) should land on the post composer pre-filled with that
+  // link, not just open the app to wherever it was — same "external event
+  // drives navigation via the ref" pattern as the notification-tap
+  // handler right below. webUrl is set when the OS recognizes the shared
+  // content as a URL specifically; text is the fallback raw shared string
+  // (some apps share a caption + link together as plain text).
+  useEffect(() => {
+    if (!hasShareIntent || !shareIntent) return;
+    const sharedText = shareIntent.webUrl || shareIntent.text;
+    if (sharedText && navigationRef.isReady()) {
+      navigationRef.navigate('Feed', { screen: 'FeedMain', params: { sharedText } });
+    }
+    resetShareIntent();
+  }, [hasShareIntent, shareIntent, resetShareIntent]);
 
   // Tapping a push notification (app backgrounded or fully closed) should
   // deep-link to the relevant screen — see notificationNavigation.ts for the
@@ -150,18 +168,20 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <LanguageProvider>
-          <AuthProvider>
-            <AdminAuthProvider>
-              <ErrorBoundary>
-                <AppContent />
-              </ErrorBoundary>
-            </AdminAuthProvider>
-          </AuthProvider>
-        </LanguageProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <ShareIntentProvider>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <AdminAuthProvider>
+                <ErrorBoundary>
+                  <AppContent />
+                </ErrorBoundary>
+              </AdminAuthProvider>
+            </AuthProvider>
+          </LanguageProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </ShareIntentProvider>
   );
 }

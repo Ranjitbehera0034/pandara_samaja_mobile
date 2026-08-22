@@ -1,7 +1,7 @@
 // src/screens/feed/FeedScreen.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ActivityIndicator, Alert, TouchableOpacity, RefreshControl } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Megaphone, Bell, Briefcase } from 'lucide-react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
@@ -54,6 +54,7 @@ function FeedSkeleton({ colors, spacing, radius }: { colors: ReturnType<typeof u
 
 export default function FeedScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const { member } = useAuth();
   const insets = useSafeAreaInsets();
   const { colors, spacing, radius, typography } = useTheme();
@@ -114,6 +115,19 @@ export default function FeedScreen() {
   useEffect(() => {
     loadFeedData();
   }, [loadFeedData]);
+
+  // Content shared into the app via the OS share sheet (see App.tsx's
+  // ShareIntentProvider handler) lands here as a route param — consume it
+  // once and clear it immediately so it doesn't re-trigger on remount/
+  // re-focus.
+  const [sharedText, setSharedText] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    const incoming = route.params?.sharedText;
+    if (incoming) {
+      setSharedText(incoming);
+      navigation.setParams({ sharedText: undefined });
+    }
+  }, [route.params?.sharedText]);
 
   useEffect(() => {
     notificationsApi.fetchUnreadCount()
@@ -360,14 +374,14 @@ export default function FeedScreen() {
 
   const ListHeader = useCallback(() => (
     <View>
-      <CreatePost onPostCreate={handleCreatePost} />
+      <CreatePost onPostCreate={handleCreatePost} initialContent={sharedText} />
       <StoryRing
         stories={stories}
         onAddStory={handleAddStory}
         onViewStory={handleViewStory}
       />
     </View>
-  ), [stories, handleCreatePost, handleAddStory, handleViewStory]);
+  ), [stories, handleCreatePost, handleAddStory, handleViewStory, sharedText]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
