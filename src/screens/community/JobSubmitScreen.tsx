@@ -30,6 +30,10 @@ export default function JobSubmitScreen() {
   const [location, setLocation] = useState('');
   const [applicationInfo, setApplicationInfo] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+  const [eligibility, setEligibility] = useState('');
+  const [lastDate, setLastDate] = useState('');
+  const [registrationStartDate, setRegistrationStartDate] = useState('');
+  const [applicationFee, setApplicationFee] = useState('');
   const [saving, setSaving] = useState(false);
 
   const inputStyle = {
@@ -54,6 +58,10 @@ export default function JobSubmitScreen() {
         location: location.trim() || undefined,
         applicationInfo: applicationInfo.trim(),
         contactPhone: contactPhone.trim(),
+        eligibility: eligibility.trim() || undefined,
+        lastDate: lastDate.trim() || undefined,
+        registrationStartDate: registrationStartDate.trim() || undefined,
+        applicationFee: applicationFee.trim() || undefined,
       });
       if (data.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -122,6 +130,25 @@ export default function JobSubmitScreen() {
 
           <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'locationLabel')}</Text>
           <TextInput style={inputStyle} placeholder={t('jobs', 'locationPlaceholder')} placeholderTextColor={C.textFaint} value={location} onChangeText={setLocation} />
+
+          <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'registrationStartLabelOptional')}</Text>
+          <TextInput style={inputStyle} placeholder={t('jobs', 'registrationStartPlaceholder')} placeholderTextColor={C.textFaint} value={registrationStartDate} onChangeText={setRegistrationStartDate} />
+
+          <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'lastDateLabelOptional')}</Text>
+          <TextInput style={inputStyle} placeholder={t('jobs', 'lastDatePlaceholder')} placeholderTextColor={C.textFaint} value={lastDate} onChangeText={setLastDate} />
+
+          <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'applicationFeeLabelOptional')}</Text>
+          <TextInput style={inputStyle} placeholder={t('jobs', 'applicationFeePlaceholder')} placeholderTextColor={C.textFaint} value={applicationFee} onChangeText={setApplicationFee} />
+
+          <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'eligibilityLabelOptional')}</Text>
+          <TextInput
+            style={{ ...inputStyle, minHeight: 70, textAlignVertical: 'top' }}
+            placeholder={t('jobs', 'eligibilityPlaceholder')}
+            placeholderTextColor={C.textFaint}
+            value={eligibility}
+            onChangeText={setEligibility}
+            multiline
+          />
 
           <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'applicationInfoLabel')}</Text>
           <TextInput

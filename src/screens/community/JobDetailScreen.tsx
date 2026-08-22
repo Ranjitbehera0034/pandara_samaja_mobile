@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Linking } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, MapPin, Clock, ExternalLink, Phone, Flag } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Clock, ExternalLink, Phone, Flag, CalendarClock, CalendarX, IndianRupee, GraduationCap } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as jobsApi from '../../api/jobs';
@@ -144,7 +144,49 @@ export default function JobDetailScreen() {
             </View>
           </View>
 
-          <Text style={{ color: C.text, fontFamily: fontRegular, marginTop: spacing.xl, ...typography.body, lineHeight: 22 }}>
+          {(job.registration_start_date || job.last_date || job.application_fee || job.eligibility) && (
+            <View style={{ backgroundColor: C.card, borderRadius: radius.lg, paddingHorizontal: spacing.lg, marginTop: spacing.lg }}>
+              {!!job.registration_start_date && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                    <CalendarClock size={15} color={C.textMuted} />
+                    <Text style={{ color: C.textMuted, ...typography.caption }}>{t('jobs', 'registrationStartLabel')}</Text>
+                  </View>
+                  <Text style={{ color: C.text, ...typography.caption, fontWeight: '700', flexShrink: 1, textAlign: 'right' }}>{job.registration_start_date}</Text>
+                </View>
+              )}
+              {!!job.last_date && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                    <CalendarX size={15} color={C.textMuted} />
+                    <Text style={{ color: C.textMuted, ...typography.caption }}>{t('jobs', 'lastDateLabel')}</Text>
+                  </View>
+                  <Text style={{ color: C.error, ...typography.caption, fontWeight: '700', flexShrink: 1, textAlign: 'right' }}>{job.last_date}</Text>
+                </View>
+              )}
+              {!!job.application_fee && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                    <IndianRupee size={15} color={C.textMuted} />
+                    <Text style={{ color: C.textMuted, ...typography.caption }}>{t('jobs', 'applicationFeeLabel')}</Text>
+                  </View>
+                  <Text style={{ color: C.text, ...typography.caption, fontWeight: '700', flexShrink: 1, textAlign: 'right' }}>{job.application_fee}</Text>
+                </View>
+              )}
+              {!!job.eligibility && (
+                <View style={{ paddingVertical: spacing.md }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
+                    <GraduationCap size={15} color={C.textMuted} />
+                    <Text style={{ color: C.textMuted, ...typography.caption }}>{t('jobs', 'eligibilityLabel')}</Text>
+                  </View>
+                  <Text style={{ color: C.text, fontFamily: fontRegular, ...typography.caption, lineHeight: 19 }}>{job.eligibility}</Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          <Text style={{ color: C.textMuted, marginTop: spacing.xl, ...typography.label }}>{t('jobs', 'descriptionLabel')}</Text>
+          <Text style={{ color: C.text, fontFamily: fontRegular, marginTop: spacing.xs, ...typography.body, lineHeight: 22 }}>
             {job.description}
           </Text>
 

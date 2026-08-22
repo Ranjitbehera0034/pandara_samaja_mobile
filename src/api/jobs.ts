@@ -18,6 +18,12 @@ export interface JobPosting {
   // applicants know who to hold accountable — null for some admin-direct
   // postings where application_info alone covers how to apply.
   contact_phone?: string | null;
+  // As-written strings (not parsed dates) — display verbatim, never
+  // reformat; source text is OCR'd or hand-typed, not machine-reliable.
+  eligibility?: string | null;
+  last_date?: string | null;
+  registration_start_date?: string | null;
+  application_fee?: string | null;
   posted_by_admin: boolean;
   submitted_by?: string | null;
   created_at: string;
@@ -43,6 +49,10 @@ export interface JobSubmission {
   description: string;
   location?: string | null;
   application_info: string;
+  eligibility?: string | null;
+  last_date?: string | null;
+  registration_start_date?: string | null;
+  application_fee?: string | null;
   status: 'pending' | 'rejected';
   admin_remarks?: string | null;
   reviewed_by?: string | null;
@@ -73,6 +83,10 @@ export interface SubmitJobInput {
   applicationInfo: string;
   // Required — the submitter's own accountability phone number.
   contactPhone: string;
+  eligibility?: string;
+  lastDate?: string;
+  registrationStartDate?: string;
+  applicationFee?: string;
 }
 
 // POST /api/portal/jobs/submissions — member submits a posting for review.

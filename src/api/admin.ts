@@ -817,6 +817,10 @@ export interface AdminJob {
   location?: string | null;
   application_info: string;
   contact_phone?: string | null;
+  eligibility?: string | null;
+  last_date?: string | null;
+  registration_start_date?: string | null;
+  application_fee?: string | null;
   posted_by_admin: boolean;
   submitted_by?: string | null;
   moderation_status?: string;
@@ -844,6 +848,10 @@ export interface JobSubmission {
   description: string;
   location?: string | null;
   application_info: string;
+  eligibility?: string | null;
+  last_date?: string | null;
+  registration_start_date?: string | null;
+  application_fee?: string | null;
   status: 'pending' | 'rejected';
   admin_remarks?: string | null;
   reviewed_by?: string | null;
@@ -869,6 +877,10 @@ export interface CreateJobInput {
   // Optional here (unlike the member submission form) — an admin posting
   // directly a real vacancy is already the accountable party.
   contactPhone?: string;
+  eligibility?: string;
+  lastDate?: string;
+  registrationStartDate?: string;
+  applicationFee?: string;
   expiresAt?: string;
 }
 
