@@ -801,3 +801,136 @@ export const adminDeleteStory = async (storyId: string) => {
   const res = await adminClient.delete(`/admin/stories/${storyId}`);
   return res.data as { success: boolean; message?: string };
 };
+
+// ── Job board (admin/superadmin) ──
+// Mirrors the matrimony applications review queue: members submit, admin
+// approves (publishes into job_postings) or rejects (remark required).
+// Admin can also create a posting directly, pre-approved — e.g. a real
+// government vacancy found by hand once OSSC/OPSC publish a notice.
+
+export interface AdminJob {
+  id: string | number;
+  title: string;
+  organization: string;
+  category: 'govt' | 'private';
+  description: string;
+  location?: string | null;
+  application_info: string;
+  contact_phone?: string | null;
+  posted_by_admin: boolean;
+  submitted_by?: string | null;
+  moderation_status?: string;
+  created_at: string;
+  expires_at?: string | null;
+  [key: string]: any;
+}
+
+export interface JobSubmissionHistoryEntry {
+  status: string;
+  remark: string;
+  changed_at: string;
+  changed_by: string;
+}
+
+export interface JobSubmission {
+  id: string | number;
+  // null for automated ingestion (scraper/) — no submitting member.
+  membership_no: string | null;
+  submitter_name?: string | null;
+  submitter_mobile?: string | null;
+  title: string;
+  organization: string;
+  category: 'govt' | 'private';
+  description: string;
+  location?: string | null;
+  application_info: string;
+  status: 'pending' | 'rejected';
+  admin_remarks?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  history: JobSubmissionHistoryEntry[];
+  submitted_at: string;
+  source_ref?: string | null;
+  [key: string]: any;
+}
+
+export const fetchAdminJobs = async (params: { category?: 'govt' | 'private'; page?: number; limit?: number } = {}) => {
+  const res = await adminClient.get('/admin/jobs', { params });
+  return res.data as { success: boolean; jobs: AdminJob[]; page: number };
+};
+
+export interface CreateJobInput {
+  title: string;
+  organization: string;
+  category: 'govt' | 'private';
+  description: string;
+  location?: string;
+  applicationInfo: string;
+  // Optional here (unlike the member submission form) — an admin posting
+  // directly a real vacancy is already the accountable party.
+  contactPhone?: string;
+  expiresAt?: string;
+}
+
+export const createAdminJob = async (data: CreateJobInput) => {
+  const res = await adminClient.post('/admin/jobs', data);
+  return res.data as { success: boolean; job: AdminJob };
+};
+
+export const updateAdminJob = async (id: string | number, data: Partial<CreateJobInput>) => {
+  const res = await adminClient.put(`/admin/jobs/${id}`, data);
+  return res.data as { success: boolean; job: AdminJob };
+};
+
+export const deleteAdminJob = async (id: string | number) => {
+  const res = await adminClient.delete(`/admin/jobs/${id}`);
+  return res.data as { success: boolean; message?: string };
+};
+
+export const fetchAdminJobSubmissions = async (
+  params: { status?: 'pending' | 'rejected'; page?: number; limit?: number } = {}
+) => {
+  const res = await adminClient.get('/admin/jobs/submissions', { params });
+  return res.data as {
+    success: boolean; submissions: JobSubmission[];
+    total: number; page: number; totalPages: number;
+  };
+};
+
+export const approveJobSubmission = async (id: string | number) => {
+  const res = await adminClient.post(`/admin/jobs/submissions/${id}/approve`);
+  return res.data as { success: boolean; job: AdminJob };
+};
+
+export const rejectJobSubmission = async (id: string | number, remark: string) => {
+  const res = await adminClient.post(`/admin/jobs/submissions/${id}/reject`, { remark });
+  return res.data as { success: boolean; submission: JobSubmission };
+};
+
+// ── Job report queue — live listings flagged by members, mirrors the
+// story-reports approve/reject flow exactly. ──
+
+export interface JobReport {
+  reporter_id: string;
+  reason: string | null;
+  created_at: string;
+}
+
+export interface ReportedJob extends AdminJob {
+  reports: JobReport[];
+}
+
+export const fetchReportedJobs = async () => {
+  const res = await adminClient.get('/admin/jobs/reports');
+  return res.data as { success: boolean; jobs: ReportedJob[] };
+};
+
+export const approveReportedJob = async (id: string | number) => {
+  const res = await adminClient.post(`/admin/jobs/reports/${id}/approve`);
+  return res.data as { success: boolean; message?: string };
+};
+
+export const rejectReportedJob = async (id: string | number) => {
+  const res = await adminClient.post(`/admin/jobs/reports/${id}/reject`);
+  return res.data as { success: boolean; message?: string };
+};

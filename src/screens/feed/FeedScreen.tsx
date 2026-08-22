@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ActivityIndicator, Alert, TouchableOpacity, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Megaphone, Bell } from 'lucide-react-native';
+import { Megaphone, Bell, Briefcase } from 'lucide-react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
@@ -390,6 +390,15 @@ export default function FeedScreen() {
             style={{ padding: spacing.md, backgroundColor: colors.card, borderRadius: radius.full, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
           >
             <Megaphone size={20} color={colors.primaryLight} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.navigate('Jobs');
+            }}
+            style={{ padding: spacing.md, backgroundColor: colors.card, borderRadius: radius.full, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
+          >
+            <Briefcase size={20} color={colors.primaryLight} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {

@@ -24,6 +24,9 @@ import AdminAnalyticsScreen from '../screens/admin/AdminAnalyticsScreen';
 import GoLiveScreen from '../screens/live/GoLiveScreen';
 import AdminExportScreen from '../screens/admin/AdminExportScreen';
 import AdminStoryReportsScreen from '../screens/admin/AdminStoryReportsScreen';
+import AdminJobsScreen from '../screens/admin/AdminJobsScreen';
+import AdminJobSubmissionsScreen from '../screens/admin/AdminJobSubmissionsScreen';
+import AdminJobReportsScreen from '../screens/admin/AdminJobReportsScreen';
 import { Leader } from '../api/admin';
 import { FamilyMember } from '../types';
 
@@ -51,6 +54,9 @@ export type AdminStackParams = {
   AdminLive: undefined;
   AdminExport: undefined;
   AdminStoryReports: undefined;
+  AdminJobs: undefined;
+  AdminJobSubmissions: undefined;
+  AdminJobReports: undefined;
 };
 
 const Stack = createStackNavigator<AdminStackParams>();
@@ -81,6 +87,9 @@ export default function AdminStack() {
       <Stack.Screen name="AdminLive" component={GoLiveScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="AdminExport" component={AdminExportScreen} />
       <Stack.Screen name="AdminStoryReports" component={AdminStoryReportsScreen} />
+      <Stack.Screen name="AdminJobs" component={AdminJobsScreen} />
+      <Stack.Screen name="AdminJobSubmissions" component={AdminJobSubmissionsScreen} />
+      <Stack.Screen name="AdminJobReports" component={AdminJobReportsScreen} />
     </Stack.Navigator>
   );
 }
