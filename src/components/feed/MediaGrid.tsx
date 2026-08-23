@@ -2,12 +2,12 @@
 import React from 'react';
 import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
-import { Video, ResizeMode } from 'expo-av';
 import { MediaItem } from '../../types';
 import { cleanPhoto } from '../../utils/googleDriveUrl';
 import { useTheme } from '../../theme/ThemeContext';
+import RichVideoPlayer from './RichVideoPlayer';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MEDIA_WIDTH = SCREEN_WIDTH - 32; // 16px padding each side
 
 interface Props {
@@ -30,16 +30,11 @@ export default function MediaGrid({ media, onVideoPlay, onMediaPress }: Props) {
         style={{ backgroundColor: colors.bg, marginTop: spacing.md, borderRadius: radius.md, overflow: 'hidden' }}
       >
         {item.type === 'video' ? (
-          <Video
-            source={{ uri: cleanPhoto(item.url) || item.url }}
-            style={{ width: MEDIA_WIDTH, height: MEDIA_WIDTH * 0.56 }}
-            useNativeControls
-            resizeMode={ResizeMode.CONTAIN}
-            onPlaybackStatusUpdate={(status) => {
-              if (status.isLoaded && status.isPlaying && onVideoPlay) {
-                onVideoPlay();
-              }
-            }}
+          <RichVideoPlayer
+            uri={cleanPhoto(item.url) || item.url}
+            maxWidth={MEDIA_WIDTH}
+            maxHeight={SCREEN_HEIGHT * 0.6}
+            onPlay={onVideoPlay}
           />
         ) : (
           <Image

@@ -4,7 +4,7 @@ import {
   View, Modal, TouchableOpacity, Dimensions, FlatList, ViewToken,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Video, ResizeMode } from 'expo-av';
+import RichVideoPlayer from './RichVideoPlayer';
 import {
   GestureHandlerRootView, Gesture, GestureDetector,
 } from 'react-native-gesture-handler';
@@ -137,13 +137,13 @@ function MediaPage({ item, isActive }: { item: MediaItem; isActive: boolean }) {
   if (item.type === 'video') {
     return (
       <View style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT, alignItems: 'center', justifyContent: 'center' }}>
-        <Video
-          source={{ uri }}
-          style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
-          useNativeControls
-          resizeMode={ResizeMode.CONTAIN}
-          shouldPlay={isActive}
-          isLooping={false}
+        <RichVideoPlayer
+          uri={uri}
+          maxWidth={SCREEN_WIDTH}
+          maxHeight={SCREEN_HEIGHT}
+          isActive={isActive}
+          autoPlayWhenActive
+          loop={false}
         />
       </View>
     );

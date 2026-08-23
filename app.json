@@ -29,7 +29,10 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundColor": "#0f172a"
       },
-      "permissions": ["CAMERA", "RECORD_AUDIO"],
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO"
+      ],
       "package": "in.nikhilaodishapandarasamaja.app",
       "googleServicesFile": "./google-services.json",
       "splash": {
@@ -91,10 +94,14 @@
             "NSExtensionActivationSupportsWebPageWithMaxCount": 1,
             "NSExtensionActivationSupportsText": true
           },
-          "androidIntentFilters": ["text/*"],
+          "androidIntentFilters": [
+            "text/*"
+          ],
           "iosShareExtensionName": "Pandara Samaja Share"
         }
-      ]
+      ],
+      "./plugins/withAndroidShareTarget.js",
+      "expo-video"
     ],
     "extra": {
       "eas": {

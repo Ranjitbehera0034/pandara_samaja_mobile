@@ -5,7 +5,7 @@ import {
   Dimensions, Animated, Pressable, FlatList, Alert, ActivityIndicator,
   KeyboardAvoidingView, Platform
 } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { X, Trash2, Eye, Heart, MessageCircle, Flag, Send } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { Story } from '../../types';
@@ -336,14 +336,7 @@ export default function StoryViewer({ visible, stories, currentMemberId, onClose
         {/* Media Background */}
         <View className="absolute inset-0">
           {activeStory.mediaType === 'video' ? (
-            <Video
-              source={{ uri: mediaUrl }}
-              style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
-              resizeMode={ResizeMode.COVER}
-              shouldPlay={!isPaused}
-              isLooping={false}
-              onError={(e) => console.log('Video error:', e)}
-            />
+            <StoryVideoBackground key={activeStory.id} uri={mediaUrl} isPaused={isPaused} />
           ) : (
             <Image
               source={{ uri: mediaUrl }}
@@ -572,5 +565,29 @@ export default function StoryViewer({ visible, stories, currentMemberId, onClose
         </Pressable>
       </Modal>
     </Modal>
+  );
+}
+
+// Mounted fresh per story (keyed by story id in the parent) so each gets its
+// own player tied to its own uri — simpler and safer than relying on
+// useVideoPlayer to swap sources under a persistent player instance.
+function StoryVideoBackground({ uri, isPaused }: { uri: string; isPaused: boolean }) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = false;
+    p.play();
+  });
+
+  useEffect(() => {
+    if (isPaused) player.pause();
+    else player.play();
+  }, [isPaused, player]);
+
+  return (
+    <VideoView
+      player={player}
+      style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
+      contentFit="cover"
+      nativeControls={false}
+    />
   );
 }
