@@ -1,13 +1,14 @@
 import 'react-native-gesture-handler';
 import "./global.css";
 import React, { useEffect } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { Audio } from 'expo-av';
+import { File, Paths } from 'expo-file-system';
 import Toast from 'react-native-toast-message';
 import { ShareIntentProvider, useShareIntentContext } from 'expo-share-intent';
 import { AuthProvider } from './src/context/AuthContext';
@@ -21,6 +22,28 @@ import { navigateFromNotificationData } from './src/utils/notificationNavigation
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Temporary crash-visibility net: there's no crash reporter (Sentry etc.)
+// wired up yet, so a fatal JS error in a release build otherwise just closes
+// the app with nothing to go on. Write it to disk synchronously (a Promise
+// write is too slow — the JS thread can be torn down before it flushes)
+// before handing off to the default handler, then surface it once on the
+// next launch so whoever's holding the phone can screenshot it.
+const CRASH_LOG_FILE = new File(Paths.document, 'last_crash_log.json');
+const defaultErrorHandler = ErrorUtils.getGlobalHandler();
+ErrorUtils.setGlobalHandler((error, isFatal) => {
+  try {
+    CRASH_LOG_FILE.write(JSON.stringify({
+      message: error?.message ?? String(error),
+      stack: error?.stack ?? null,
+      isFatal: !!isFatal,
+      at: new Date().toISOString(),
+    }, null, 2));
+  } catch {
+    // best-effort only — never let logging itself block the crash path
+  }
+  defaultErrorHandler(error, isFatal);
+});
 
 // Show notifications with a banner/sound/badge even while the app is in the
 // foreground — by default Expo/OS would otherwise suppress the alert while
@@ -38,6 +61,21 @@ Notifications.setNotificationHandler({
 function AppContent() {
   const { scheme, colors } = useTheme();
   const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntentContext();
+
+  // If the app fatally crashed last launch, the global handler above wrote
+  // details to disk — surface them once, then delete so this doesn't repeat
+  // on every future normal launch.
+  useEffect(() => {
+    if (!CRASH_LOG_FILE.exists) return;
+    CRASH_LOG_FILE.text()
+      .then((contents) => {
+        Alert.alert('Last crash report', contents);
+      })
+      .catch(() => {})
+      .finally(() => {
+        try { CRASH_LOG_FILE.delete(); } catch {}
+      });
+  }, []);
 
   // Sharing a link into the app from Facebook/YouTube/Instagram/etc (OS
   // share sheet) should land on the post composer pre-filled with that
