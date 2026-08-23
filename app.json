@@ -99,8 +99,7 @@
           ],
           "iosShareExtensionName": "Pandara Samaja Share"
         }
-      ],
-      "expo-video"
+      ]
     ],
     "extra": {
       "eas": {
