@@ -7,7 +7,7 @@
 //     signed paper registration form, for admin review.
 //   - My Applications: track the status of your own submissions, resubmit
 //     if a correction is requested.
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -28,7 +28,7 @@ import * as Haptics from 'expo-haptics';
 import {
   ArrowLeft, MapPin, Briefcase, GraduationCap, FileText,
   Search, SlidersHorizontal, ImageOff, Download, Camera,
-  Clock, AlertTriangle, CheckCircle2, XCircle,
+  Clock, AlertTriangle, CheckCircle2, XCircle, Maximize2,
 } from 'lucide-react-native';
 import * as matrimonyApi from '../../api/matrimony';
 import { Candidate, MatrimonyApplication } from '../../api/matrimony';
@@ -37,6 +37,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import SkeletonBox from '../../components/common/SkeletonBox';
 import EmptyState from '../../components/common/EmptyState';
 import Button from '../../components/common/Button';
+import MediaViewerModal from '../../components/feed/MediaViewerModal';
 
 const { width: W, height: H } = Dimensions.get('window');
 
@@ -70,10 +71,22 @@ function pickedFromAsset(asset: ImagePicker.ImagePickerAsset): PickedFile {
 // ════════════════════════════════════════════════
 //  Photo carousel — shared by card + detail modal
 // ════════════════════════════════════════════════
-function PhotoCarousel({ photos, width, height, borderRadius, colors: C }: {
+function PhotoCarousel({ photos, width, height, borderRadius, colors: C, activeIndex, onIndexChange }: {
   photos: string[]; width: number; height: number; borderRadius: number; colors: ReturnType<typeof useTheme>['colors'];
+  // Optional external control — the detail screen's thumbnail strip drives
+  // this to jump the carousel; the plain list-card usage omits both and
+  // the carousel just tracks its own swipes as before.
+  activeIndex?: number; onIndexChange?: (i: number) => void;
 }) {
-  const [idx, setIdx] = useState(0);
+  const [idx, setIdx] = useState(activeIndex ?? 0);
+  const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (activeIndex === undefined || activeIndex === idx) return;
+    scrollRef.current?.scrollTo({ x: activeIndex * width, animated: true });
+    setIdx(activeIndex);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex]);
 
   if (photos.length === 0) {
     return (
@@ -83,13 +96,20 @@ function PhotoCarousel({ photos, width, height, borderRadius, colors: C }: {
     );
   }
 
+  const handleScrollEnd = (e: any) => {
+    const newIdx = Math.round(e.nativeEvent.contentOffset.x / width);
+    setIdx(newIdx);
+    onIndexChange?.(newIdx);
+  };
+
   return (
     <View style={{ width, height, borderRadius, overflow: 'hidden' }}>
       <ScrollView
+        ref={scrollRef}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(e) => setIdx(Math.round(e.nativeEvent.contentOffset.x / width))}
+        onMomentumScrollEnd={handleScrollEnd}
       >
         {photos.map((uri, i) => (
           <Image key={i} source={{ uri }} style={{ width, height }} contentFit="cover" transition={150} />
@@ -118,13 +138,21 @@ function CandidateDetailModal({ candidate, onClose }: { candidate: Candidate | n
   const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;
   const fontFamilyBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
 
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [formViewerVisible, setFormViewerVisible] = useState(false);
+
+  // Reset to the first photo each time a different candidate is opened.
+  useEffect(() => {
+    setActivePhotoIndex(0);
+  }, [candidate?.id]);
+
   if (!candidate) return null;
   const photos = getCandidatePhotos(candidate);
 
-  const openForm = () => {
+  const openFormFullSize = () => {
     if (!candidate.form_url) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Linking.openURL(candidate.form_url).catch(() => Alert.alert(t('common', 'errorTitle'), t('common', 'error')));
+    setFormViewerVisible(true);
   };
 
   const Row = ({ label, value }: { label: string; value?: string | number | null }) => {
@@ -143,7 +171,15 @@ function CandidateDetailModal({ candidate, onClose }: { candidate: Candidate | n
     <Modal visible={!!candidate} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: C.bg }}>
         <View style={{ height: H * 0.35, position: 'relative' }}>
-          <PhotoCarousel photos={photos} width={W} height={H * 0.35} borderRadius={0} colors={C} />
+          <PhotoCarousel
+            photos={photos}
+            width={W}
+            height={H * 0.35}
+            borderRadius={0}
+            colors={C}
+            activeIndex={activePhotoIndex}
+            onIndexChange={setActivePhotoIndex}
+          />
           <TouchableOpacity
             onPress={onClose}
             style={{
@@ -156,7 +192,28 @@ function CandidateDetailModal({ candidate, onClose }: { candidate: Candidate | n
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={{ padding: spacing.xl - 4, paddingBottom: spacing.xxl + spacing.xxl }}>
+        {photos.length > 1 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: spacing.sm, padding: spacing.md, paddingBottom: spacing.sm }}
+          >
+            {photos.map((uri, i) => (
+              <TouchableOpacity
+                key={i}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActivePhotoIndex(i); }}
+                style={{
+                  width: 48, height: 48, borderRadius: radius.sm, overflow: 'hidden',
+                  borderWidth: i === activePhotoIndex ? 2 : 0, borderColor: C.primary,
+                }}
+              >
+                <Image source={{ uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        ) : null}
+
+        <ScrollView contentContainerStyle={{ padding: spacing.xl - 4, paddingTop: photos.length > 1 ? 0 : spacing.xl - 4, paddingBottom: spacing.xxl + spacing.xxl }}>
           <Text style={{ color: C.text, fontFamily: fontFamilyBold, ...typography.display }}>
             {candidate.name}{typeof candidate.age === 'number' ? `, ${candidate.age}` : ''}
           </Text>
@@ -185,20 +242,34 @@ function CandidateDetailModal({ candidate, onClose }: { candidate: Candidate | n
           </View>
 
           {candidate.form_url ? (
-            <TouchableOpacity
-              onPress={openForm}
-              style={{
-                marginTop: spacing.xl, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-                gap: spacing.sm, backgroundColor: C.primary + '15', borderWidth: 1, borderColor: C.primary + '30',
-                borderRadius: radius.md, paddingVertical: spacing.md,
-              }}
-            >
-              <FileText size={18} color={C.primary} />
-              <Text style={{ color: C.primary, ...typography.bodyEmphasis }}>{t('matrimony', 'viewBiodataButton')}</Text>
-            </TouchableOpacity>
+            <View style={{ marginTop: spacing.xl }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md }}>
+                <Text style={{ color: C.textMuted, letterSpacing: 0.5, textTransform: 'uppercase', ...typography.caption, fontWeight: '700' }}>
+                  {t('matrimony', 'biodataFormHeader')}
+                </Text>
+                <TouchableOpacity onPress={openFormFullSize} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Text style={{ color: C.primary, ...typography.caption, fontWeight: '700' }}>{t('matrimony', 'viewFullSizeLabel')}</Text>
+                  <Maximize2 size={12} color={C.primary} />
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity onPress={openFormFullSize} activeOpacity={0.9}>
+                <Image
+                  source={{ uri: candidate.form_url }}
+                  style={{ width: '100%', height: 260, borderRadius: radius.md, backgroundColor: C.border }}
+                  contentFit="contain"
+                />
+              </TouchableOpacity>
+            </View>
           ) : null}
         </ScrollView>
       </View>
+
+      <MediaViewerModal
+        visible={formViewerVisible}
+        media={candidate.form_url ? [{ url: candidate.form_url, type: 'image' }] : []}
+        initialIndex={0}
+        onClose={() => setFormViewerVisible(false)}
+      />
     </Modal>
   );
 }
