@@ -64,6 +64,10 @@ export default function FeedScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const POSTS_PAGE_SIZE = 20;
+  const [postsPage, setPostsPage] = useState(1);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
+  const [loadingMorePosts, setLoadingMorePosts] = useState(false);
   
   // Story viewer state
   const [selectedStoryAuthor, setSelectedStoryAuthor] = useState<string | null>(null);
@@ -77,7 +81,7 @@ export default function FeedScreen() {
     try {
       // Fetch posts, announcements, stories in parallel
       const [postsRes, anncRes, storiesRes] = await Promise.allSettled([
-        feedApi.fetchFeedPosts(),
+        feedApi.fetchFeedPosts(1, POSTS_PAGE_SIZE),
         feedApi.fetchAnnouncements(),
         feedApi.fetchStories()
       ]);
@@ -103,6 +107,8 @@ export default function FeedScreen() {
 
       setPosts(merged);
       setStories(parsedStories);
+      setPostsPage(1);
+      setHasMorePosts(parsedPosts.length >= POSTS_PAGE_SIZE);
     } catch (e) {
       console.error('[FEED] Failed to load feed data:', e);
       Alert.alert(t('common', 'errorTitle'), t('feed', 'loadError'));
@@ -111,6 +117,28 @@ export default function FeedScreen() {
       setIsRefreshing(false);
     }
   }, []);
+
+  // Older posts, appended past whatever announcements/stories loaded up
+  // front — announcements are a small, unpaginated set already fully
+  // loaded, so only posts need a "next page" concept.
+  const loadMorePosts = useCallback(async () => {
+    if (loadingMorePosts || !hasMorePosts) return;
+    setLoadingMorePosts(true);
+    try {
+      const nextPage = postsPage + 1;
+      const data = await feedApi.fetchFeedPosts(nextPage, POSTS_PAGE_SIZE);
+      if (data.success) {
+        const nextPosts: Post[] = data.posts.map(mapPost);
+        setPosts(prev => [...prev, ...nextPosts]);
+        setPostsPage(nextPage);
+        setHasMorePosts(nextPosts.length >= POSTS_PAGE_SIZE);
+      }
+    } catch (e) {
+      console.error('[FEED] Failed to load more posts:', e);
+    } finally {
+      setLoadingMorePosts(false);
+    }
+  }, [loadingMorePosts, hasMorePosts, postsPage]);
 
   useEffect(() => {
     loadFeedData();
@@ -465,6 +493,15 @@ export default function FeedScreen() {
                 title={t('feed', 'noPostsTitle')}
                 subtitle={t('feed', 'noPostsSubtitle')}
               />
+            }
+            onEndReached={loadMorePosts}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              loadingMorePosts ? (
+                <View style={{ paddingVertical: spacing.lg, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+              ) : null
             }
           />
         </View>

@@ -2,8 +2,12 @@
 import client from './client';
 
 // ── Fetch feed posts (member portal posts) ──
-export const fetchFeedPosts = async () => {
-  const res = await client.get('/portal/posts');
+// Backend has always supported page/limit (default page=1, limit=20,
+// capped at 50) — the mobile app just never passed them or fetched a
+// second page, so the feed was silently stuck at whatever page 1 returned
+// with no way to scroll further back.
+export const fetchFeedPosts = async (page = 1, limit = 20) => {
+  const res = await client.get('/portal/posts', { params: { page, limit } });
   return res.data;
 };
 
