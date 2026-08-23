@@ -652,6 +652,7 @@ export default function MatrimonyScreen() {
   const [relationOther, setRelationOther] = useState('');
   const [submitGender, setSubmitGender] = useState<'Male' | 'Female' | ''>('');
   const [uploadedForm, setUploadedForm] = useState<PickedFile | null>(null);
+  const [uploadedPhotos, setUploadedPhotos] = useState<PickedFile[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
 
@@ -681,12 +682,29 @@ export default function MatrimonyScreen() {
     setUploadedForm(pickedFromAsset(result.assets[0]));
   };
 
+  const pickUploadedPhotos = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+    });
+    if (result.canceled || result.assets.length === 0) return;
+    setUploadedPhotos(prev => [...prev, ...result.assets.map(pickedFromAsset)]);
+  };
+
+  const removeUploadedPhoto = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setUploadedPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
   const resetSubmitForm = () => {
     setCandidateName('');
     setRelation('Self/Head');
     setRelationOther('');
     setSubmitGender('');
     setUploadedForm(null);
+    setUploadedPhotos([]);
   };
 
   const handleSubmitApplication = async () => {
@@ -717,6 +735,10 @@ export default function MatrimonyScreen() {
       fd.append('gender', submitGender);
       // @ts-ignore — React Native FormData file shape
       fd.append('form', uploadedForm);
+      uploadedPhotos.forEach((photo) => {
+        // @ts-ignore — React Native FormData file shape
+        fd.append('photos', photo);
+      });
 
       const data = await matrimonyApi.submitMatrimonyApplication(fd);
       if (data.success) {
@@ -1004,6 +1026,39 @@ export default function MatrimonyScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          <Text style={labelStyle}>{t('matrimony', 'uploadedPhotosFieldLabel')}</Text>
+          <Text style={{ color: C.textFaint, marginBottom: spacing.sm, fontFamily, ...typography.caption }}>
+            {t('matrimony', 'uploadedPhotosHelpText')}
+          </Text>
+          {uploadedPhotos.length > 0 ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm }}>
+              {uploadedPhotos.map((photo, i) => (
+                <View key={i} style={{ width: 80, height: 80, borderRadius: radius.md, overflow: 'hidden' }}>
+                  <Image source={{ uri: photo.uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                  <TouchableOpacity
+                    onPress={() => removeUploadedPhoto(i)}
+                    style={{
+                      position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.6)',
+                      width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <XCircle size={14} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          ) : null}
+          <TouchableOpacity
+            onPress={pickUploadedPhotos}
+            style={{
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+              borderWidth: 1, borderColor: C.border, borderRadius: radius.md, paddingVertical: spacing.md, marginBottom: spacing.xl,
+            }}
+          >
+            <Camera size={18} color={C.primary} />
+            <Text style={{ color: C.primary, ...typography.bodyEmphasis }}>{t('matrimony', 'chooseUploadedPhotosButton')}</Text>
+          </TouchableOpacity>
 
           <Text style={labelStyle}>{t('matrimony', 'uploadedFormFieldLabel')}</Text>
           <Text style={{ color: C.textFaint, marginBottom: spacing.sm, fontFamily, ...typography.caption }}>

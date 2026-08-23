@@ -289,13 +289,21 @@ export const fetchAdminMatrimonyCandidate = async (id: string | number) => {
   return res.data as { success: boolean; message?: string; candidate: MatrimonyCandidate };
 };
 
-export const createMatrimonyCandidate = async (data: MatrimonyCandidateInput) => {
-  const res = await adminClient.post('/admin/matrimony', data);
+// Multipart now (not JSON) so admin can attach personal photos and/or a
+// biodata form image in the same request as the text fields — build the
+// FormData with MatrimonyCandidateInput's fields plus optional repeated
+// `photos` file entries and an optional `form` file entry.
+export const createMatrimonyCandidate = async (formData: FormData) => {
+  const res = await adminClient.post('/admin/matrimony', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return res.data as { success: boolean; message?: string; candidate: MatrimonyCandidate };
 };
 
-export const updateMatrimonyCandidate = async (id: string | number, data: Partial<MatrimonyCandidateInput>) => {
-  const res = await adminClient.put(`/admin/matrimony/${id}`, data);
+export const updateMatrimonyCandidate = async (id: string | number, formData: FormData) => {
+  const res = await adminClient.put(`/admin/matrimony/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return res.data as { success: boolean; message?: string; candidate: MatrimonyCandidate };
 };
 

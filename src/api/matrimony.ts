@@ -95,6 +95,7 @@ export interface MatrimonyApplication {
   member_mobile?: string | null;
   uploaded_file_url: string;
   file_type?: string | null;
+  photos?: string[] | null;
   status: 'pending' | 'correction_needed' | 'approved' | 'rejected';
   submitted_at: string;
   reviewed_by?: string | null;
@@ -108,7 +109,8 @@ export interface MatrimonyApplication {
 // POST /api/portal/matrimony/applications — multipart: text fields
 // candidateName (required), relationToHof (required), gender (required,
 // 'Male'|'Female'), uploadedByMobile (optional) + file field `form`
-// (required — photographed/scanned filled form, image or PDF).
+// (required — photographed/scanned filled form, image or PDF) + optional
+// repeated file field `photos` (personal photos of the candidate).
 export const submitMatrimonyApplication = async (formData: FormData) => {
   const res = await client.post('/portal/matrimony/applications', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

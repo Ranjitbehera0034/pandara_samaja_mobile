@@ -51,6 +51,14 @@ export default function AdminMatrimonyFormScreen() {
   const [banning, setBanning] = useState(false);
   const [matchModalVisible, setMatchModalVisible] = useState(false);
 
+  // Existing media, loaded from the candidate — read-only display; new
+  // photos are ADDED to these (backend merges, never replaces) and a new
+  // form image REPLACES the one shown here.
+  const [existingPhotos, setExistingPhotos] = useState<string[]>([]);
+  const [existingFormUrl, setExistingFormUrl] = useState<string | null>(null);
+  const [newPhotos, setNewPhotos] = useState<PickedFile[]>([]);
+  const [newForm, setNewForm] = useState<PickedFile | null>(null);
+
   const load = useCallback(async () => {
     if (!isEdit) return;
     try {
@@ -66,6 +74,8 @@ export default function AdminMatrimonyFormScreen() {
         });
         setStatus(c.status);
         setIsMatched(!!c.is_matched);
+        setExistingPhotos((c.photos && c.photos.length > 0) ? c.photos : (c.photo ? [c.photo] : []));
+        setExistingFormUrl(c.form_url || null);
       }
     } catch (e) {
       console.error('[ADMIN_MATRIMONY_FORM] Fetch failed:', e);
@@ -79,6 +89,32 @@ export default function AdminMatrimonyFormScreen() {
 
   const setField = (key: keyof MatrimonyCandidateInput, value: string) => setForm(prev => ({ ...prev, [key]: value }));
 
+  const pickNewPhotos = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+    });
+    if (result.canceled || result.assets.length === 0) return;
+    setNewPhotos(prev => [...prev, ...result.assets.map(pickedFromAsset)]);
+  };
+
+  const removeNewPhoto = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setNewPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const pickNewForm = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    setNewForm(pickedFromAsset(result.assets[0]));
+  };
+
   const handleSave = async () => {
     if (!form.name.trim()) {
       Alert.alert(t('common', 'errorTitle'), t('admin', 'matrimonyNameRequiredError'));
@@ -87,9 +123,22 @@ export default function AdminMatrimonyFormScreen() {
     setSaving(true);
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const fd = new FormData();
+      Object.entries(form).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') fd.append(key, String(value));
+      });
+      newPhotos.forEach((photo) => {
+        // @ts-ignore — React Native FormData file shape
+        fd.append('photos', photo);
+      });
+      if (newForm) {
+        // @ts-ignore — React Native FormData file shape
+        fd.append('form', newForm);
+      }
+
       const data = isEdit
-        ? await adminApi.updateMatrimonyCandidate(id!, form)
-        : await adminApi.createMatrimonyCandidate(form);
+        ? await adminApi.updateMatrimonyCandidate(id!, fd)
+        : await adminApi.createMatrimonyCandidate(fd);
       if (data.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         navigation.goBack();
@@ -265,6 +314,65 @@ export default function AdminMatrimonyFormScreen() {
               />
             </View>
           ))}
+
+          {!isMatched && (
+            <View style={{ marginTop: spacing.md }}>
+              <Text style={labelStyle}>{t('admin', 'matrimonyPhotosLabel')}</Text>
+              {(existingPhotos.length > 0 || newPhotos.length > 0) && (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm }}>
+                  {existingPhotos.map((uri, i) => (
+                    <Image key={`existing-${i}`} source={{ uri }} style={{ width: 72, height: 72, borderRadius: radius.md }} contentFit="cover" />
+                  ))}
+                  {newPhotos.map((photo, i) => (
+                    <View key={`new-${i}`} style={{ width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden' }}>
+                      <Image source={{ uri: photo.uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                      <TouchableOpacity
+                        onPress={() => removeNewPhoto(i)}
+                        style={{
+                          position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.6)',
+                          width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+                        }}
+                      >
+                        <X size={14} color="#fff" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+              <Text style={{ color: C.textFaint, marginBottom: spacing.sm, fontFamily: fontRegular, ...typography.caption }}>
+                {t('admin', 'matrimonyPhotosHelpText')}
+              </Text>
+              <TouchableOpacity
+                onPress={pickNewPhotos}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+                  borderWidth: 1, borderColor: C.border, borderRadius: radius.md, paddingVertical: spacing.md, marginBottom: spacing.lg,
+                }}
+              >
+                <Camera size={18} color={C.primary} />
+                <Text style={{ color: C.primary, ...typography.bodyEmphasis }}>{t('admin', 'matrimonyAddPhotosButton')}</Text>
+              </TouchableOpacity>
+
+              <Text style={labelStyle}>{t('admin', 'matrimonyFormLabel')}</Text>
+              {newForm ? (
+                <Image source={{ uri: newForm.uri }} style={{ width: '100%', height: 160, borderRadius: radius.md, marginBottom: spacing.sm }} contentFit="cover" />
+              ) : existingFormUrl ? (
+                <Image source={{ uri: existingFormUrl }} style={{ width: '100%', height: 160, borderRadius: radius.md, marginBottom: spacing.sm }} contentFit="contain" />
+              ) : null}
+              <TouchableOpacity
+                onPress={pickNewForm}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm,
+                  borderWidth: 1, borderColor: C.border, borderRadius: radius.md, paddingVertical: spacing.md, marginBottom: spacing.lg,
+                }}
+              >
+                <Camera size={18} color={C.primary} />
+                <Text style={{ color: C.primary, ...typography.bodyEmphasis }}>
+                  {existingFormUrl ? t('admin', 'matrimonyReplaceFormButton') : t('admin', 'matrimonyAddFormButton')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={{ gap: spacing.md, marginTop: spacing.md }}>
             {!isMatched && (
