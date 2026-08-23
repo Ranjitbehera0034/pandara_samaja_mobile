@@ -100,7 +100,6 @@
           "iosShareExtensionName": "Pandara Samaja Share"
         }
       ],
-      "./plugins/withAndroidShareTarget.js",
       "expo-video"
     ],
     "extra": {
