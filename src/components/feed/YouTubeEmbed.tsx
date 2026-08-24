@@ -16,8 +16,14 @@ interface Props {
 // instead of fixing it — a synthetic HTML string loaded via source.html
 // has no real origin of its own for a referrer policy to inherit from,
 // so the browser still sends no Referer. Forcing a genuine Referer
-// header via source.headers on a direct URI request is the fix that
-// actually produces a real HTTP header on the request YouTube checks.
+// header via source.headers on a direct URI request is the fix — but the
+// header value matters: sending youtube.com's own domain as the Referer
+// (tried first) still produced error 152-4, since YouTube's embed check
+// wants the referer of the actual embedding site, not itself. Using this
+// app's own bundle identifier — mimicking what a real website's browser
+// would send when embedding — is the version confirmed to work.
+const EMBED_REFERER = 'https://in.nikhilaodishapandarasamaja.app';
+
 function embedUri(videoId: string): string {
   return `https://www.youtube.com/embed/${videoId}?playsinline=1&autoplay=1&rel=0`;
 }
@@ -53,7 +59,7 @@ export default function YouTubeEmbed({ videoId }: Props) {
       {playing ? (
         <>
           <WebView
-            source={{ uri: embedUri(videoId), headers: { Referer: 'https://www.youtube.com/' } }}
+            source={{ uri: embedUri(videoId), headers: { Referer: EMBED_REFERER } }}
             style={{ flex: 1, backgroundColor: '#000' }}
             allowsFullscreenVideo
             allowsInlineMediaPlayback

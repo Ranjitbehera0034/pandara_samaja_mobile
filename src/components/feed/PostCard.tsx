@@ -13,11 +13,13 @@ import { Post, Comment, ReactionType } from '../../types';
 import { timeAgoShort, REACTIONS, mapComment, containsBannedContent, censorText } from '../../utils/feedUtils';
 import { urlsToMedia } from '../../utils/media';
 import { extractYouTubeId } from '../../utils/youtube';
+import { extractFacebookUrl } from '../../utils/facebook';
 import { useAuth } from '../../context/AuthContext';
 import MediaGrid from './MediaGrid';
 import MediaViewerModal from './MediaViewerModal';
 import RichContent from './RichContent';
 import YouTubeEmbed from './YouTubeEmbed';
+import FacebookEmbed from './FacebookEmbed';
 import PollDisplay from './PollDisplay';
 import CommentItem from './CommentItem';
 import Avatar from '../common/Avatar';
@@ -73,6 +75,7 @@ export default function PostCard({
   const [viewerIndex, setViewerIndex] = useState(0);
   const postMedia = post.media?.length ? post.media : urlsToMedia(post.images);
   const youtubeId = extractYouTubeId(post.content);
+  const facebookUrl = !youtubeId ? extractFacebookUrl(post.content) : null;
 
   const isAuthor = member && (
     member.membership_no === post.authorId
@@ -283,6 +286,7 @@ export default function PostCard({
           <RichContent text={post.content} />
         )}
         {!isEditing && youtubeId && <YouTubeEmbed videoId={youtubeId} />}
+        {!isEditing && facebookUrl && <FacebookEmbed url={facebookUrl} />}
       </View>
 
       {/* ── Media Grid ── */}
