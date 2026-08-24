@@ -25,6 +25,13 @@ export interface AdminUser {
   id: number | string;
   username: string;
   role: 'admin' | 'superadmin';
+  email?: string | null;
+  membershipNo?: string | null;
+  // Grace-period nag flags — true until this admin fills in the field via
+  // updateAdminProfile. Login is never blocked on these; only surfaced as
+  // a persistent banner.
+  needsEmailPrompt?: boolean;
+  needsMembershipPrompt?: boolean;
 }
 
 export interface AdminAccountRow {
@@ -36,9 +43,12 @@ export interface AdminAccountRow {
   // Only present once the `users.is_active` migration has run (and only
   // ever returned from the ban/unban response) — treat undefined as active.
   is_active?: boolean;
-  // Optional — used only to notify the admin by email on account
-  // create/remove.
+  // Optional at the DB level for accounts predating the identity-
+  // completeness rule (see AdminUser's needsEmailPrompt) — used to notify
+  // the admin by email on account create/remove, and mandatory for any
+  // newly-created admin/superadmin account going forward.
   email?: string | null;
+  membership_no?: string | null;
 }
 
 export interface AdminMember {
@@ -164,8 +174,14 @@ export const fetchAdminAccounts = async () => {
   return res.data as { success: boolean; users: AdminAccountRow[] };
 };
 
-export const createAdminAccount = async (username: string, password: string, role: 'admin' | 'superadmin', email?: string) => {
-  const res = await adminClient.post('/admin/users', { username, password, role, email: email || undefined });
+export const createAdminAccount = async (
+  username: string,
+  password: string,
+  role: 'admin' | 'superadmin',
+  email: string,
+  membershipNo: string
+) => {
+  const res = await adminClient.post('/admin/users', { username, password, role, email, membershipNo });
   return res.data as { success: boolean; message?: string; user?: AdminAccountRow };
 };
 
@@ -176,7 +192,7 @@ export const deleteAdminAccount = async (id: string | number) => {
 
 export const updateAdminAccount = async (
   id: string | number,
-  data: { username?: string; role?: 'admin' | 'superadmin'; password?: string }
+  data: { username?: string; role?: 'admin' | 'superadmin'; password?: string; email?: string; membershipNo?: string }
 ) => {
   const res = await adminClient.put(`/admin/users/${id}`, data);
   return res.data as { success: boolean; message?: string; user?: AdminAccountRow };
@@ -192,6 +208,13 @@ export const setAdminAccountActive = async (id: string | number, active: boolean
 export const changeAdminPassword = async (currentPassword: string, newPassword: string) => {
   const res = await adminClient.put('/admin/settings/password', { currentPassword, newPassword });
   return res.data as { success: boolean; message?: string };
+};
+
+// Self-service completion of the grace-period nag — fills in whichever of
+// email/membershipNo is passed, leaves the other untouched.
+export const updateAdminProfile = async (data: { email?: string; membershipNo?: string }) => {
+  const res = await adminClient.put('/admin/settings/profile', data);
+  return res.data as { success: boolean; message?: string; user?: AdminUser };
 };
 
 // ── Activity tracker (admin + superadmin, actorType filtering superadmin-only) ──

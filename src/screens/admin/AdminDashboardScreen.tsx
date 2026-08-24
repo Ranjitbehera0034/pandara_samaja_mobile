@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Users, Flag, ShieldCheck, LogOut, ChevronRight, History, Heart, Newspaper, Megaphone, Wallet, Settings as SettingsIcon, Award, PieChart, TrendingUp, Radio, Download, Briefcase } from 'lucide-react-native';
+import { Users, Flag, ShieldCheck, LogOut, ChevronRight, History, Heart, Newspaper, Megaphone, Wallet, Settings as SettingsIcon, Award, PieChart, TrendingUp, Radio, Download, Briefcase, AlertTriangle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAdminAuth } from '../../context/AdminAuthContext';
@@ -19,6 +19,7 @@ export default function AdminDashboardScreen() {
   const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
 
   const isSuperAdmin = adminUser?.role === 'superadmin';
+  const needsProfileCompletion = !!(adminUser?.needsEmailPrompt || adminUser?.needsMembershipPrompt);
 
   const handleLogout = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -174,6 +175,28 @@ export default function AdminDashboardScreen() {
             </Text>
           </View>
         </View>
+
+        {needsProfileCompletion && (
+          <TouchableOpacity
+            onPress={() => navigateTo('AdminSettings')}
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+              backgroundColor: C.warning + '15', borderColor: C.warning + '40', borderWidth: 1,
+              borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg,
+            }}
+          >
+            <AlertTriangle size={22} color={C.warning} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: C.text, fontFamily: fontBold, ...typography.bodyEmphasis }}>
+                {t('admin', 'profileIncompleteTitle')}
+              </Text>
+              <Text style={{ color: C.textMuted, fontFamily: fontRegular, marginTop: 2, ...typography.caption }}>
+                {t('admin', 'profileIncompleteDesc')}
+              </Text>
+            </View>
+            <ChevronRight size={20} color={C.textFaint} />
+          </TouchableOpacity>
+        )}
 
         <View style={{ gap: spacing.md }}>
           {cards.map(card => (

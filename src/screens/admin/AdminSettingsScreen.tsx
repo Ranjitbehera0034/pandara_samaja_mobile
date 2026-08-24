@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Lock, UserCircle, Globe } from 'lucide-react-native';
+import { ArrowLeft, Lock, UserCircle, Globe, AlertTriangle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
@@ -16,7 +16,7 @@ export default function AdminSettingsScreen() {
   const insets = useSafeAreaInsets();
   const { colors: C, spacing, radius, typography, shadow, mode, setMode } = useTheme();
   const { lang, setLang, t } = useLanguage();
-  const { adminUser } = useAdminAuth();
+  const { adminUser, refreshAdminUser } = useAdminAuth();
   const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
   const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
 
@@ -24,6 +24,47 @@ export default function AdminSettingsScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [saving, setSaving] = useState(false);
+
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profileMembershipNo, setProfileMembershipNo] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const handleSaveProfile = async () => {
+    const data: { email?: string; membershipNo?: string } = {};
+    if (adminUser?.needsEmailPrompt) {
+      if (!profileEmail.trim()) {
+        Alert.alert(t('common', 'errorTitle'), t('admin', 'profileEmailRequiredError'));
+        return;
+      }
+      data.email = profileEmail.trim();
+    }
+    if (adminUser?.needsMembershipPrompt) {
+      if (!profileMembershipNo.trim()) {
+        Alert.alert(t('common', 'errorTitle'), t('admin', 'profileMembershipRequiredError'));
+        return;
+      }
+      data.membershipNo = profileMembershipNo.trim();
+    }
+    setSavingProfile(true);
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const res = await adminApi.updateAdminProfile(data);
+      if (res.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        await refreshAdminUser();
+        setProfileEmail('');
+        setProfileMembershipNo('');
+        Alert.alert(t('common', 'successTitle'), t('admin', 'profileUpdatedSuccess'));
+      } else {
+        throw new Error(res.message || t('admin', 'profileUpdateError'));
+      }
+    } catch (e: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t('common', 'errorTitle'), e.response?.data?.message || e.message || t('admin', 'profileUpdateError'));
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!currentPassword) {
@@ -102,10 +143,65 @@ export default function AdminSettingsScreen() {
           </Text>
 
           <Text style={labelStyle}>{t('admin', 'roleFieldLabel')}</Text>
-          <Text style={{ color: C.text, fontFamily: fontRegular, ...typography.body }}>
+          <Text style={{ color: C.text, fontFamily: fontRegular, marginBottom: spacing.lg, ...typography.body }}>
             {adminUser?.role === 'superadmin' ? t('admin', 'roleSuperadmin') : t('admin', 'roleAdmin')}
           </Text>
+
+          <Text style={labelStyle}>{t('admin', 'profileEmailLabel')}</Text>
+          <Text style={{ color: adminUser?.email ? C.text : C.warning, fontFamily: fontRegular, marginBottom: spacing.lg, ...typography.body }}>
+            {adminUser?.email || t('admin', 'profileNotSet')}
+          </Text>
+
+          <Text style={labelStyle}>{t('admin', 'profileMembershipLabel')}</Text>
+          <Text style={{ color: adminUser?.membershipNo ? C.text : C.warning, fontFamily: fontRegular, ...typography.body }}>
+            {adminUser?.membershipNo || t('admin', 'profileNotSet')}
+          </Text>
         </View>
+
+        {(adminUser?.needsEmailPrompt || adminUser?.needsMembershipPrompt) && (
+          <View style={{ backgroundColor: C.warning + '10', borderColor: C.warning + '40', borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg, ...shadow.card }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
+              <AlertTriangle size={18} color={C.warning} />
+              <Text style={{ color: C.text, fontFamily: fontBold, ...typography.bodyEmphasis }}>{t('admin', 'profileIncompleteTitle')}</Text>
+            </View>
+            <Text style={{ color: C.textMuted, fontFamily: fontRegular, marginBottom: spacing.lg, ...typography.caption }}>
+              {t('admin', 'profileIncompleteDesc')}
+            </Text>
+
+            {adminUser?.needsEmailPrompt && (
+              <>
+                <Text style={labelStyle}>{t('admin', 'profileEmailLabel')}</Text>
+                <TextInput
+                  style={inputStyle}
+                  placeholder={t('admin', 'profileEmailPlaceholder')}
+                  placeholderTextColor={C.textFaint}
+                  value={profileEmail}
+                  onChangeText={setProfileEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </>
+            )}
+
+            {adminUser?.needsMembershipPrompt && (
+              <>
+                <Text style={labelStyle}>{t('admin', 'profileMembershipLabel')}</Text>
+                <TextInput
+                  style={inputStyle}
+                  placeholder={t('admin', 'profileMembershipPlaceholder')}
+                  placeholderTextColor={C.textFaint}
+                  value={profileMembershipNo}
+                  onChangeText={setProfileMembershipNo}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                />
+              </>
+            )}
+
+            <Button variant="primary" label={t('common', 'save')} onPress={handleSaveProfile} loading={savingProfile} />
+          </View>
+        )}
 
         {/* Appearance + Language card */}
         <View style={{ backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg, ...shadow.card }}>

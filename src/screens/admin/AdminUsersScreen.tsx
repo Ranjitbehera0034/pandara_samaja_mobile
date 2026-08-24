@@ -34,6 +34,7 @@ export default function AdminUsersScreen() {
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [newMembershipNo, setNewMembershipNo] = useState('');
   const [newRole, setNewRole] = useState<'admin' | 'superadmin'>('admin');
   const [creating, setCreating] = useState(false);
 
@@ -64,6 +65,7 @@ export default function AdminUsersScreen() {
     setNewUsername('');
     setNewPassword('');
     setNewEmail('');
+    setNewMembershipNo('');
     setNewRole('admin');
   };
 
@@ -76,10 +78,18 @@ export default function AdminUsersScreen() {
       Alert.alert(t('common', 'errorTitle'), t('admin', 'passwordRequiredCreateError'));
       return;
     }
+    if (!newEmail.trim()) {
+      Alert.alert(t('common', 'errorTitle'), t('admin', 'profileEmailRequiredError'));
+      return;
+    }
+    if (!newMembershipNo.trim()) {
+      Alert.alert(t('common', 'errorTitle'), t('admin', 'profileMembershipRequiredError'));
+      return;
+    }
     setCreating(true);
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const data = await adminApi.createAdminAccount(newUsername.trim(), newPassword, newRole, newEmail.trim());
+      const data = await adminApi.createAdminAccount(newUsername.trim(), newPassword, newRole, newEmail.trim(), newMembershipNo.trim());
       if (data.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowCreate(false);
@@ -329,6 +339,17 @@ export default function AdminUsersScreen() {
               autoCorrect={false}
             />
             <Text style={{ color: C.textFaint, marginBottom: spacing.lg, ...typography.caption }}>{t('admin', 'emailCaption')}</Text>
+
+            <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'profileMembershipLabel')}</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text, ...typography.body }}
+              placeholder={t('admin', 'profileMembershipPlaceholder')}
+              placeholderTextColor={C.textFaint}
+              value={newMembershipNo}
+              onChangeText={setNewMembershipNo}
+              autoCapitalize="characters"
+              autoCorrect={false}
+            />
 
             <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'roleFieldLabel')}</Text>
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xl }}>

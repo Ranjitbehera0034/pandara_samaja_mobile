@@ -16,6 +16,10 @@ interface AdminAuthContextType {
   isLoading: boolean;
   adminLogin: (username: string, password: string) => Promise<void>;
   adminLogout: () => Promise<void>;
+  // Re-fetches /admin/me and updates adminUser in place — used after
+  // completing the email/membershipNo grace-period nag so the banner
+  // clears without forcing a fresh login.
+  refreshAdminUser: () => Promise<void>;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
@@ -95,6 +99,13 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     ]);
   };
 
+  const refreshAdminUser = async () => {
+    const res = await adminApi.fetchAdminMe();
+    if (!res.success || !res.user) return;
+    setAdminUser(res.user);
+    await storage.setItem(STORAGE_KEYS.ADMIN_USER, JSON.stringify(res.user));
+  };
+
   const logout = async () => {
     setAdminUser(null);
     setAdminToken(null);
@@ -112,6 +123,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       isAdminAuthenticated: !!adminUser && !!adminToken,
       adminLogin,
       adminLogout: logout,
+      refreshAdminUser,
     }}>
       {children}
     </AdminAuthContext.Provider>
