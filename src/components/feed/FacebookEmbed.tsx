@@ -34,6 +34,31 @@ async function fetchEmbedHtml(url: string): Promise<string | null> {
   return null;
 }
 
+// Meta's own JS renders a real <iframe> inside the fb-video/fb-post div on
+// success; on failure (privacy-restricted, geo-blocked, re-shared content
+// the sharer doesn't have distribution rights to — all real, common, and
+// entirely Facebook's call, not something fixable client-side) it renders
+// its own "video isn't available" page instead, with no iframe at all and
+// no reliable event to listen for. Polling for the iframe's presence a few
+// seconds after load is what actually distinguishes the two cases.
+const DETECT_SCRIPT = `
+(function () {
+  var attempts = 0;
+  var timer = setInterval(function () {
+    attempts++;
+    var hasIframe = !!document.querySelector('.fb-video iframe, .fb-post iframe');
+    if (hasIframe) {
+      clearInterval(timer);
+      window.ReactNativeWebView.postMessage('success');
+    } else if (attempts >= 6) {
+      clearInterval(timer);
+      window.ReactNativeWebView.postMessage('unavailable');
+    }
+  }, 1000);
+  true;
+})();
+`;
+
 function wrapperHtml(oembedHtml: string): string {
   return `
 <!DOCTYPE html>
@@ -57,6 +82,10 @@ export default function FacebookEmbed({ url }: Props) {
   const [loading, setLoading] = useState(false);
   const [html, setHtml] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  // Set once the in-page detection script reports no real video/post
+  // iframe ever appeared — Facebook's own error page is still sitting
+  // underneath, just not shown.
+  const [renderFailed, setRenderFailed] = useState(false);
 
   const openInFacebook = () => {
     Linking.openURL(url).catch(() => {});
@@ -74,7 +103,7 @@ export default function FacebookEmbed({ url }: Props) {
     setLoading(false);
   };
 
-  if (expanded && html) {
+  if (expanded && html && !renderFailed) {
     return (
       <View style={{ minHeight: 300, borderRadius: radius.md, overflow: 'hidden', backgroundColor: '#000', marginTop: 8 }}>
         <WebView
@@ -86,6 +115,10 @@ export default function FacebookEmbed({ url }: Props) {
           javaScriptEnabled
           domStorageEnabled
           scalesPageToFit
+          injectedJavaScript={DETECT_SCRIPT}
+          onMessage={(event) => {
+            if (event.nativeEvent.data === 'unavailable') setRenderFailed(true);
+          }}
         />
         <TouchableOpacity
           onPress={openInFacebook}
@@ -106,7 +139,7 @@ export default function FacebookEmbed({ url }: Props) {
   return (
     <TouchableOpacity
       activeOpacity={0.9}
-      onPress={failed ? openInFacebook : handleExpand}
+      onPress={failed || renderFailed ? openInFacebook : handleExpand}
       style={{
         aspectRatio: 16 / 9,
         borderRadius: radius.md,
@@ -119,7 +152,7 @@ export default function FacebookEmbed({ url }: Props) {
     >
       {loading ? (
         <ActivityIndicator color="#fff" />
-      ) : failed ? (
+      ) : failed || renderFailed ? (
         <View style={{ alignItems: 'center', gap: 8 }}>
           <ExternalLink size={28} color="#fff" />
           <Text style={{ color: '#fff', fontWeight: '600' }}>Couldn't load preview — open in Facebook</Text>
