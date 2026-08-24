@@ -16,6 +16,15 @@ OTA published from a commit that hadn't been pushed yet).
    pushed, the deployed code and the GitHub history silently diverge,
    and a rollback or "what shipped when" question becomes unanswerable.
 
+1a. **Commit and push after every change, but don't OTA-publish by
+    default — OTA builds are a limited resource on this plan.** After
+    finishing a fix, always commit and push so nothing sits unshipped to
+    git. Then stop — don't also ask "want me to publish this?" as a
+    reflexive next step. Only run `publish:ota` when the user explicitly
+    asks for it, or when several fixes have piled up unpublished and it's
+    worth checking whether they want to batch-publish. Default to holding,
+    not to shipping.
+
 2. **Before shipping any build (OTA or native), state the blast radius.**
    Identify which existing features share the files/components a change
    touched, and say what was actually checked — not just "typecheck
