@@ -58,6 +58,9 @@ export default function AdminMatrimonyFormScreen() {
   const [existingFormUrl, setExistingFormUrl] = useState<string | null>(null);
   const [newPhotos, setNewPhotos] = useState<PickedFile[]>([]);
   const [newForm, setNewForm] = useState<PickedFile | null>(null);
+  // URL of the existing photo currently being moved to the form slot —
+  // drives a per-thumbnail loading state while the API call is in flight.
+  const [reassigningPhotoUrl, setReassigningPhotoUrl] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!isEdit) return;
@@ -113,6 +116,67 @@ export default function AdminMatrimonyFormScreen() {
     });
     if (result.canceled || !result.assets[0]) return;
     setNewForm(pickedFromAsset(result.assets[0]));
+  };
+
+  // Some members upload their biodata form scan into the photos section by
+  // mistake — this reclassifies one already-saved photo as the form image
+  // via a direct backend call (removes it from `photos`, sets it as
+  // `manual_form` server-side; same underlying file, no re-upload).
+  const doMoveExistingPhotoToForm = async (uri: string) => {
+    setReassigningPhotoUrl(uri);
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const data = await adminApi.reassignMatrimonyPhotoToForm(id!, uri);
+      if (data.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setExistingPhotos(prev => prev.filter(p => p !== uri));
+        setExistingFormUrl(data.candidate.form_url || uri);
+      } else {
+        throw new Error(data.message || t('admin', 'matrimonyMoveToFormError'));
+      }
+    } catch (e: any) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t('common', 'errorTitle'), e.response?.data?.message || e.message || t('admin', 'matrimonyMoveToFormError'));
+    } finally {
+      setReassigningPhotoUrl(null);
+    }
+  };
+
+  const handleLongPressExistingPhoto = (uri: string) => {
+    if (reassigningPhotoUrl) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert(
+      t('admin', 'matrimonyMoveToFormTitle'),
+      existingFormUrl ? t('admin', 'matrimonyMoveToFormReplaceMessage') : t('admin', 'matrimonyMoveToFormMessage'),
+      [
+        { text: t('common', 'cancel'), style: 'cancel' },
+        { text: t('admin', 'matrimonyMoveToFormButton'), onPress: () => doMoveExistingPhotoToForm(uri) },
+      ]
+    );
+  };
+
+  // A not-yet-saved photo lives only in local state — moving it is just a
+  // local reassignment, no backend call needed until Save.
+  const handleLongPressNewPhoto = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert(
+      t('admin', 'matrimonyMoveToFormTitle'),
+      (newForm || existingFormUrl) ? t('admin', 'matrimonyMoveToFormReplaceMessage') : t('admin', 'matrimonyMoveToFormMessage'),
+      [
+        { text: t('common', 'cancel'), style: 'cancel' },
+        {
+          text: t('admin', 'matrimonyMoveToFormButton'),
+          onPress: () => {
+            setNewPhotos(prev => {
+              const target = prev[index];
+              if (!target) return prev;
+              setNewForm(target);
+              return prev.filter((_, i) => i !== index);
+            });
+          },
+        },
+      ]
+    );
   };
 
   const handleSave = async () => {
@@ -321,10 +385,27 @@ export default function AdminMatrimonyFormScreen() {
               {(existingPhotos.length > 0 || newPhotos.length > 0) && (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm }}>
                   {existingPhotos.map((uri, i) => (
-                    <Image key={`existing-${i}`} source={{ uri }} style={{ width: 72, height: 72, borderRadius: radius.md }} contentFit="cover" />
+                    <TouchableOpacity
+                      key={`existing-${i}`}
+                      activeOpacity={0.8}
+                      onLongPress={() => handleLongPressExistingPhoto(uri)}
+                      style={{ width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden' }}
+                    >
+                      <Image source={{ uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                      {reassigningPhotoUrl === uri && (
+                        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }}>
+                          <ActivityIndicator size="small" color="#fff" />
+                        </View>
+                      )}
+                    </TouchableOpacity>
                   ))}
                   {newPhotos.map((photo, i) => (
-                    <View key={`new-${i}`} style={{ width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden' }}>
+                    <TouchableOpacity
+                      key={`new-${i}`}
+                      activeOpacity={0.8}
+                      onLongPress={() => handleLongPressNewPhoto(i)}
+                      style={{ width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden' }}
+                    >
                       <Image source={{ uri: photo.uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                       <TouchableOpacity
                         onPress={() => removeNewPhoto(i)}
@@ -335,13 +416,18 @@ export default function AdminMatrimonyFormScreen() {
                       >
                         <X size={14} color="#fff" />
                       </TouchableOpacity>
-                    </View>
+                    </TouchableOpacity>
                   ))}
                 </View>
               )}
               <Text style={{ color: C.textFaint, marginBottom: spacing.sm, fontFamily: fontRegular, ...typography.caption }}>
                 {t('admin', 'matrimonyPhotosHelpText')}
               </Text>
+              {(existingPhotos.length > 0 || newPhotos.length > 0) && (
+                <Text style={{ color: C.textFaint, marginTop: -spacing.xs, marginBottom: spacing.sm, fontFamily: fontRegular, ...typography.caption, fontStyle: 'italic' }}>
+                  {t('admin', 'matrimonyMoveToFormHint')}
+                </Text>
+              )}
               <TouchableOpacity
                 onPress={pickNewPhotos}
                 style={{

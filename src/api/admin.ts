@@ -330,6 +330,15 @@ export const updateMatrimonyCandidate = async (id: string | number, formData: Fo
   return res.data as { success: boolean; message?: string; candidate: MatrimonyCandidate };
 };
 
+// Reclassifies one existing personal photo as the candidate's biodata form
+// image — for the common case of a member uploading their form scan into
+// the photos section by mistake. `photoUrl` is the resolved (signed) URL
+// currently shown for that thumbnail, matched server-side.
+export const reassignMatrimonyPhotoToForm = async (id: string | number, photoUrl: string) => {
+  const res = await adminClient.put(`/admin/matrimony/${id}/photos/reassign-to-form`, { photoUrl });
+  return res.data as { success: boolean; message?: string; candidate: MatrimonyCandidate };
+};
+
 export const deleteMatrimonyCandidate = async (id: string | number) => {
   const res = await adminClient.delete(`/admin/matrimony/${id}`);
   return res.data as { success: boolean; message?: string };

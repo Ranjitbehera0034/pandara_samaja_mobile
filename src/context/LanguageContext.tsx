@@ -867,6 +867,12 @@ const translations = {
       matrimonyFormLabel: 'Biodata Form',
       matrimonyAddFormButton: 'Add Form Image',
       matrimonyReplaceFormButton: 'Replace Form Image',
+      matrimonyMoveToFormHint: 'Long-press a photo if it\'s actually the biodata form',
+      matrimonyMoveToFormTitle: 'Move to Form Image?',
+      matrimonyMoveToFormMessage: 'This photo will be removed from Personal Photos and set as the Biodata Form image instead.',
+      matrimonyMoveToFormReplaceMessage: 'This photo will be removed from Personal Photos and replace the current Biodata Form image.',
+      matrimonyMoveToFormButton: 'Move to Form',
+      matrimonyMoveToFormError: 'Failed to move photo to form image',
 
       // Entry points from the candidate list screen
       matrimonyReviewQueueButton: 'Review Queue', matrimonyHistoryButton: 'History',
@@ -1962,6 +1968,12 @@ const translations = {
       matrimonyFormLabel: 'ବାୟୋଡାଟା ଫର୍ମ',
       matrimonyAddFormButton: 'ଫର୍ମ ଫଟୋ ଯୋଡନ୍ତୁ',
       matrimonyReplaceFormButton: 'ଫର୍ମ ଫଟୋ ବଦଳାନ୍ତୁ',
+      matrimonyMoveToFormHint: 'ଯଦି ଏହା ପ୍ରକୃତରେ ବାୟୋଡାଟା ଫର୍ମ, ତେବେ ଫଟୋକୁ ଦୀର୍ଘ ସମୟ ଦବାନ୍ତୁ',
+      matrimonyMoveToFormTitle: 'ଫର୍ମ ଫଟୋକୁ ଘୁଞ୍ଚାନ୍ତୁ?',
+      matrimonyMoveToFormMessage: 'ଏହି ଫଟୋ ବ୍ୟକ୍ତିଗତ ଫଟୋରୁ ହଟାଯିବ ଏବଂ ବାୟୋଡାଟା ଫର୍ମ ଫଟୋ ଭାବରେ ସେଟ୍ ହେବ।',
+      matrimonyMoveToFormReplaceMessage: 'ଏହି ଫଟୋ ବ୍ୟକ୍ତିଗତ ଫଟୋରୁ ହଟାଯିବ ଏବଂ ବର୍ତ୍ତମାନର ବାୟୋଡାଟା ଫର୍ମ ଫଟୋକୁ ବଦଳାଇବ।',
+      matrimonyMoveToFormButton: 'ଫର୍ମକୁ ଘୁଞ୍ଚାନ୍ତୁ',
+      matrimonyMoveToFormError: 'ଫଟୋକୁ ଫର୍ମ ଫଟୋ ଭାବରେ ଘୁଞ୍ଚାଇବାରେ ବିଫଳ',
 
       matrimonyReviewQueueButton: 'ସମୀକ୍ଷା ତାଲିକା', matrimonyHistoryButton: 'ଇତିହାସ',
 
