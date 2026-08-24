@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { Play, ExternalLink } from 'lucide-react-native';
+import { Play, ExternalLink, Users } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeContext';
+import { isFacebookPageUrl } from '../../utils/facebook';
 
 interface Props {
   url: string;
@@ -90,6 +91,34 @@ export default function FacebookEmbed({ url }: Props) {
   const openInFacebook = () => {
     Linking.openURL(url).catch(() => {});
   };
+
+  // A bare page/profile link has no single post to embed — don't bother
+  // with the oEmbed round-trip or the 6s WebView failure-detection wait,
+  // both of which would just end up at the same fallback anyway (see
+  // isFacebookPageUrl's doc comment). Show a distinct, honest card
+  // up front instead.
+  if (isFacebookPageUrl(url)) {
+    return (
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={openInFacebook}
+        style={{
+          flexDirection: 'row', alignItems: 'center', gap: 10,
+          borderRadius: radius.md, overflow: 'hidden', backgroundColor: '#0866FF',
+          marginTop: 8, padding: 14,
+        }}
+      >
+        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+          <Users size={20} color="#fff" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: '#fff', fontWeight: '600' }}>Facebook Page</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 1 }}>Tap to view on Facebook</Text>
+        </View>
+        <ExternalLink size={18} color="#fff" />
+      </TouchableOpacity>
+    );
+  }
 
   const handleExpand = async () => {
     setExpanded(true);
