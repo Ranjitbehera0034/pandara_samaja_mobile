@@ -6,7 +6,8 @@
 // a decorative flourish, not a themed UI surface, same reasoning as any
 // other celebratory graphic that doesn't need a dark-mode variant.
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, Dimensions } from 'react-native';
+import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
 import Animated, {
   useSharedValue, useAnimatedStyle, withTiming, withDelay, withSequence, Easing, runOnJS,
 } from 'react-native-reanimated';
@@ -21,6 +22,81 @@ const MAROON = '#8c1f2e';
 const GOLD = '#cf9d3f';
 const MARIGOLD = '#e2932f';
 const BLUSH = '#c9647a';
+const SKIN = '#e8b894';
+const HAIR = '#2b1c14';
+const GROOM_GREEN = '#2f5233';
+const BRIDE_WINE = '#7a1f3d';
+
+// Original illustrated couple, hand-built in react-native-svg — not a copy
+// of any reference image. A stock illustration a user shared for style
+// direction was a watermarked, unlicensed Adobe Stock preview; tracing or
+// closely replicating it would use someone else's copyrighted artwork
+// without a license, so this only borrows the general chibi-couple /
+// traditional-attire *idea* (big rounded heads, layered lehenga/sherwani,
+// jewelry, bindi, mustache), built from scratch as plain shapes.
+function GroomFigure() {
+  return (
+    <Svg width={58} height={96} viewBox="0 0 58 96">
+      {/* sherwani coat */}
+      <Path d="M16,38 Q29,33 42,38 L46,92 Q29,98 12,92 Z" fill={GROOM_GREEN} />
+      {/* gold sash */}
+      <Path d="M19,39 L25,39 L38,90 L32,90 Z" fill={GOLD} opacity={0.9} />
+      {/* buttons */}
+      {[46, 55, 64, 73, 82].map((y) => (
+        <Circle key={y} cx={29} cy={y} r={1.4} fill={GOLD} />
+      ))}
+      {/* hair (peeks above head circle) */}
+      <Ellipse cx={29} cy={16} rx={16} ry={13} fill={HAIR} />
+      {/* head */}
+      <Circle cx={29} cy={22} r={14.5} fill={SKIN} />
+      {/* eyes */}
+      <Circle cx={23.5} cy={22} r={1.3} fill={HAIR} />
+      <Circle cx={34.5} cy={22} r={1.3} fill={HAIR} />
+      {/* mustache */}
+      <Path d="M22,28 Q29,32 36,28 Q29,31 22,28 Z" fill={HAIR} />
+      {/* smile */}
+      <Path d="M24,30.5 Q29,33 34,30.5" stroke={HAIR} strokeWidth={1} fill="none" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function BrideFigure() {
+  return (
+    <Svg width={58} height={96} viewBox="0 0 58 96">
+      {/* dupatta veil, behind head */}
+      <Path d="M6,32 Q9,-2 29,0 Q49,-2 52,32 L45,48 Q29,40 13,48 Z" fill={GOLD} opacity={0.55} />
+      {/* choli (bodice) */}
+      <Path d="M18,38 Q29,34 40,38 L40,56 Q29,52 18,56 Z" fill={BRIDE_WINE} />
+      {/* lehenga skirt */}
+      <Path d="M16,56 Q29,52 42,56 L50,92 Q29,99 8,92 Z" fill={BRIDE_WINE} />
+      {/* hem border */}
+      <Path d="M11,86 Q29,80 47,86 L50,92 Q29,99 8,92 Z" fill={GOLD} opacity={0.85} />
+      {/* floral accents on skirt */}
+      {[[18, 68], [40, 72], [24, 82], [34, 88]].map(([cx, cy]) => (
+        <Circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={1.6} fill={MARIGOLD} />
+      ))}
+      {/* diagonal dupatta drape */}
+      <Path d="M37,39 L43,39 L30,88 L24,88 Z" fill={GOLD} opacity={0.75} />
+      {/* side hair framing face */}
+      <Ellipse cx={15} cy={26} rx={4} ry={9} fill={HAIR} />
+      <Ellipse cx={43} cy={26} rx={4} ry={9} fill={HAIR} />
+      {/* hair top */}
+      <Ellipse cx={29} cy={15} rx={15} ry={12} fill={HAIR} />
+      {/* head */}
+      <Circle cx={29} cy={21} r={13.5} fill={SKIN} />
+      {/* jhumka earrings */}
+      <Circle cx={15.5} cy={28} r={2} fill={GOLD} />
+      <Circle cx={42.5} cy={28} r={2} fill={GOLD} />
+      {/* bindi */}
+      <Circle cx={29} cy={12.5} r={1.6} fill={MAROON} />
+      {/* eyes */}
+      <Circle cx={24} cy={21} r={1.3} fill={HAIR} />
+      <Circle cx={34} cy={21} r={1.3} fill={HAIR} />
+      {/* smile */}
+      <Path d="M24.5,26 Q29,28.5 33.5,26" stroke={HAIR} strokeWidth={1} fill="none" strokeLinecap="round" />
+    </Svg>
+  );
+}
 
 const PETALS: { left: `${number}%`; delay: number; color: string }[] = [
   { left: '12%', delay: 100, color: '#d9702f' },
@@ -116,9 +192,8 @@ export default function MatrimonySplash({ onFinish }: Props) {
       {PETALS.map((p, i) => <Petal key={i} {...p} />)}
 
       <View style={styles.figuresRow}>
-        <Animated.View style={[styles.figureBody, styles.groomBody, groomStyle]}>
-          <View style={styles.groomTurban} />
-          <View style={styles.groomSash} />
+        <Animated.View style={groomStyle}>
+          <GroomFigure />
         </Animated.View>
 
         <Animated.View style={[styles.garland, garlandStyle]}>
@@ -133,11 +208,8 @@ export default function MatrimonySplash({ onFinish }: Props) {
           ))}
         </Animated.View>
 
-        <Animated.View style={[styles.figureBody, styles.brideBody, brideStyle]}>
-          <View style={styles.brideVeil} />
-          <View style={styles.brideBindi} />
-          <View style={[styles.brideJewel, { left: -4 }]} />
-          <View style={[styles.brideJewel, { right: -4 }]} />
+        <Animated.View style={brideStyle}>
+          <BrideFigure />
         </Animated.View>
       </View>
 
@@ -170,70 +242,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'center',
-  },
-  figureBody: {
-    width: 52,
-    height: 80,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 10,
-  },
-  groomBody: {
-    backgroundColor: MAROON,
-    marginRight: 6,
-    alignItems: 'center',
-  },
-  groomTurban: {
-    position: 'absolute',
-    top: -16,
-    width: 34,
-    height: 20,
-    borderTopLeftRadius: 17,
-    borderTopRightRadius: 17,
-    backgroundColor: GOLD,
-  },
-  groomSash: {
-    position: 'absolute',
-    top: 10,
-    bottom: 6,
-    width: 4,
-    borderRadius: 2,
-    backgroundColor: '#e8c98a',
-    opacity: 0.85,
-  },
-  brideBody: {
-    backgroundColor: BLUSH,
-    marginLeft: 6,
-  },
-  brideVeil: {
-    position: 'absolute',
-    top: -10,
-    left: -9,
-    right: -9,
-    height: 30,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    backgroundColor: GOLD,
-    opacity: 0.55,
-  },
-  brideBindi: {
-    position: 'absolute',
-    top: 6,
-    left: '50%',
-    marginLeft: -3,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: MAROON,
-  },
-  brideJewel: {
-    position: 'absolute',
-    top: 16,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: GOLD,
   },
   garland: {
     flexDirection: 'row',
