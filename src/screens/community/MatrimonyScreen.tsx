@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import {
@@ -37,6 +37,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import SkeletonBox from '../../components/common/SkeletonBox';
 import EmptyState from '../../components/common/EmptyState';
 import Button from '../../components/common/Button';
+import MatrimonySplash from '../../components/matrimony/MatrimonySplash';
 import MediaViewerModal from '../../components/feed/MediaViewerModal';
 
 const { width: W, height: H } = Dimensions.get('window');
@@ -571,6 +572,16 @@ export default function MatrimonyScreen() {
   const [activeTab, setActiveTab] = useState<TabKey>('browse');
   const [detailCandidate, setDetailCandidate] = useState<Candidate | null>(null);
 
+  // Re-shown every time this screen gains focus, not just on first mount —
+  // it lives in a bottom-tab stack, which keeps the screen instance mounted
+  // across tab switches, so a plain useEffect would only ever fire once.
+  const [showSplash, setShowSplash] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      setShowSplash(true);
+    }, [])
+  );
+
   // ── Browse tab state ──
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [page, setPage] = useState(1);
@@ -825,6 +836,7 @@ export default function MatrimonyScreen() {
   const labelStyle = { color: C.textMuted, marginBottom: spacing.xs, fontFamily, ...typography.caption };
 
   return (
+    <>
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top }}>
       {/* Header */}
       <View
@@ -1177,5 +1189,7 @@ export default function MatrimonyScreen() {
         onApply={(f, s) => { setFilters(f); setSort(s); }}
       />
     </View>
+    {showSplash && <MatrimonySplash onFinish={() => setShowSplash(false)} />}
+    </>
   );
 }
