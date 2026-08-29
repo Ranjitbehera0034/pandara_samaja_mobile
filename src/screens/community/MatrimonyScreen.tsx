@@ -761,6 +761,10 @@ export default function MatrimonyScreen() {
       Alert.alert(t('common', 'errorTitle'), t('matrimony', 'uploadedFormRequiredError'));
       return;
     }
+    if (uploadedPhotos.length === 0) {
+      Alert.alert(t('common', 'errorTitle'), t('matrimony', 'uploadedPhotosRequiredError'));
+      return;
+    }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSubmitting(true);
