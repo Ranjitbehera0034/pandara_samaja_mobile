@@ -234,6 +234,7 @@ export default function AdminLeadersScreen() {
           </View>
         ) : (
           <FlashList
+            maintainVisibleContentPosition={{ disabled: true }}
             data={leaders}
             keyExtractor={keyExtractor}
             renderItem={renderLeader}

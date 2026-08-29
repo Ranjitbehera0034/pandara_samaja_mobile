@@ -397,6 +397,7 @@ export default function GroupsScreen() {
       {/* Horizontal Category Chips */}
       <View style={{ paddingVertical: spacing.sm + 2 }}>
         <FlashList
+          maintainVisibleContentPosition={{ disabled: true }}
           horizontal
           showsHorizontalScrollIndicator={false}
           data={categories}
@@ -450,6 +451,7 @@ export default function GroupsScreen() {
         />
       ) : (
         <FlashList
+          maintainVisibleContentPosition={{ disabled: true }}
           data={filteredGroups}
           keyExtractor={item => item.id}
           renderItem={renderGroupItem}

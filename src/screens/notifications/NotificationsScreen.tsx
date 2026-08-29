@@ -242,6 +242,7 @@ export default function NotificationsScreen() {
         ) : (
           <View style={{ flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
             <FlashList
+              maintainVisibleContentPosition={{ disabled: true }}
               data={notifications}
               keyExtractor={keyExtractor}
               renderItem={renderNotifRow}

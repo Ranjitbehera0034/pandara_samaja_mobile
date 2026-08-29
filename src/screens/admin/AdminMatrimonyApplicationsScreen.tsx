@@ -406,6 +406,7 @@ export default function AdminMatrimonyApplicationsScreen() {
           </View>
         ) : (
           <FlashList
+            maintainVisibleContentPosition={{ disabled: true }}
             data={applications}
             keyExtractor={keyExtractor}
             renderItem={renderApplication}

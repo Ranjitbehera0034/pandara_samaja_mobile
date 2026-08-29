@@ -472,6 +472,7 @@ export default function FeedScreen() {
       ) : (
         <View style={{ flex: 1 }}>
           <FlashList
+            maintainVisibleContentPosition={{ disabled: true }}
             data={posts}
             keyExtractor={keyExtractor}
             renderItem={renderPost}

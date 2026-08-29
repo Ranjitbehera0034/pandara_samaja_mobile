@@ -194,6 +194,7 @@ export default function AdminTrackerScreen() {
           <EmptyState emoji="🛠️" title={t('admin', 'trackerMigrationPendingTitle')} subtitle={t('admin', 'trackerMigrationPendingSubtitle')} />
         ) : (
           <FlashList
+            maintainVisibleContentPosition={{ disabled: true }}
             data={activities}
             keyExtractor={keyExtractor}
             renderItem={renderRow}

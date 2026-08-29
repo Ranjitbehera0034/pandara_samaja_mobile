@@ -224,6 +224,7 @@ export default function AdminMembersScreen() {
           </View>
         ) : (
           <FlashList
+            maintainVisibleContentPosition={{ disabled: true }}
             data={members}
             keyExtractor={keyExtractor}
             renderItem={renderMember}

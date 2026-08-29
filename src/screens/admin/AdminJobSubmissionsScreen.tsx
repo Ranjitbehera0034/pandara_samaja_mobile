@@ -370,6 +370,7 @@ export default function AdminJobSubmissionsScreen() {
           </View>
         ) : (
           <FlashList
+            maintainVisibleContentPosition={{ disabled: true }}
             data={submissions}
             keyExtractor={keyExtractor}
             renderItem={renderSubmission}

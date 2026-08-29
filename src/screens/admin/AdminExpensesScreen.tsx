@@ -309,6 +309,7 @@ export default function AdminExpensesScreen() {
           </View>
         ) : (
           <FlashList
+            maintainVisibleContentPosition={{ disabled: true }}
             data={entries}
             keyExtractor={keyExtractor}
             renderItem={renderEntry}

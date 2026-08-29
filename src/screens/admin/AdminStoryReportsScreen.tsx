@@ -174,6 +174,7 @@ export default function AdminStoryReportsScreen() {
       ) : (
         <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
           <FlashList
+            maintainVisibleContentPosition={{ disabled: true }}
             data={stories}
             keyExtractor={keyExtractor}
             renderItem={renderStory}

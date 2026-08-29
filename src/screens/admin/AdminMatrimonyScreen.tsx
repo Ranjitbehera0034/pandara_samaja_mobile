@@ -170,6 +170,7 @@ export default function AdminMatrimonyScreen() {
           </View>
         ) : (
           <FlashList
+            maintainVisibleContentPosition={{ disabled: true }}
             data={candidates}
             keyExtractor={keyExtractor}
             renderItem={renderCandidate}

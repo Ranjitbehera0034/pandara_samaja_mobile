@@ -184,6 +184,7 @@ export default function AdminReportsScreen() {
       ) : (
         <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
           <FlashList
+            maintainVisibleContentPosition={{ disabled: true }}
             data={posts}
             keyExtractor={keyExtractor}
             renderItem={renderPost}

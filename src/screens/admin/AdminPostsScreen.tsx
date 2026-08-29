@@ -213,6 +213,7 @@ export default function AdminPostsScreen() {
           </View>
         ) : (
           <FlashList
+            maintainVisibleContentPosition={{ disabled: true }}
             data={posts}
             keyExtractor={keyExtractor}
             renderItem={renderPost}

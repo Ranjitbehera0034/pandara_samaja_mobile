@@ -122,6 +122,7 @@ export default function AdminMatrimonyHistoryScreen() {
           </View>
         ) : (
           <FlashList
+            maintainVisibleContentPosition={{ disabled: true }}
             data={candidates}
             keyExtractor={keyExtractor}
             renderItem={renderCandidate}
