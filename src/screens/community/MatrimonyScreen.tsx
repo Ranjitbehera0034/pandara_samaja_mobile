@@ -597,7 +597,10 @@ export default function MatrimonyScreen() {
   // Re-shown every time this screen gains focus, not just on first mount —
   // it lives in a bottom-tab stack, which keeps the screen instance mounted
   // across tab switches, so a plain useEffect would only ever fire once.
-  const [showSplash, setShowSplash] = useState(false);
+  // Starts true (not false) so the very first render — before the focus
+  // effect below even runs — already has the splash up instead of
+  // flashing the real content for one frame first.
+  const [showSplash, setShowSplash] = useState(true);
   useFocusEffect(
     useCallback(() => {
       setShowSplash(true);
@@ -857,8 +860,18 @@ export default function MatrimonyScreen() {
   };
   const labelStyle = { color: C.textMuted, marginBottom: spacing.xs, fontFamily, ...typography.caption };
 
+  // Data loads in the background regardless (see loadBrowse's own effect
+  // above) so the list is ready the instant the splash finishes — only
+  // the visible UI is held back, not the fetch itself.
+  if (showSplash) {
+    return (
+      <View style={{ flex: 1, backgroundColor: C.bg }}>
+        <MatrimonySplash onFinish={() => setShowSplash(false)} />
+      </View>
+    );
+  }
+
   return (
-    <>
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top }}>
       {/* Header */}
       <View
@@ -1211,7 +1224,5 @@ export default function MatrimonyScreen() {
         onApply={(f, s) => { setFilters(f); setSort(s); }}
       />
     </View>
-    {showSplash && <MatrimonySplash onFinish={() => setShowSplash(false)} />}
-    </>
   );
 }
