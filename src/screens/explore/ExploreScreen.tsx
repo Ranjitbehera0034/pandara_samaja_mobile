@@ -268,7 +268,7 @@ export default function ExploreScreen() {
           {activeTab === 'news' && (
             <View>
               {(!newsLoading || newsLoaded) && availableCategories.length > 0 && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }} contentContainerStyle={{ gap: spacing.sm }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }} contentContainerStyle={{ gap: spacing.sm, alignItems: 'center' }}>
                   <TouchableOpacity
                     onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSelectedCategory(null); }}
                     style={{
