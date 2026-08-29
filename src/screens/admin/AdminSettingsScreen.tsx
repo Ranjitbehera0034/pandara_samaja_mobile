@@ -27,10 +27,11 @@ export default function AdminSettingsScreen() {
 
   const [profileEmail, setProfileEmail] = useState('');
   const [profileMembershipNo, setProfileMembershipNo] = useState('');
+  const [profileMobile, setProfileMobile] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
 
   const handleSaveProfile = async () => {
-    const data: { email?: string; membershipNo?: string } = {};
+    const data: { email?: string; membershipNo?: string; mobile?: string } = {};
     if (adminUser?.needsEmailPrompt) {
       if (!profileEmail.trim()) {
         Alert.alert(t('common', 'errorTitle'), t('admin', 'profileEmailRequiredError'));
@@ -45,6 +46,13 @@ export default function AdminSettingsScreen() {
       }
       data.membershipNo = profileMembershipNo.trim();
     }
+    if (adminUser?.needsMobilePrompt) {
+      if (!profileMobile.trim()) {
+        Alert.alert(t('common', 'errorTitle'), t('admin', 'profileMobileRequiredError'));
+        return;
+      }
+      data.mobile = profileMobile.trim();
+    }
     setSavingProfile(true);
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -54,6 +62,7 @@ export default function AdminSettingsScreen() {
         await refreshAdminUser();
         setProfileEmail('');
         setProfileMembershipNo('');
+        setProfileMobile('');
         Alert.alert(t('common', 'successTitle'), t('admin', 'profileUpdatedSuccess'));
       } else {
         throw new Error(res.message || t('admin', 'profileUpdateError'));
@@ -153,12 +162,17 @@ export default function AdminSettingsScreen() {
           </Text>
 
           <Text style={labelStyle}>{t('admin', 'profileMembershipLabel')}</Text>
-          <Text style={{ color: adminUser?.membershipNo ? C.text : C.warning, fontFamily: fontRegular, ...typography.body }}>
+          <Text style={{ color: adminUser?.membershipNo ? C.text : C.warning, fontFamily: fontRegular, marginBottom: spacing.lg, ...typography.body }}>
             {adminUser?.membershipNo || t('admin', 'profileNotSet')}
+          </Text>
+
+          <Text style={labelStyle}>{t('admin', 'mobileLabel')}</Text>
+          <Text style={{ color: adminUser?.mobile ? C.text : C.warning, fontFamily: fontRegular, ...typography.body }}>
+            {adminUser?.mobile || t('admin', 'profileNotSet')}
           </Text>
         </View>
 
-        {(adminUser?.needsEmailPrompt || adminUser?.needsMembershipPrompt) && (
+        {(adminUser?.needsEmailPrompt || adminUser?.needsMembershipPrompt || adminUser?.needsMobilePrompt) && (
           <View style={{ backgroundColor: C.warning + '10', borderColor: C.warning + '40', borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg, ...shadow.card }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
               <AlertTriangle size={18} color={C.warning} />

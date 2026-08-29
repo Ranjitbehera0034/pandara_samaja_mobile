@@ -27,11 +27,14 @@ export interface AdminUser {
   role: 'admin' | 'superadmin';
   email?: string | null;
   membershipNo?: string | null;
+  mobile?: string | null;
   // Grace-period nag flags — true until this admin fills in the field via
   // updateAdminProfile. Login is never blocked on these; only surfaced as
-  // a persistent banner.
+  // a persistent banner. (needsMobilePrompt is theoretical in practice —
+  // login itself now requires a mobile on file, see adminLoginRequest.)
   needsEmailPrompt?: boolean;
   needsMembershipPrompt?: boolean;
+  needsMobilePrompt?: boolean;
 }
 
 export interface AdminAccountRow {
@@ -49,6 +52,7 @@ export interface AdminAccountRow {
   // newly-created admin/superadmin account going forward.
   email?: string | null;
   membership_no?: string | null;
+  mobile?: string | null;
 }
 
 export interface AdminMember {
@@ -91,9 +95,24 @@ export interface ReportedPost {
 }
 
 // ── Auth ──
+// Two-step login: password first, then an OTP sent (via Firebase Phone
+// Auth, same mechanism the member app uses) to the admin's own registered
+// mobile — see AdminAuthContext for how these two calls are wired
+// together with the FirebaseRecaptcha WebView.
 
+// Step 1: username + password → a short-lived pendingToken, not a session.
 export const adminLoginRequest = async (username: string, password: string) => {
   const res = await adminClient.post('/admin/login', { username, password });
+  return res.data as {
+    success: boolean; message?: string;
+    requiresOtp?: boolean; pendingToken?: string; mobile?: string; maskedMobile?: string;
+  };
+};
+
+// Step 2: Firebase ID token (from the phone-auth flow) + the pendingToken
+// from step 1 → the real session token.
+export const adminVerifyOtp = async (pendingToken: string, idToken: string) => {
+  const res = await adminClient.post('/admin/login/verify-otp', { pendingToken, idToken });
   return res.data as { success: boolean; message?: string; token?: string; user?: AdminUser };
 };
 
@@ -179,9 +198,10 @@ export const createAdminAccount = async (
   password: string,
   role: 'admin' | 'superadmin',
   email: string,
-  membershipNo: string
+  membershipNo: string,
+  mobile: string
 ) => {
-  const res = await adminClient.post('/admin/users', { username, password, role, email, membershipNo });
+  const res = await adminClient.post('/admin/users', { username, password, role, email, membershipNo, mobile });
   return res.data as { success: boolean; message?: string; user?: AdminAccountRow };
 };
 
@@ -190,9 +210,11 @@ export const deleteAdminAccount = async (id: string | number) => {
   return res.data as { success: boolean; message?: string };
 };
 
+// Superadmin editing another admin's details (username/role/password reset,
+// or their email/membershipNo/mobile) — same route also handles promotion.
 export const updateAdminAccount = async (
   id: string | number,
-  data: { username?: string; role?: 'admin' | 'superadmin'; password?: string; email?: string; membershipNo?: string }
+  data: { username?: string; role?: 'admin' | 'superadmin'; password?: string; email?: string; membershipNo?: string; mobile?: string }
 ) => {
   const res = await adminClient.put(`/admin/users/${id}`, data);
   return res.data as { success: boolean; message?: string; user?: AdminAccountRow };
@@ -211,8 +233,8 @@ export const changeAdminPassword = async (currentPassword: string, newPassword: 
 };
 
 // Self-service completion of the grace-period nag — fills in whichever of
-// email/membershipNo is passed, leaves the other untouched.
-export const updateAdminProfile = async (data: { email?: string; membershipNo?: string }) => {
+// email/membershipNo/mobile is passed, leaves the rest untouched.
+export const updateAdminProfile = async (data: { email?: string; membershipNo?: string; mobile?: string }) => {
   const res = await adminClient.put('/admin/settings/profile', data);
   return res.data as { success: boolean; message?: string; user?: AdminUser };
 };

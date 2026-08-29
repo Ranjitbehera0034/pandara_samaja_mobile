@@ -35,6 +35,7 @@ export default function AdminUsersScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newMembershipNo, setNewMembershipNo] = useState('');
+  const [newMobile, setNewMobile] = useState('');
   const [newRole, setNewRole] = useState<'admin' | 'superadmin'>('admin');
   const [creating, setCreating] = useState(false);
 
@@ -42,6 +43,9 @@ export default function AdminUsersScreen() {
   const [editUsername, setEditUsername] = useState('');
   const [editRole, setEditRole] = useState<'admin' | 'superadmin'>('admin');
   const [editPassword, setEditPassword] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editMembershipNo, setEditMembershipNo] = useState('');
+  const [editMobile, setEditMobile] = useState('');
   const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState<string | number | null>(null);
 
@@ -66,6 +70,7 @@ export default function AdminUsersScreen() {
     setNewPassword('');
     setNewEmail('');
     setNewMembershipNo('');
+    setNewMobile('');
     setNewRole('admin');
   };
 
@@ -86,10 +91,14 @@ export default function AdminUsersScreen() {
       Alert.alert(t('common', 'errorTitle'), t('admin', 'profileMembershipRequiredError'));
       return;
     }
+    if (!newMobile.trim()) {
+      Alert.alert(t('common', 'errorTitle'), t('admin', 'profileMobileRequiredError'));
+      return;
+    }
     setCreating(true);
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const data = await adminApi.createAdminAccount(newUsername.trim(), newPassword, newRole, newEmail.trim(), newMembershipNo.trim());
+      const data = await adminApi.createAdminAccount(newUsername.trim(), newPassword, newRole, newEmail.trim(), newMembershipNo.trim(), newMobile.trim());
       if (data.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowCreate(false);
@@ -142,6 +151,9 @@ export default function AdminUsersScreen() {
     setEditUsername(row.username);
     setEditRole(row.role);
     setEditPassword('');
+    setEditEmail(row.email || '');
+    setEditMembershipNo(row.membership_no || '');
+    setEditMobile(row.mobile || '');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
@@ -158,6 +170,9 @@ export default function AdminUsersScreen() {
         username: editUsername.trim(),
         role: editRole,
         password: editPassword || undefined,
+        email: editEmail.trim() || undefined,
+        membershipNo: editMembershipNo.trim() || undefined,
+        mobile: editMobile.trim() || undefined,
       });
       if (data.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -351,6 +366,18 @@ export default function AdminUsersScreen() {
               autoCorrect={false}
             />
 
+            <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'mobileLabel')}</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.xs, backgroundColor: C.card, borderColor: C.border, color: C.text, ...typography.body }}
+              placeholder={t('admin', 'mobilePlaceholder')}
+              placeholderTextColor={C.textFaint}
+              value={newMobile}
+              onChangeText={setNewMobile}
+              keyboardType="phone-pad"
+              maxLength={10}
+            />
+            <Text style={{ color: C.textFaint, marginBottom: spacing.lg, ...typography.caption }}>{t('admin', 'mobileCaption')}</Text>
+
             <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'roleFieldLabel')}</Text>
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xl }}>
               {(['admin', 'superadmin'] as const).map(r => (
@@ -409,6 +436,40 @@ export default function AdminUsersScreen() {
               secureTextEntry
               autoCapitalize="none"
               autoCorrect={false}
+            />
+
+            <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'emailLabel')}</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text, ...typography.body }}
+              placeholder={t('admin', 'emailPlaceholder')}
+              placeholderTextColor={C.textFaint}
+              value={editEmail}
+              onChangeText={setEditEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'profileMembershipLabel')}</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text, ...typography.body }}
+              placeholder={t('admin', 'profileMembershipPlaceholder')}
+              placeholderTextColor={C.textFaint}
+              value={editMembershipNo}
+              onChangeText={setEditMembershipNo}
+              autoCapitalize="characters"
+              autoCorrect={false}
+            />
+
+            <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'mobileLabel')}</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text, ...typography.body }}
+              placeholder={t('admin', 'mobilePlaceholder')}
+              placeholderTextColor={C.textFaint}
+              value={editMobile}
+              onChangeText={setEditMobile}
+              keyboardType="phone-pad"
+              maxLength={10}
             />
 
             <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('admin', 'roleFieldLabel')}</Text>
