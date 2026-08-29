@@ -13,14 +13,14 @@ interface SocketHandlers {
   onNewComment?: (data: { postId: string; comment: any }) => void;
   onCommentLikeUpdated?: (data: { commentId: string; likes: number }) => void;
   onNotificationCount?: (data: { count: number }) => void;
-  onUserOnline?: (data: { userId: string }) => void;
-  onUserOffline?: (data: { userId: string }) => void;
+  onUserOnline?: (data: { userId: string; mobile?: string }) => void;
+  onUserOffline?: (data: { userId: string; mobile?: string }) => void;
   onReceiveMessage?: (message: any) => void;
   onMessageSent?: (message: any) => void;
   onMessageError?: (data: { error: string }) => void;
-  onTypingStart?: (data: { senderId: string }) => void;
-  onTypingStop?: (data: { senderId: string }) => void;
-  onMessagesRead?: (data: { readerId: string }) => void;
+  onTypingStart?: (data: { senderId: string; senderMobile?: string }) => void;
+  onTypingStop?: (data: { senderId: string; senderMobile?: string }) => void;
+  onMessagesRead?: (data: { readerId: string; readerMobile?: string }) => void;
   onLiveStarted?: (stream: any) => void;
   onLiveEnded?: (data: { roomName: string }) => void;
   onLiveViewerCount?: (data: { roomName: string; count: number }) => void;
@@ -109,20 +109,20 @@ export const useSocket = (handlers: SocketHandlers, options: UseSocketOptions = 
     socketRef.current?.emit('join_chat', { userId });
   };
 
-  const sendMessage = (receiverId: string, content: string, type = 'text') => {
-    socketRef.current?.emit('send_message', { receiverId, content, type });
+  const sendMessage = (receiverId: string, receiverMobile: string, content: string, type = 'text') => {
+    socketRef.current?.emit('send_message', { receiverId, receiverMobile, content, type });
   };
 
-  const typingStart = (receiverId: string) => {
-    socketRef.current?.emit('typing_start', { receiverId });
+  const typingStart = (receiverId: string, receiverMobile: string) => {
+    socketRef.current?.emit('typing_start', { receiverId, receiverMobile });
   };
 
-  const typingStop = (receiverId: string) => {
-    socketRef.current?.emit('typing_stop', { receiverId });
+  const typingStop = (receiverId: string, receiverMobile: string) => {
+    socketRef.current?.emit('typing_stop', { receiverId, receiverMobile });
   };
 
-  const markRead = (senderId: string) => {
-    socketRef.current?.emit('mark_read', { senderId });
+  const markRead = (senderId: string, senderMobile: string) => {
+    socketRef.current?.emit('mark_read', { senderId, senderMobile });
   };
 
   const joinLive = (roomName: string) => {

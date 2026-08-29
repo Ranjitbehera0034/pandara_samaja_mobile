@@ -5,6 +5,7 @@ export interface NotificationRow {
   id: string;
   recipient_id: string;
   actor_id: string;
+  actor_mobile: string | null;
   actor_name: string;
   actor_avatar: string | null;
   type: string;

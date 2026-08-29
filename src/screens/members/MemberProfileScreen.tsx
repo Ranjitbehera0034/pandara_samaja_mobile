@@ -79,7 +79,7 @@ export default function MemberProfileScreen() {
 
   const handleMessage = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    navigation.navigate('Chat', { withId: profile.id, withName: profile.name });
+    navigation.navigate('Chat', { withId: profile.id, withMobile: profile.mobile, withName: profile.name });
   };
 
   const handleTabPress = (tabKey: 'posts' | 'family' | 'gallery') => {

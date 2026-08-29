@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../theme/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useChat } from '../context/ChatContext';
 
 // Import all screen placeholders
 import FeedScreen from '../screens/feed/FeedScreen';
@@ -102,6 +103,7 @@ export default function MainTabs() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const { unreadCount } = useChat();
 
   const handleTabPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -145,7 +147,12 @@ export default function MainTabs() {
       <Tab.Screen
         name="Chat"
         component={ChatScreen}
-        options={{ tabBarIcon: ({ color }) => <MessageSquare size={22} color={color} />, tabBarLabel: t('nav', 'messages') }}
+        options={{
+          tabBarIcon: ({ color }) => <MessageSquare size={22} color={color} />,
+          tabBarLabel: t('nav', 'messages'),
+          tabBarBadge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined,
+          tabBarBadgeStyle: { fontSize: 10, minWidth: 16, height: 16, lineHeight: 16 },
+        }}
         listeners={{ tabPress: handleTabPress }}
       />
       <Tab.Screen

@@ -25,6 +25,7 @@ interface Notification {
   timestamp: string;
   read: boolean;
   senderId?: string;
+  senderMobile?: string | null;
   postId?: string;
 }
 
@@ -37,6 +38,7 @@ function mapNotification(row: NotificationRow): Notification {
     timestamp: timeAgoShort(row.created_at),
     read: row.read,
     senderId: row.actor_id,
+    senderMobile: row.actor_mobile,
     postId: row.post_id ?? undefined,
   };
 }
@@ -138,8 +140,8 @@ export default function NotificationsScreen() {
       navigation.navigate('FeedMain');
     } else if (notif.type === 'follow' && notif.senderId) {
       navigation.navigate('MemberProfile', { id: notif.senderId });
-    } else if (notif.type === 'message' && notif.senderId) {
-      navigation.navigate('Chat', { withId: notif.senderId, withName: notif.title });
+    } else if (notif.type === 'message' && notif.senderId && notif.senderMobile) {
+      navigation.navigate('Chat', { withId: notif.senderId, withMobile: notif.senderMobile, withName: notif.title });
     }
   };
 

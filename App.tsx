@@ -12,6 +12,7 @@ import { File, Paths } from 'expo-file-system';
 import Toast from 'react-native-toast-message';
 import { ShareIntentProvider, useShareIntentContext } from 'expo-share-intent';
 import { AuthProvider } from './src/context/AuthContext';
+import { ChatProvider } from './src/context/ChatContext';
 import { AdminAuthProvider } from './src/context/AdminAuthContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
@@ -211,11 +212,13 @@ export default function App() {
         <ThemeProvider>
           <LanguageProvider>
             <AuthProvider>
-              <AdminAuthProvider>
-                <ErrorBoundary>
-                  <AppContent />
-                </ErrorBoundary>
-              </AdminAuthProvider>
+              <ChatProvider>
+                <AdminAuthProvider>
+                  <ErrorBoundary>
+                    <AppContent />
+                  </ErrorBoundary>
+                </AdminAuthProvider>
+              </ChatProvider>
             </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>

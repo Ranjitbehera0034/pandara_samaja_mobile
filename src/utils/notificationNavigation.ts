@@ -10,6 +10,7 @@ import { navigationRef } from '../navigation/RootNavigator';
 export interface NotificationData {
   type?: 'message' | 'like' | 'comment' | 'new_post' | 'follow' | 'announcement' | string;
   fromId?: string;
+  fromMobile?: string;
   postId?: string | number;
   [key: string]: any;
 }
@@ -23,7 +24,7 @@ export function navigateFromNotificationData(data: NotificationData | undefined 
       case 'message':
         // ChatScreen is a top-level tab (not nested in a stack) and already
         // supports deep-linking into a specific thread via {withId, withName}.
-        navigationRef.navigate('Chat', { withId: data.fromId });
+        navigationRef.navigate('Chat', { withId: data.fromId, withMobile: data.fromMobile });
         break;
 
       case 'like':
