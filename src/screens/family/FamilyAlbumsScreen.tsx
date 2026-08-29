@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, TextInput,
-  Modal, Alert, RefreshControl, ActivityIndicator, Dimensions
+  Modal, Alert, RefreshControl, ActivityIndicator, useWindowDimensions
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -15,8 +15,6 @@ import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import SkeletonBox from '../../components/common/SkeletonBox';
 import EmptyState from '../../components/common/EmptyState';
-
-const { width: W } = Dimensions.get('window');
 
 interface AlbumPhoto {
   id: string | number;
@@ -52,6 +50,7 @@ function AlbumsSkeleton({ colors, spacing, radius, cardWidth }: any) {
 export default function FamilyAlbumsScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { width: W } = useWindowDimensions();
   const { colors: C, spacing, radius, typography, shadow } = useTheme();
   const { lang, t } = useLanguage();
   const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;

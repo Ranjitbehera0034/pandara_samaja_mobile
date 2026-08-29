@@ -1,13 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, Dimensions } from 'react-native';
+import { View, Text, Animated } from 'react-native';
 import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import { useTheme } from '../theme/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 
 SplashScreen.preventAutoHideAsync();
-
-const { width } = Dimensions.get('window');
 
 export default function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
   const { colors } = useTheme();

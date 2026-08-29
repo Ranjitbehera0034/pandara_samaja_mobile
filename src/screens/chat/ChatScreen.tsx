@@ -10,7 +10,7 @@ import {
   FlatList,
   Modal,
   Animated,
-  Dimensions,
+  useWindowDimensions,
   Alert,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -28,8 +28,6 @@ import { timeAgoShort } from '../../utils/feedUtils';
 import SkeletonBox from '../../components/common/SkeletonBox';
 import EmptyState from '../../components/common/EmptyState';
 import Avatar from '../../components/common/Avatar';
-
-const { width: W } = Dimensions.get('window');
 
 interface ChatMessage {
   id: string;
@@ -136,6 +134,7 @@ function TypingIndicator({ colors }: { colors: ReturnType<typeof useTheme>['colo
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
+  const { width: W } = useWindowDimensions();
   const { lang, t } = useLanguage();
   const { colors: C, spacing, radius, typography, shadow } = useTheme();
   const { member } = useAuth();

@@ -1,7 +1,8 @@
 // src/components/feed/StoryCameraScreen.tsx
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { Camera, type CameraRef, useCameraDevice, useCameraPermission, usePhotoOutput } from 'react-native-vision-camera';
 import { ImageFormat, Skia } from '@shopify/react-native-skia';
 import { File, Paths } from 'expo-file-system';
@@ -41,6 +42,24 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
   const cameraRef = useRef<CameraRef>(null);
   const [filterId, setFilterId] = useState('normal');
   const [capturing, setCapturing] = useState(false);
+
+  // Camera sensor orientation doesn't follow UI rotation the way flexbox
+  // layouts do — most apps (Instagram, WhatsApp) keep their camera screens
+  // portrait-locked even when the rest of the app rotates freely, since a
+  // live viewfinder rotating mid-shot is both hard to get right and rarely
+  // useful (on-screen controls have a fixed layout either way). This app
+  // now supports rotation everywhere else, so lock just this screen while
+  // it's open and hand rotation back once it closes.
+  useEffect(() => {
+    if (visible) {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+    } else {
+      ScreenOrientation.unlockAsync().catch(() => {});
+    }
+    return () => {
+      ScreenOrientation.unlockAsync().catch(() => {});
+    };
+  }, [visible]);
 
   const activeFilter = STORY_FILTERS.find((f) => f.id === filterId) ?? STORY_FILTERS[0];
 

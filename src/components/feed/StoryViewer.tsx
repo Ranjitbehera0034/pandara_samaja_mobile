@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, Image, Modal, TouchableOpacity, TextInput,
-  Dimensions, Animated, Pressable, FlatList, Alert, ActivityIndicator,
+  useWindowDimensions, Animated, Pressable, FlatList, Alert, ActivityIndicator,
   KeyboardAvoidingView, Platform
 } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
@@ -18,7 +18,6 @@ import EmptyState from '../common/EmptyState';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const STORY_DURATION = 5000; // 5 seconds per story
 
 interface Props {
@@ -33,6 +32,7 @@ interface Props {
 
 export default function StoryViewer({ visible, stories, currentMemberId, onClose, onStoryViewed, onStoryDeleted, onStoryLiked }: Props) {
   const { colors: C, spacing, radius, typography } = useTheme();
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
   const { lang, t } = useLanguage();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);

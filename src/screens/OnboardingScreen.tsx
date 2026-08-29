@@ -1,14 +1,12 @@
 // src/screens/OnboardingScreen.tsx
 import React, { useRef, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, Dimensions,
+  View, Text, TouchableOpacity, useWindowDimensions,
   ScrollView, Animated
 } from 'react-native';
 import { storage } from '../utils/secureStorage';
 import { useTheme } from '../theme/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-
-const { width: W } = Dimensions.get('window');
 
 const SLIDE_META = [
   { emoji: '🏛️', titleKey: 'slide1Title', bodyKey: 'slide1Body', accentKey: 'primary' as const },
@@ -20,6 +18,7 @@ const SLIDE_META = [
 export default function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
+  const { width: W } = useWindowDimensions();
   const { colors, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
   const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;

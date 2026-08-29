@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity,
-  ScrollView, ActivityIndicator, Dimensions
+  ScrollView, ActivityIndicator, useWindowDimensions
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,13 +19,13 @@ import Avatar from '../../components/common/Avatar';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
-const { width: W } = Dimensions.get('window');
 const isFemale = (g?: string | null) => ['female', 'f'].includes((g || '').toLowerCase());
 
 export default function MemberProfileScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
+  const { width: W } = useWindowDimensions();
   const { colors: C, spacing, radius, typography, shadow } = useTheme();
   const { lang, t } = useLanguage();
   const { id, name: nameParam } = route.params || {};

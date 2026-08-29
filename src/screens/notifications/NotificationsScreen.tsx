@@ -1,6 +1,6 @@
 // src/screens/notifications/NotificationsScreen.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, RefreshControl, Dimensions, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Bell, Check, Trash2 } from 'lucide-react-native';
@@ -16,8 +16,6 @@ import { NotificationRow } from '../../api/notifications';
 import { timeAgoShort } from '../../utils/feedUtils';
 import SkeletonBox from '../../components/common/SkeletonBox';
 import EmptyState from '../../components/common/EmptyState';
-
-const { width: W } = Dimensions.get('window');
 
 interface Notification {
   id: string;

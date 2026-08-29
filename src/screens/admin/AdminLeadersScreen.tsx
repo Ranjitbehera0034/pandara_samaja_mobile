@@ -1,6 +1,6 @@
 // src/screens/admin/AdminLeadersScreen.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, RefreshControl, Modal, Pressable, ScrollView, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, RefreshControl, Modal, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
 import { Search, X, ArrowLeft, Plus, MapPin } from 'lucide-react-native';
@@ -25,6 +25,7 @@ type LevelFilter = '' | typeof LEVELS[number];
 export default function AdminLeadersScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   const { colors: C, spacing, radius, typography, shadow } = useTheme();
   const { lang, t } = useLanguage();
   const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
@@ -259,7 +260,7 @@ export default function AdminLeadersScreen() {
           <View
             style={{
               backgroundColor: C.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl,
-              maxHeight: Dimensions.get('window').height * 0.7, paddingBottom: insets.bottom + spacing.xl, padding: spacing.xl,
+              maxHeight: windowHeight * 0.7, paddingBottom: insets.bottom + spacing.xl, padding: spacing.xl,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>

@@ -2,7 +2,7 @@
 // Full-screen, swipeable, Inshorts-style reader — swiping left/right moves
 // between articles instead of backing out to the list each time.
 import React, { useRef } from 'react';
-import { View, Text, Modal, FlatList, TouchableOpacity, ScrollView, Dimensions, Alert, Linking } from 'react-native';
+import { View, Text, Modal, FlatList, TouchableOpacity, ScrollView, useWindowDimensions, Alert, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { X, ExternalLink } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -11,8 +11,6 @@ import { NewsItem } from '../../api/news';
 import { timeAgoShort } from '../../utils/feedUtils';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface Props {
   visible: boolean;
@@ -25,7 +23,29 @@ export default function NewsViewer({ visible, items, initialIndex, onClose }: Pr
   const insets = useSafeAreaInsets();
   const { colors: C, spacing, radius, typography } = useTheme();
   const { t } = useLanguage();
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
   const listRef = useRef<FlatList>(null);
+  const currentIndexRef = useRef(initialIndex);
+
+  // Same resnap-on-rotation reasoning as MediaViewerModal — a paging
+  // FlatList's existing scroll offset is wrong for the new width after
+  // rotation, landing between two articles instead of on one.
+  const isFirstRender = useRef(true);
+  React.useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    listRef.current?.scrollToIndex({ index: currentIndexRef.current, animated: false });
+  }, [SCREEN_WIDTH]);
+
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: { isViewable: boolean; index: number | null }[] }) => {
+      const first = viewableItems.find((v) => v.isViewable);
+      if (first && first.index != null) currentIndexRef.current = first.index;
+    }
+  ).current;
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
 
   const openFullArticle = (url: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -46,6 +66,8 @@ export default function NewsViewer({ visible, items, initialIndex, onClose }: Pr
           showsHorizontalScrollIndicator={false}
           getItemLayout={(_, index) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * index, index })}
           initialScrollIndex={initialIndex}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
           renderItem={({ item }) => (
             <View style={{ width: SCREEN_WIDTH, flex: 1 }}>
               <ScrollView showsVerticalScrollIndicator={false}>

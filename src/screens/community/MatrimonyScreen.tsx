@@ -17,7 +17,7 @@ import {
   Modal,
   Alert,
   ActivityIndicator,
-  Dimensions,
+  useWindowDimensions,
   Linking,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -39,8 +39,6 @@ import EmptyState from '../../components/common/EmptyState';
 import Button from '../../components/common/Button';
 import MatrimonySplash from '../../components/matrimony/MatrimonySplash';
 import MediaViewerModal from '../../components/feed/MediaViewerModal';
-
-const { width: W, height: H } = Dimensions.get('window');
 
 type TabKey = 'browse' | 'submit' | 'myApplications';
 type SortKey = 'newest' | 'age_asc' | 'age_desc' | 'name';
@@ -134,6 +132,7 @@ function PhotoCarousel({ photos, width, height, borderRadius, colors: C, activeI
 //  Candidate detail modal (browse tap)
 // ════════════════════════════════════════════════
 function CandidateDetailModal({ candidate, onClose }: { candidate: Candidate | null; onClose: () => void }) {
+  const { width: W, height: H } = useWindowDimensions();
   const { colors: C, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
   const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;
@@ -440,6 +439,7 @@ function MatrimonyFilterModal({ visible, onClose, filters, sort, onApply }: {
 //  Browse card (no swipe — plain tap-to-open-detail)
 // ════════════════════════════════════════════════
 function CandidateCard({ candidate, onOpenDetail }: { candidate: Candidate; onOpenDetail: () => void }) {
+  const { width: W } = useWindowDimensions();
   const { colors: C, spacing, radius, typography, shadow } = useTheme();
   const { lang, t } = useLanguage();
   const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;
@@ -516,6 +516,7 @@ function CandidateCard({ candidate, onOpenDetail }: { candidate: Candidate; onOp
 }
 
 function BrowseSkeleton({ colors: C, spacing, radius }: { colors: ReturnType<typeof useTheme>['colors']; spacing: ReturnType<typeof useTheme>['spacing']; radius: ReturnType<typeof useTheme>['radius'] }) {
+  const { width: W } = useWindowDimensions();
   const cardWidth = W - spacing.lg * 2;
   return (
     <View style={{ padding: spacing.lg }}>

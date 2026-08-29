@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  ActivityIndicator, Dimensions, Modal, Pressable
+  ActivityIndicator, useWindowDimensions, Modal, Pressable
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useNavigation } from '@react-navigation/native';
@@ -16,9 +16,6 @@ import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 type LevelKey = 'State' | 'District' | 'Taluka' | 'Panchayat';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = (SCREEN_WIDTH - 40) / 2; // Two items per row
 
 interface Leader {
   id: number;
@@ -35,6 +32,8 @@ interface Leader {
 export default function LeadersScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { width: SCREEN_WIDTH, height: windowHeight } = useWindowDimensions();
+  const CARD_WIDTH = (SCREEN_WIDTH - 40) / 2; // Two items per row
   const { colors, spacing, radius, typography, shadow } = useTheme();
   const { lang, t } = useLanguage();
   const [activeLevel, setActiveLevel] = useState<LevelKey>('State');
@@ -144,7 +143,7 @@ export default function LeadersScreen() {
         ) : null}
       </View>
     );
-  }, [levelMeta, colors, lang]);
+  }, [levelMeta, colors, lang, CARD_WIDTH]);
 
   // Grouped leaders map
   const groupedByLocation = needsLocation && !selectedLocation
@@ -310,7 +309,7 @@ export default function LeadersScreen() {
       >
         <Pressable style={{ backgroundColor: 'rgba(0,0,0,0.6)' }} className="flex-1 justify-end" onPress={() => setShowLocationModal(false)}>
           <View
-            style={{ backgroundColor: colors.card, borderColor: colors.border, maxHeight: Dimensions.get('window').height * 0.7, paddingBottom: insets.bottom + spacing.xl, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xl }}
+            style={{ backgroundColor: colors.card, borderColor: colors.border, maxHeight: windowHeight * 0.7, paddingBottom: insets.bottom + spacing.xl, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xl }}
             className="border-t"
           >
             <View style={{ marginBottom: spacing.lg }} className="flex-row items-center justify-between">

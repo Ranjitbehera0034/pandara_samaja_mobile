@@ -1,14 +1,11 @@
 // src/components/feed/MediaGrid.tsx
 import React from 'react';
-import { View, Text, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, useWindowDimensions, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Video, ResizeMode } from 'expo-av';
 import { MediaItem } from '../../types';
 import { cleanPhoto } from '../../utils/googleDriveUrl';
 import { useTheme } from '../../theme/ThemeContext';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const MEDIA_WIDTH = SCREEN_WIDTH - 32; // 16px padding each side
 
 interface Props {
   media: MediaItem[];
@@ -18,6 +15,8 @@ interface Props {
 
 export default function MediaGrid({ media, onVideoPlay, onMediaPress }: Props) {
   const { colors, spacing, radius, typography } = useTheme();
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const MEDIA_WIDTH = SCREEN_WIDTH - 32; // 16px padding each side
   if (!media || media.length === 0) return null;
 
   // Single media

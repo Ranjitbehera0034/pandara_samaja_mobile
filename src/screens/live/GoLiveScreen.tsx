@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { X, Users, Send } from 'lucide-react-native';
 import { Room, RoomEvent, LocalTrackPublication, Track } from 'livekit-client';
 import { VideoTrack } from '@livekit/react-native';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useSocket } from '../../hooks/useSocket';
@@ -40,6 +41,17 @@ export default function GoLiveScreen() {
 
   const roomRef = useRef<Room | null>(null);
   const roomNameRef = useRef<string | null>(null);
+
+  // Same reasoning as StoryCameraScreen — broadcasting your own camera is
+  // one of the few flows where locking to portrait while active is
+  // deliberate, not an oversight, even in an app that otherwise rotates
+  // freely.
+  useEffect(() => {
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+    return () => {
+      ScreenOrientation.unlockAsync().catch(() => {});
+    };
+  }, []);
 
   const { joinLive, leaveLive, sendLiveComment } = useSocket(
     {

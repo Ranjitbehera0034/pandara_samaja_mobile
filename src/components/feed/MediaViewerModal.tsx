@@ -1,7 +1,7 @@
 // src/components/feed/MediaViewerModal.tsx
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  View, Modal, TouchableOpacity, Dimensions, FlatList, ViewToken,
+  View, Modal, TouchableOpacity, useWindowDimensions, FlatList, ViewToken,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Video, ResizeMode } from 'expo-av';
@@ -17,7 +17,6 @@ import { MediaItem } from '../../types';
 import { cleanPhoto } from '../../utils/googleDriveUrl';
 import { useTheme } from '../../theme/ThemeContext';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MAX_SCALE = 4;
 const DOUBLE_TAP_SCALE = 2.5;
 
@@ -31,6 +30,7 @@ interface Props {
 export default function MediaViewerModal({ visible, media, initialIndex, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const { spacing, radius } = useTheme();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const flatListRef = useRef<FlatList<MediaItem>>(null);
 
@@ -38,6 +38,20 @@ export default function MediaViewerModal({ visible, media, initialIndex, onClose
   useEffect(() => {
     if (visible) setCurrentIndex(initialIndex);
   }, [visible, initialIndex]);
+
+  // A rotation mid-view changes screenWidth, but the FlatList's existing
+  // scroll offset was computed for the OLD width — without resnapping, the
+  // paged view lands between pages (partially showing two photos at once).
+  // Skip the very first render (mount) since there's nothing to resnap yet.
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    flatListRef.current?.scrollToIndex({ index: currentIndex, animated: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screenWidth]);
 
   const onViewableItemsChanged = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -52,11 +66,11 @@ export default function MediaViewerModal({ visible, media, initialIndex, onClose
 
   const getItemLayout = useCallback(
     (_: ArrayLike<MediaItem> | null | undefined, index: number) => ({
-      length: SCREEN_WIDTH,
-      offset: SCREEN_WIDTH * index,
+      length: screenWidth,
+      offset: screenWidth * index,
       index,
     }),
-    []
+    [screenWidth]
   );
 
   // Fully unmount (and reset all internal state) when closed — mirrors StoryViewer's pattern
@@ -79,7 +93,7 @@ export default function MediaViewerModal({ visible, media, initialIndex, onClose
             onViewableItemsChanged={onViewableItemsChanged}
             viewabilityConfig={viewabilityConfig}
             renderItem={({ item, index }: { item: MediaItem; index: number }) => (
-              <MediaPage item={item} isActive={index === currentIndex} />
+              <MediaPage item={item} isActive={index === currentIndex} width={screenWidth} height={screenHeight} />
             )}
           />
 
@@ -131,15 +145,15 @@ export default function MediaViewerModal({ visible, media, initialIndex, onClose
   );
 }
 
-function MediaPage({ item, isActive }: { item: MediaItem; isActive: boolean }) {
+function MediaPage({ item, isActive, width, height }: { item: MediaItem; isActive: boolean; width: number; height: number }) {
   const uri = cleanPhoto(item.url) || item.url;
 
   if (item.type === 'video') {
     return (
-      <View style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
         <Video
           source={{ uri }}
-          style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
+          style={{ width, height }}
           useNativeControls
           resizeMode={ResizeMode.CONTAIN}
           shouldPlay={isActive}
@@ -149,10 +163,10 @@ function MediaPage({ item, isActive }: { item: MediaItem; isActive: boolean }) {
     );
   }
 
-  return <ZoomableImage uri={uri} isActive={isActive} />;
+  return <ZoomableImage uri={uri} isActive={isActive} width={width} height={height} />;
 }
 
-function ZoomableImage({ uri, isActive }: { uri: string; isActive: boolean }) {
+function ZoomableImage({ uri, isActive, width, height }: { uri: string; isActive: boolean; width: number; height: number }) {
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -233,9 +247,9 @@ function ZoomableImage({ uri, isActive }: { uri: string; isActive: boolean }) {
   }));
 
   return (
-    <View style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+    <View style={{ width, height, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
       <GestureDetector gesture={composedGesture}>
-        <Animated.View style={[{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }, animatedStyle]}>
+        <Animated.View style={[{ width, height }, animatedStyle]}>
           <Image
             source={{ uri }}
             style={{ width: '100%', height: '100%' }}
