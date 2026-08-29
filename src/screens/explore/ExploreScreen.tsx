@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { Image } from 'expo-image';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Compass, TrendingUp, Users, Hash, Newspaper, RefreshCw, CalendarDays } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -36,7 +37,22 @@ export default function ExploreScreen() {
   const { colors: C, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const [activeTab, setActiveTab] = useState<Tab>('news');
+
+  // A news push notification navigates here with { initialTab: 'news' } —
+  // this screen stays mounted across tab switches (standard bottom-tab
+  // behavior), so without this, tapping the notification would just reveal
+  // whatever pill the member last left selected instead of actually landing
+  // on News. Consumed once via setParams so it doesn't keep re-forcing News
+  // if the member later leaves and naturally returns to this tab.
+  useEffect(() => {
+    if (route.params?.initialTab === 'news') {
+      setActiveTab('news');
+      navigation.setParams({ initialTab: undefined });
+    }
+  }, [route.params?.initialTab, navigation]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [news, setNews] = useState<NewsItem[]>([]);

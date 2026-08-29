@@ -43,10 +43,13 @@ export function navigateFromNotificationData(data: NotificationData | undefined 
         break;
 
       case 'news':
-        // News is the default/first pill on the Explore tab (not a
-        // separate route) — no per-article deep link exists, same
-        // "land on the section" fallback as like/comment/new_post above.
-        navigationRef.navigate('Explore', { screen: 'ExploreMain' });
+        // News is a pill within the Explore tab (not a separate route) —
+        // no per-article deep link exists yet, so this lands on the News
+        // pill specifically rather than just the Explore tab. ExploreScreen
+        // stays mounted across tab switches, so passing initialTab forces
+        // News even if the member last left a different pill selected —
+        // see ExploreScreen's own effect that consumes this param.
+        navigationRef.navigate('Explore', { screen: 'ExploreMain', params: { initialTab: 'news' } });
         break;
 
       case 'new_job':
