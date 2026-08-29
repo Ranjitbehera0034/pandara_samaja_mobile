@@ -56,6 +56,10 @@ export function navigateFromNotificationData(data: NotificationData | undefined 
         navigationRef.navigate('Feed', { screen: 'Jobs' });
         break;
 
+      case 'new_candidate':
+        navigationRef.navigate('Feed', { screen: 'Matrimony' });
+        break;
+
       default:
         break;
     }
