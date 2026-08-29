@@ -227,7 +227,6 @@ const translations = {
     },
     matrimony: {
       title: 'Matrimony Services',
-      splashBlessing: 'Shubha Bibaha',
       verifiedBanner: 'All matrimony profiles are 100% verified by Samaja.',
       filterAll: 'All Candidates', filterBrides: 'Brides ♀', filterGrooms: 'Grooms ♂',
       groomTag: 'Groom ♂', brideTag: 'Bride ♀',
@@ -1329,7 +1328,6 @@ const translations = {
     },
     matrimony: {
       title: 'ବୈବାହିକ ପ୍ରସ୍ତାବ',
-      splashBlessing: 'ଶୁଭ ବିବାହ',
       verifiedBanner: 'ସମସ୍ତ ପ୍ରୋଫାଇଲ୍ ସମାଜ ଦ୍ୱାରା ଯାଞ୍ଚ ହୋଇଛି',
       filterAll: 'ସବୁ', filterBrides: 'ପାତ୍ରୀ ♀', filterGrooms: 'ପାତ୍ର ♂',
       groomTag: 'ପାତ୍ର ♂', brideTag: 'ପାତ୍ରୀ ♀',
