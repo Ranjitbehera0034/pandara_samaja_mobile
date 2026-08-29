@@ -1,11 +1,11 @@
 // src/screens/auth/LoginScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   ScrollView, KeyboardAvoidingView, Platform,
   Alert, Image, Linking
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Users } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -18,9 +18,11 @@ import { APP_NAME, APP_TAGLINE } from '../../config/constants';
 import Button from '../../components/common/Button';
 
 type Nav = StackNavigationProp<AuthStackParams, 'Login'>;
+type LoginRoute = RouteProp<AuthStackParams, 'Login'>;
 
 export default function LoginScreen() {
   const navigation = useNavigation<Nav>();
+  const route = useRoute<LoginRoute>();
   const { requestOtp } = useAuth();
   const insets = useSafeAreaInsets();
   const { colors, spacing, radius, typography, shadow } = useTheme();
@@ -28,9 +30,17 @@ export default function LoginScreen() {
   const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
   const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
 
-  const [membershipNo, setMembershipNo] = useState('');
+  const [membershipNo, setMembershipNo] = useState(route.params?.prefillMembershipNo || '');
   const [mobile, setMobile] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Coming back from "Find my membership" with a result — prefill even if
+  // this screen was already mounted (stack navigation keeps it alive).
+  useEffect(() => {
+    if (route.params?.prefillMembershipNo) {
+      setMembershipNo(route.params.prefillMembershipNo);
+    }
+  }, [route.params?.prefillMembershipNo]);
 
   const isValid = membershipNo.trim().length > 0 && mobile.replace(/\D/g, '').length === 10;
 
@@ -216,6 +226,18 @@ export default function LoginScreen() {
               {t('auth', 'joinGroupSubtitle')}
             </Text>
           </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            navigation.navigate('FindMembership');
+          }}
+          style={{ marginTop: spacing.lg, alignItems: 'center', paddingVertical: spacing.sm }}
+        >
+          <Text style={{ color: colors.primary, fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>
+            {t('auth', 'findMembershipLinkLabel')}
+          </Text>
         </TouchableOpacity>
 
         {/* Footer */}
