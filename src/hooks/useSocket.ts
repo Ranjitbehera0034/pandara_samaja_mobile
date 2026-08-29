@@ -37,6 +37,20 @@ export const useSocket = (handlers: SocketHandlers, options: UseSocketOptions = 
   const socketRef = useRef<Socket | null>(null);
   const tokenType = options.tokenType || 'member';
 
+  // Callers (e.g. ChatScreen) pass a fresh handlers object with new inline
+  // closures on every render — typing a single character used to redeclare
+  // onTypingStart/onMessageSent/etc, which (before this ref) sat in the
+  // effect's dependency array below and tore the whole socket down and
+  // reconnected it on nearly every keystroke. A message sent right as that
+  // reconnect churn was mid-flight could have its server ack land on a
+  // socket instance the client had already discarded, so the sender's own
+  // screen would never see their own just-sent message appear — even
+  // though it was correctly saved server-side the whole time. Routing
+  // dispatch through a ref means the connection is made once and handlers
+  // simply always call whatever is current, no reconnect required.
+  const handlersRef = useRef(handlers);
+  handlersRef.current = handlers;
+
   useEffect(() => {
     let socket: Socket;
 
@@ -67,31 +81,31 @@ export const useSocket = (handlers: SocketHandlers, options: UseSocketOptions = 
       });
 
       // Feed events
-      if (handlers.onNewPost) socket.on('new_post', handlers.onNewPost);
-      if (handlers.onLikeUpdated) socket.on('like_updated', handlers.onLikeUpdated);
-      if (handlers.onNewComment) socket.on('new_comment', handlers.onNewComment);
-      if (handlers.onCommentLikeUpdated) socket.on('comment_like_updated', handlers.onCommentLikeUpdated);
+      socket.on('new_post', (p: any) => handlersRef.current.onNewPost?.(p));
+      socket.on('like_updated', (d: any) => handlersRef.current.onLikeUpdated?.(d));
+      socket.on('new_comment', (d: any) => handlersRef.current.onNewComment?.(d));
+      socket.on('comment_like_updated', (d: any) => handlersRef.current.onCommentLikeUpdated?.(d));
 
       // Notification events
-      if (handlers.onNotificationCount) socket.on('notification_count', handlers.onNotificationCount);
+      socket.on('notification_count', (d: any) => handlersRef.current.onNotificationCount?.(d));
 
       // Presence events
-      if (handlers.onUserOnline) socket.on('user_online', handlers.onUserOnline);
-      if (handlers.onUserOffline) socket.on('user_offline', handlers.onUserOffline);
+      socket.on('user_online', (d: any) => handlersRef.current.onUserOnline?.(d));
+      socket.on('user_offline', (d: any) => handlersRef.current.onUserOffline?.(d));
 
       // Chat events
-      if (handlers.onReceiveMessage) socket.on('receive_message', handlers.onReceiveMessage);
-      if (handlers.onMessageSent) socket.on('message_sent', handlers.onMessageSent);
-      if (handlers.onMessageError) socket.on('message_error', handlers.onMessageError);
-      if (handlers.onTypingStart) socket.on('typing_start', handlers.onTypingStart);
-      if (handlers.onTypingStop) socket.on('typing_stop', handlers.onTypingStop);
-      if (handlers.onMessagesRead) socket.on('messages_read', handlers.onMessagesRead);
+      socket.on('receive_message', (m: any) => handlersRef.current.onReceiveMessage?.(m));
+      socket.on('message_sent', (m: any) => handlersRef.current.onMessageSent?.(m));
+      socket.on('message_error', (d: any) => handlersRef.current.onMessageError?.(d));
+      socket.on('typing_start', (d: any) => handlersRef.current.onTypingStart?.(d));
+      socket.on('typing_stop', (d: any) => handlersRef.current.onTypingStop?.(d));
+      socket.on('messages_read', (d: any) => handlersRef.current.onMessagesRead?.(d));
 
       // Live streaming events
-      if (handlers.onLiveStarted) socket.on('live_started', handlers.onLiveStarted);
-      if (handlers.onLiveEnded) socket.on('live_ended', handlers.onLiveEnded);
-      if (handlers.onLiveViewerCount) socket.on('live_viewer_count', handlers.onLiveViewerCount);
-      if (handlers.onLiveComment) socket.on('live_comment', handlers.onLiveComment);
+      socket.on('live_started', (s: any) => handlersRef.current.onLiveStarted?.(s));
+      socket.on('live_ended', (d: any) => handlersRef.current.onLiveEnded?.(d));
+      socket.on('live_viewer_count', (d: any) => handlersRef.current.onLiveViewerCount?.(d));
+      socket.on('live_comment', (d: any) => handlersRef.current.onLiveComment?.(d));
     };
 
     connectSocket();
@@ -99,7 +113,7 @@ export const useSocket = (handlers: SocketHandlers, options: UseSocketOptions = 
     return () => {
       if (socket) socket.disconnect();
     };
-  }, [tokenType, handlers.onNewPost, handlers.onLikeUpdated, handlers.onNewComment, handlers.onCommentLikeUpdated, handlers.onNotificationCount, handlers.onUserOnline, handlers.onUserOffline, handlers.onReceiveMessage, handlers.onMessageSent, handlers.onMessageError, handlers.onTypingStart, handlers.onTypingStop, handlers.onMessagesRead, handlers.onLiveStarted, handlers.onLiveEnded, handlers.onLiveViewerCount, handlers.onLiveComment]);
+  }, [tokenType]);
 
   const emit = (event: string, data?: any) => {
     socketRef.current?.emit(event, data);
