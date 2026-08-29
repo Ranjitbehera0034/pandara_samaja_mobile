@@ -56,10 +56,30 @@ const EMPTY_FILTERS: FilterState = { minAge: '', maxAge: '', education: '', gotr
 
 const LIMIT = 10;
 
-function getCandidatePhotos(c: Candidate): string[] {
+// Personal photos actually uploaded by/for the candidate — no fallback.
+function getRawPersonalPhotos(c: Candidate): string[] {
   if (c.photos && c.photos.length > 0) return c.photos;
   if (c.photo) return [c.photo];
   return [];
+}
+
+// What to show where personal photos would normally go. A candidate can
+// legitimately have no personal photos on file (e.g. only a form scan was
+// submitted) — falling back to the biodata form image there beats showing
+// a broken-image placeholder.
+function getDisplayPhotos(c: Candidate): string[] {
+  const raw = getRawPersonalPhotos(c);
+  if (raw.length > 0) return raw;
+  return c.form_url ? [c.form_url] : [];
+}
+
+// What to show in the biodata-form section. The form is legitimately
+// optional at application time — if it's missing, fall back to a personal
+// photo rather than leaving the section blank.
+function getFormDisplayUrl(c: Candidate): string | null {
+  if (c.form_url) return c.form_url;
+  const raw = getRawPersonalPhotos(c);
+  return raw.length > 0 ? raw[0] : null;
 }
 
 function pickedFromAsset(asset: ImagePicker.ImagePickerAsset): PickedFile {
@@ -147,10 +167,11 @@ function CandidateDetailModal({ candidate, onClose }: { candidate: Candidate | n
   }, [candidate?.id]);
 
   if (!candidate) return null;
-  const photos = getCandidatePhotos(candidate);
+  const photos = getDisplayPhotos(candidate);
+  const formDisplayUrl = getFormDisplayUrl(candidate);
 
   const openFormFullSize = () => {
-    if (!candidate.form_url) return;
+    if (!formDisplayUrl) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setFormViewerVisible(true);
   };
@@ -241,7 +262,7 @@ function CandidateDetailModal({ candidate, onClose }: { candidate: Candidate | n
             <Row label={t('matrimony', 'emailLabel')} value={candidate.email} />
           </View>
 
-          {candidate.form_url ? (
+          {formDisplayUrl ? (
             <View style={{ marginTop: spacing.xl }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md }}>
                 <Text style={{ color: C.textMuted, letterSpacing: 0.5, textTransform: 'uppercase', ...typography.caption, fontWeight: '700' }}>
@@ -254,7 +275,7 @@ function CandidateDetailModal({ candidate, onClose }: { candidate: Candidate | n
               </View>
               <TouchableOpacity onPress={openFormFullSize} activeOpacity={0.9}>
                 <Image
-                  source={{ uri: candidate.form_url }}
+                  source={{ uri: formDisplayUrl }}
                   style={{ width: '100%', height: 260, borderRadius: radius.md, backgroundColor: C.border }}
                   contentFit="contain"
                 />
@@ -266,7 +287,7 @@ function CandidateDetailModal({ candidate, onClose }: { candidate: Candidate | n
 
       <MediaViewerModal
         visible={formViewerVisible}
-        media={candidate.form_url ? [{ url: candidate.form_url, type: 'image' }] : []}
+        media={formDisplayUrl ? [{ url: formDisplayUrl, type: 'image' }] : []}
         initialIndex={0}
         onClose={() => setFormViewerVisible(false)}
       />
@@ -444,7 +465,7 @@ function CandidateCard({ candidate, onOpenDetail }: { candidate: Candidate; onOp
   const { lang, t } = useLanguage();
   const fontFamily = lang === 'od' ? 'NotoSansOriya' : undefined;
   const fontFamilyBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
-  const photos = getCandidatePhotos(candidate);
+  const photos = getDisplayPhotos(candidate);
   const cardWidth = W - spacing.lg * 2;
 
   return (
