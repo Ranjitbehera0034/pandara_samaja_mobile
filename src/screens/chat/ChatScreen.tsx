@@ -14,7 +14,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Search, Send, ArrowLeft, MessageSquare, Circle, Check, CheckCheck, Plus, MoreVertical, X } from 'lucide-react-native';
@@ -210,9 +210,16 @@ export default function ChatScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    loadContacts();
-  }, [loadContacts]);
+  // Bottom-tab screens stay mounted across tab switches, so a plain mount
+  // effect only ever fetches once — going Home and back to Messages would
+  // keep showing whatever was loaded at the very first visit. Refetching
+  // on every focus is what makes "go away and come back" actually show
+  // new messages, matching what every other chat app does.
+  useFocusEffect(
+    useCallback(() => {
+      loadContacts();
+    }, [loadContacts])
+  );
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
