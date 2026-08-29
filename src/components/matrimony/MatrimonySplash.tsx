@@ -10,7 +10,12 @@ import React, { useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 
-const SPLASH_VIDEO_URL = 'https://storage.googleapis.com/nikhila-odisha-pandara-samaja.firebasestorage.app/app-assets/matrimony-splash.mp4';
+// v2: true 9:16 vertical (720x1280), replacing the original 16:9 landscape
+// clip that needed cropping to fill a portrait screen. Uploaded to a new
+// path rather than overwriting the old one — both are cached
+// "immutable, max-age=1yr", so overwriting risks a stale CDN/client copy
+// persisting for up to a year instead of picking up the replacement.
+const SPLASH_VIDEO_URL = 'https://storage.googleapis.com/nikhila-odisha-pandara-samaja.firebasestorage.app/app-assets/matrimony-splash-v2.mp4';
 
 interface Props {
   onFinish: () => void;
