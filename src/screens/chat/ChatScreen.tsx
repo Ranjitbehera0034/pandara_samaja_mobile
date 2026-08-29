@@ -12,6 +12,7 @@ import {
   Animated,
   useWindowDimensions,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -159,6 +160,7 @@ export default function ChatScreen() {
   const [search, setSearch] = useState('');
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
   const [blockedSet, setBlockedSet] = useState<Set<string>>(new Set());
 
@@ -210,6 +212,12 @@ export default function ChatScreen() {
 
   useEffect(() => {
     loadContacts();
+  }, [loadContacts]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadContacts();
+    setRefreshing(false);
   }, [loadContacts]);
 
   const openThread = useCallback(async (thread: ChatThread) => {
@@ -535,6 +543,9 @@ export default function ChatScreen() {
             data={filteredThreads}
             keyExtractor={item => item.id}
             contentContainerStyle={{ paddingHorizontal: spacing.lg }}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={C.primary} colors={[C.primary]} />
+            }
             renderItem={({ item }) => (
               <TouchableOpacity
                 onPress={() => handleThreadPress(item)}
