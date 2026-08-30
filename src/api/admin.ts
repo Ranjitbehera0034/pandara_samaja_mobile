@@ -726,17 +726,24 @@ export const deleteAdminFamilyMember = async (memberId: string, index: number) =
 // ── Community demographics (admin + superadmin) — computed community-wide
 // across every household's family_members roster. ──
 
+export interface AgeGenderBucket { total: number; male: number; female: number; }
+
 export interface Demographics {
   totalFamilyMembers: number;
   male: number;
   female: number;
-  adults: number;
-  children: number;
-  infants: number;
-  married: number;
-  unmarried: number;
   householdsTotal: number;
   householdsWithDetailedData: number;
+  infants: AgeGenderBucket;
+  children: AgeGenderBucket;
+  adults: AgeGenderBucket;
+  elderly: AgeGenderBucket;
+  married: number;
+  divorced: number;
+  widowed: number;
+  unmarried: { total: number; men: number; women: number };
+  bloodGroups: { group: string; count: number }[];
+  occupations: { occupation: string; count: number }[];
 }
 
 // GET /api/admin/members/demographics

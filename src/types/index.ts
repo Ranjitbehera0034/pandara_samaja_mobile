@@ -24,6 +24,8 @@ export interface FamilyMember {
   mobile?: string;
   marital_status?: string;
   profile_pic?: string | null;
+  occupation?: string | null;
+  blood_group?: string | null;
 }
 
 export interface LoggedUser {

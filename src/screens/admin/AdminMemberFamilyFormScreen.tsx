@@ -37,6 +37,13 @@ const MARITAL_LABEL_KEYS: Record<string, string> = {
   Unmarried: 'familyMemberMaritalUnmarried', Married: 'familyMemberMaritalMarried',
   Divorced: 'familyMemberMaritalDivorced', Widowed: 'familyMemberMaritalWidowed',
 };
+const OCCUPATION_OPTIONS = ['Student', 'Homemaker', 'Farmer', 'Government Employee', 'Private Employee', 'Business', 'Retired', 'Unemployed'] as const;
+const OCCUPATION_LABEL_KEYS: Record<string, string> = {
+  Student: 'familyMemberOccupationStudent', Homemaker: 'familyMemberOccupationHomemaker', Farmer: 'familyMemberOccupationFarmer',
+  'Government Employee': 'familyMemberOccupationGovtEmployee', 'Private Employee': 'familyMemberOccupationPrivateEmployee',
+  Business: 'familyMemberOccupationBusiness', Retired: 'familyMemberOccupationRetired', Unemployed: 'familyMemberOccupationUnemployed',
+};
+const BLOOD_GROUP_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const;
 
 // Mirrors the backend's isHeadEntry() (memberModel.ts) exactly.
 function isHeadRelation(relation?: string): boolean {
@@ -49,6 +56,13 @@ function resolveRelationMode(rel?: string): { mode: 'chip' | 'other'; chip: stri
   const match = RELATION_OPTIONS.find(o => o.toLowerCase() === rel.toLowerCase());
   if (match) return { mode: 'chip', chip: match, other: '' };
   return { mode: 'other', chip: RELATION_OPTIONS[0], other: rel };
+}
+
+function resolveOccupationMode(occ?: string | null): { mode: 'chip' | 'other'; chip: string; other: string } {
+  if (!occ) return { mode: 'chip', chip: '', other: '' };
+  const match = OCCUPATION_OPTIONS.find(o => o.toLowerCase() === occ.toLowerCase());
+  if (match) return { mode: 'chip', chip: match, other: '' };
+  return { mode: 'other', chip: '', other: occ };
 }
 
 function resolveGender(g?: string): 'Male' | 'Female' | '' {
@@ -78,6 +92,7 @@ export default function AdminMemberFamilyFormScreen() {
   const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
 
   const initialRelation = resolveRelationMode(existing?.relation);
+  const initialOccupation = resolveOccupationMode(existing?.occupation);
 
   const [name, setName] = useState(existing?.name || '');
   const [relationMode, setRelationMode] = useState<'chip' | 'other'>(initialRelation.mode);
@@ -87,6 +102,10 @@ export default function AdminMemberFamilyFormScreen() {
   const [age, setAge] = useState(existing?.age != null ? String(existing.age) : '');
   const [mobile, setMobile] = useState(existing?.mobile || '');
   const [maritalStatus, setMaritalStatus] = useState<string>(resolveMarital(existing?.marital_status));
+  const [occupationMode, setOccupationMode] = useState<'chip' | 'other'>(initialOccupation.mode);
+  const [occupationChip, setOccupationChip] = useState<string>(initialOccupation.chip);
+  const [occupationOther, setOccupationOther] = useState<string>(initialOccupation.other);
+  const [bloodGroup, setBloodGroup] = useState<string>(existing?.blood_group || '');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -107,11 +126,15 @@ export default function AdminMemberFamilyFormScreen() {
       return;
     }
 
+    const occupationValue = occupationMode === 'chip' ? occupationChip : occupationOther.trim();
+
     const payload: FamilyMemberInput = { name: name.trim(), relation: relationValue };
     if (gender) payload.gender = gender;
     if (age.trim()) payload.age = age.trim();
     if (maritalStatus) payload.marital_status = maritalStatus;
     if (cleanMobile) payload.mobile = cleanMobile;
+    if (occupationValue) payload.occupation = occupationValue;
+    if (bloodGroup) payload.blood_group = bloodGroup;
 
     setSaving(true);
     try {
@@ -286,7 +309,7 @@ export default function AdminMemberFamilyFormScreen() {
         />
 
         <Text style={labelStyle}>{t('admin', 'familyMemberMaritalStatusLabel')}</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xl }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg }}>
           {MARITAL_OPTIONS.map(opt => {
             const active = maritalStatus === opt;
             return (
@@ -302,6 +325,70 @@ export default function AdminMemberFamilyFormScreen() {
                 <Text style={{ color: active ? '#fff' : C.textMuted, ...typography.caption, fontWeight: '700' }}>
                   {t('admin', MARITAL_LABEL_KEYS[opt])}
                 </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <Text style={labelStyle}>{t('admin', 'familyMemberOccupationLabel')}</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm }}>
+          {OCCUPATION_OPTIONS.map(opt => {
+            const active = occupationMode === 'chip' && occupationChip === opt;
+            return (
+              <TouchableOpacity
+                key={opt}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setOccupationMode('chip'); setOccupationChip(active ? '' : opt); }}
+                style={{
+                  backgroundColor: active ? C.primary : C.card, borderColor: active ? C.primary : C.border,
+                  borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+                }}
+                className="border"
+              >
+                <Text style={{ color: active ? '#fff' : C.textMuted, ...typography.caption, fontWeight: '700' }}>
+                  {t('admin', OCCUPATION_LABEL_KEYS[opt])}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+          <TouchableOpacity
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setOccupationMode('other'); }}
+            style={{
+              backgroundColor: occupationMode === 'other' ? C.primary : C.card, borderColor: occupationMode === 'other' ? C.primary : C.border,
+              borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+            }}
+            className="border"
+          >
+            <Text style={{ color: occupationMode === 'other' ? '#fff' : C.textMuted, ...typography.caption, fontWeight: '700' }}>
+              {t('admin', 'familyMemberOccupationOther')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {occupationMode === 'other' && (
+          <TextInput
+            style={inputStyle}
+            placeholder={t('admin', 'familyMemberOccupationOtherPlaceholder')}
+            placeholderTextColor={C.textFaint}
+            value={occupationOther}
+            onChangeText={setOccupationOther}
+          />
+        )}
+        {occupationMode !== 'other' && <View style={{ marginBottom: spacing.sm }} />}
+
+        <Text style={labelStyle}>{t('admin', 'familyMemberBloodGroupLabel')}</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xl }}>
+          {BLOOD_GROUP_OPTIONS.map(opt => {
+            const active = bloodGroup === opt;
+            return (
+              <TouchableOpacity
+                key={opt}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setBloodGroup(active ? '' : opt); }}
+                style={{
+                  backgroundColor: active ? C.primary : C.card, borderColor: active ? C.primary : C.border,
+                  borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+                }}
+                className="border"
+              >
+                <Text style={{ color: active ? '#fff' : C.textMuted, ...typography.caption, fontWeight: '700' }}>{opt}</Text>
               </TouchableOpacity>
             );
           })}
