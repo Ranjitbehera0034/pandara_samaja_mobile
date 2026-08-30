@@ -805,6 +805,24 @@ export const adminFetchActiveLiveStreams = async () => {
   return res.data as { success: boolean; streams: LiveStream[] };
 };
 
+export interface LiveViewer {
+  identity: string;
+  name: string;
+  joinedAt: number;
+}
+
+// Current viewers of your own live stream — straight from LiveKit, not our DB.
+export const adminFetchLiveViewers = async (roomName: string) => {
+  const res = await adminClient.get(`/admin/live/${roomName}/participants`);
+  return res.data as { success: boolean; viewers: LiveViewer[] };
+};
+
+// Disconnects one viewer from the stream only — no effect on their account.
+export const adminKickLiveViewer = async (roomName: string, identity: string) => {
+  const res = await adminClient.post(`/admin/live/${roomName}/kick`, { identity });
+  return res.data as { success: boolean; message?: string };
+};
+
 // ── CSV export (admin/superadmin) ──
 export interface ExportLocationFilters {
   district?: string;

@@ -4,7 +4,7 @@ import { View, Text, TouchableOpacity, FlatList, RefreshControl, ActivityIndicat
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { ArrowLeft, Radio, Users } from 'lucide-react-native';
+import { ArrowLeft, Users } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useSocket } from '../../hooks/useSocket';
@@ -12,7 +12,6 @@ import * as liveApi from '../../api/live';
 import { LiveStream } from '../../api/live';
 import Avatar from '../../components/common/Avatar';
 import EmptyState from '../../components/common/EmptyState';
-import Button from '../../components/common/Button';
 
 export default function LiveStreamScreen() {
   const navigation = useNavigation<any>();
@@ -23,7 +22,6 @@ export default function LiveStreamScreen() {
   const [streams, setStreams] = useState<LiveStream[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [starting, setStarting] = useState(false);
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
@@ -45,11 +43,6 @@ export default function LiveStreamScreen() {
     onLiveEnded: () => load(),
   });
 
-  const handleGoLive = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    navigation.navigate('GoLive');
-  };
-
   const handleWatch = (stream: LiveStream) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     navigation.navigate('LiveViewer', { roomName: stream.room_name });
@@ -62,16 +55,6 @@ export default function LiveStreamScreen() {
           <ArrowLeft size={20} color={C.text} />
         </TouchableOpacity>
         <Text style={{ color: C.text, ...typography.heading }}>{t('live', 'hubTitle')}</Text>
-      </View>
-
-      <View style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.md }}>
-        <Button
-          variant="primary"
-          label={t('live', 'goLiveButton')}
-          icon={<Radio size={18} color="#fff" />}
-          onPress={handleGoLive}
-          loading={starting}
-        />
       </View>
 
       {loading ? (

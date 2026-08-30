@@ -8,10 +8,11 @@
 import { navigationRef } from '../navigation/RootNavigator';
 
 export interface NotificationData {
-  type?: 'message' | 'like' | 'comment' | 'new_post' | 'follow' | 'announcement' | string;
+  type?: 'message' | 'like' | 'comment' | 'new_post' | 'follow' | 'announcement' | 'live_started' | string;
   fromId?: string;
   fromMobile?: string;
   postId?: string | number;
+  roomName?: string;
   [key: string]: any;
 }
 
@@ -59,6 +60,15 @@ export function navigateFromNotificationData(data: NotificationData | undefined 
 
       case 'new_candidate':
         navigationRef.navigate('Feed', { screen: 'Matrimony' });
+        break;
+
+      case 'live_started':
+        // roomName comes straight from the push payload set in
+        // routes/adminLive.ts — LiveViewerScreen itself handles the case
+        // where the stream has already ended by the time this is tapped.
+        if (data.roomName) {
+          navigationRef.navigate('Feed', { screen: 'LiveViewer', params: { roomName: data.roomName } });
+        }
         break;
 
       default:

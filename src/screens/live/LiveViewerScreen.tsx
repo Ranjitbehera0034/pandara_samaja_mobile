@@ -5,7 +5,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { X, Users, Send } from 'lucide-react-native';
-import { Room, RoomEvent, RemoteTrackPublication, RemoteParticipant, Track } from 'livekit-client';
+import { Room, RoomEvent, RemoteTrackPublication, RemoteParticipant, Track, DisconnectReason } from 'livekit-client';
 import { VideoTrack } from '@livekit/react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -28,15 +28,17 @@ export default function LiveViewerScreen() {
   const { colors: C, spacing, radius, typography } = useTheme();
   const { t } = useLanguage();
 
-  const [phase, setPhase] = useState<'joining' | 'live' | 'ended' | 'error'>('joining');
+  const [phase, setPhase] = useState<'joining' | 'live' | 'ended' | 'removed' | 'error'>('joining');
   const [errorMessage, setErrorMessage] = useState('');
   const [hostName, setHostName] = useState<string | null>(null);
   const [remoteTrackRef, setRemoteTrackRef] = useState<any>(undefined);
+  const [waitingForHost, setWaitingForHost] = useState(false);
   const [viewerCount, setViewerCount] = useState(0);
   const [comments, setComments] = useState<LiveComment[]>([]);
   const [commentText, setCommentText] = useState('');
 
   const roomRef = useRef<Room | null>(null);
+  const waitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { joinLive, leaveLive, sendLiveComment } = useSocket({
     onLiveComment: (c) => setComments(prev => [...prev.slice(-99), c]),
@@ -73,11 +75,16 @@ export default function LiveViewerScreen() {
 
         room.on(RoomEvent.TrackSubscribed, (_track, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
           if (publication.source === Track.Source.Camera) {
+            if (waitTimerRef.current) { clearTimeout(waitTimerRef.current); waitTimerRef.current = null; }
+            setWaitingForHost(false);
             setRemoteTrackRef({ participant, publication, source: Track.Source.Camera } as any);
           }
         });
-        room.on(RoomEvent.Disconnected, () => {
-          setPhase((p) => (p === 'live' ? 'ended' : p));
+        room.on(RoomEvent.Disconnected, (reason) => {
+          setPhase((p) => {
+            if (p !== 'live') return p;
+            return reason === DisconnectReason.PARTICIPANT_REMOVED ? 'removed' : 'ended';
+          });
         });
 
         await room.connect(res.wsUrl, res.token);
@@ -85,6 +92,13 @@ export default function LiveViewerScreen() {
 
         joinLive(roomName);
         setPhase('live');
+
+        // The host's video may take a moment to arrive after joining (or,
+        // for a stale/orphaned room, may never arrive at all) — show a
+        // "waiting" indicator rather than an unlabeled spinner forever.
+        waitTimerRef.current = setTimeout(() => {
+          if (!cancelled) setWaitingForHost(true);
+        }, 15000);
       } catch (e: any) {
         if (cancelled) return;
         console.error('[LIVE_VIEWER] Failed to join:', e);
@@ -97,6 +111,7 @@ export default function LiveViewerScreen() {
 
     return () => {
       cancelled = true;
+      if (waitTimerRef.current) clearTimeout(waitTimerRef.current);
       cleanup();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -123,12 +138,15 @@ export default function LiveViewerScreen() {
     );
   }
 
-  if (phase === 'error' || phase === 'ended') {
+  if (phase === 'error' || phase === 'ended' || phase === 'removed') {
+    const message = phase === 'ended'
+      ? t('live', 'streamEndedMessage')
+      : phase === 'removed'
+        ? t('live', 'removedByHostMessage')
+        : errorMessage;
     return (
       <View style={{ flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.lg }}>
-        <Text style={{ color: '#fff', textAlign: 'center', ...typography.body }}>
-          {phase === 'ended' ? t('live', 'streamEndedMessage') : errorMessage}
-        </Text>
+        <Text style={{ color: '#fff', textAlign: 'center', ...typography.body }}>{message}</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ paddingHorizontal: spacing.xl, paddingVertical: spacing.md, backgroundColor: C.primary, borderRadius: radius.lg }}>
           <Text style={{ color: '#fff', fontWeight: '700' }}>{t('common', 'back')}</Text>
         </TouchableOpacity>
@@ -141,8 +159,11 @@ export default function LiveViewerScreen() {
       {remoteTrackRef ? (
         <VideoTrack trackRef={remoteTrackRef} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} objectFit="cover" />
       ) : (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md }}>
           <ActivityIndicator size="large" color="#fff" />
+          {waitingForHost && (
+            <Text style={{ color: 'rgba(255,255,255,0.7)', ...typography.body }}>{t('live', 'waitingForHostMessage')}</Text>
+          )}
         </View>
       )}
 

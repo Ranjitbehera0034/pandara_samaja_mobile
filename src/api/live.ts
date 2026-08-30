@@ -22,18 +22,6 @@ export interface LiveTokenResponse {
   wsUrl: string;
 }
 
-// ── Start a live stream (broadcaster) ──
-export const startLiveStream = async (title?: string) => {
-  const res = await client.post('/portal/live/start', { title });
-  return res.data as LiveTokenResponse;
-};
-
-// ── End your own live stream ──
-export const endLiveStream = async (roomName: string) => {
-  const res = await client.post(`/portal/live/${roomName}/end`);
-  return res.data as { success: boolean; message?: string };
-};
-
 // ── List currently-active live streams (feed discovery) ──
 export const fetchActiveLiveStreams = async () => {
   const res = await client.get('/portal/live/active');
