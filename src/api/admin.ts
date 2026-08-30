@@ -257,12 +257,32 @@ export interface ActivityLogEntry {
 
 export const fetchAdminActivity = async (params: {
   page?: number; limit?: number; actorType?: 'member' | 'admin' | 'superadmin'; actorId?: string; action?: string;
+  startDate?: string; endDate?: string; search?: string;
 } = {}) => {
   const res = await adminClient.get('/admin/activity', { params });
   return res.data as {
     success: boolean; message?: string; activities: ActivityLogEntry[];
     page: number; limit: number; total: number | null; totalPages: number | null; migrationPending?: boolean;
   };
+};
+
+// Distinct action values actually present in the log — powers the
+// action-type filter picker.
+export const fetchActivityActions = async () => {
+  const res = await adminClient.get('/admin/activity/actions');
+  return res.data as { success: boolean; message?: string; actions: string[] };
+};
+
+export const exportActivityCsv = async (params: {
+  actorType?: 'member' | 'admin' | 'superadmin'; actorId?: string; action?: string;
+  startDate?: string; endDate?: string; search?: string;
+} = {}) => {
+  const res = await adminClient.get('/admin/export/activity', {
+    params,
+    responseType: 'text',
+    transformResponse: (data) => data,
+  });
+  return res.data as string;
 };
 
 // ── Matrimony candidate management (admin + superadmin) ──

@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Zap, CalendarDays, Calendar, UserX, TrendingUp, ChevronRight, LogIn, Eye, MousePointerClick } from 'lucide-react-native';
+import { ArrowLeft, Zap, CalendarDays, Calendar, UserX, TrendingUp, ChevronRight, LogIn, Eye, MousePointerClick, ClipboardList } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
@@ -122,7 +122,13 @@ export default function AdminAnalyticsScreen() {
         <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.goBack(); }} style={{ padding: spacing.xs, borderRadius: radius.full, backgroundColor: C.card }}>
           <ArrowLeft size={20} color={C.text} />
         </TouchableOpacity>
-        <Text style={{ color: C.text, fontFamily: fontBold, ...typography.heading }}>{t('admin', 'analyticsTitle')}</Text>
+        <Text style={{ color: C.text, fontFamily: fontBold, flex: 1, ...typography.heading }}>{t('admin', 'analyticsTitle')}</Text>
+        <TouchableOpacity
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('AdminTracker'); }}
+          style={{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: C.primary + '15', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <ClipboardList size={16} color={C.primary} />
+        </TouchableOpacity>
       </View>
 
       {loading ? (

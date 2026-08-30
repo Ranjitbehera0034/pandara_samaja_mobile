@@ -40,7 +40,7 @@ export type AdminStackParams = {
   AdminAnalytics: undefined;
   AdminReports: undefined;
   AdminUsers: undefined;
-  AdminTracker: undefined;
+  AdminTracker: { actorId?: string; actorName?: string } | undefined;
   AdminMatrimony: undefined;
   AdminMatrimonyForm: { id?: string | number };
   AdminMatrimonyApplications: undefined;

@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Alert, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Plus, Trash2, X as XIcon, Edit2, Ban, CheckCircle2 } from 'lucide-react-native';
+import { ArrowLeft, Plus, Trash2, X as XIcon, Edit2, Ban, CheckCircle2, ClipboardList } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
@@ -240,6 +240,12 @@ export default function AdminUsersScreen() {
             </View>
           )}
         </View>
+        <TouchableOpacity
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('AdminTracker', { actorId: String(item.id), actorName: item.username }); }}
+          style={{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: C.primary + '15', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <ClipboardList size={16} color={C.primary} />
+        </TouchableOpacity>
         <TouchableOpacity
           onPress={() => openEdit(item)}
           style={{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: C.primary + '15', alignItems: 'center', justifyContent: 'center' }}
