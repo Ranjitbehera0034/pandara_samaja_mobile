@@ -17,6 +17,19 @@ export const fetchAnnouncements = async () => {
   return res.data;
 };
 
+export interface FacebookLinkPreview {
+  title: string | null;
+  description: string | null;
+  image: string | null;
+  siteName: string | null;
+}
+
+// ── Open Graph preview for a shared Facebook link (WhatsApp-style) ──
+export const fetchFacebookLinkPreview = async (url: string) => {
+  const res = await client.get('/portal/link-preview', { params: { url } });
+  return res.data as { success: boolean; message?: string; preview: FacebookLinkPreview | null };
+};
+
 // ── Like / Unlike a post ──
 export const likePost = async (postId: string) => {
   const res = await client.post(`/portal/posts/${postId}/like`);
