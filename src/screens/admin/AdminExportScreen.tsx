@@ -1,8 +1,8 @@
 // src/screens/admin/AdminExportScreen.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Users, Award, Heart, Download, Wallet, FileArchive } from 'lucide-react-native';
+import { ArrowLeft, Users, Award, Heart, Download, Wallet, FileArchive, ChevronDown, Check } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { File, Paths } from 'expo-file-system';
@@ -11,6 +11,7 @@ import * as adminApi from '../../api/admin';
 import { AdminMemberFilterOptions, ExportKind } from '../../api/admin';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import Button from '../../components/common/Button';
 
 export default function AdminExportScreen() {
   const navigation = useNavigation<any>();
@@ -29,6 +30,7 @@ export default function AdminExportScreen() {
 
   const [expenseMonths, setExpenseMonths] = useState<string[]>([]);
   const [selectedExpenseMonths, setSelectedExpenseMonths] = useState<string[]>([]);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
 
   useEffect(() => {
     adminApi.fetchAdminMemberFilters()
@@ -251,25 +253,69 @@ export default function AdminExportScreen() {
             <Text style={{ color: C.textMuted, marginBottom: spacing.sm, fontFamily: fontBold, ...typography.label }}>
               {t('admin', 'exportExpenseMonthsLabel')}
             </Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-              {expenseMonths.map(m => {
-                const active = selectedExpenseMonths.includes(m);
-                return (
-                  <TouchableOpacity key={m} onPress={() => toggleExpenseMonth(m)} style={chipStyle(active)} className="border">
-                    <Text style={chipTextStyle(active)}>{formatMonthLabel(m)}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-            {selectedExpenseMonths.length > 0 && (
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSelectedExpenseMonths([]); }} style={{ marginTop: spacing.xs }}>
-                <Text style={{ color: C.primary, fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>
-                  {t('admin', 'exportClearMonthsLabel')}
-                </Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMonthPickerOpen(true); }}
+              style={{
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderRadius: radius.md,
+                borderWidth: 1, borderColor: selectedExpenseMonths.length > 0 ? C.primary : C.border,
+                backgroundColor: selectedExpenseMonths.length > 0 ? C.primary + '15' : C.card,
+              }}
+            >
+              <Text style={{ color: selectedExpenseMonths.length > 0 ? C.primary : C.textMuted, fontFamily: fontRegular, ...typography.body, fontWeight: selectedExpenseMonths.length > 0 ? '700' : '400' }} numberOfLines={1}>
+                {selectedExpenseMonths.length === 0
+                  ? t('admin', 'expenseFilterAllMonths')
+                  : selectedExpenseMonths.length === 1
+                    ? formatMonthLabel(selectedExpenseMonths[0])
+                    : t('admin', 'exportMonthsSelectedCount').replace('{n}', String(selectedExpenseMonths.length))}
+              </Text>
+              <ChevronDown size={18} color={selectedExpenseMonths.length > 0 ? C.primary : C.textFaint} />
+            </TouchableOpacity>
           </View>
         )}
+
+        <Modal visible={monthPickerOpen} animationType="slide" transparent onRequestClose={() => setMonthPickerOpen(false)}>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => setMonthPickerOpen(false)}
+            style={{ flex: 1, backgroundColor: '#00000080', justifyContent: 'flex-end' }}
+          >
+            <TouchableOpacity activeOpacity={1} style={{ backgroundColor: C.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, maxHeight: '75%' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.lg }}>
+                <Text style={{ color: C.text, fontFamily: fontBold, ...typography.title }}>
+                  {t('admin', 'exportExpenseMonthsLabel')}
+                </Text>
+                {selectedExpenseMonths.length > 0 && (
+                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSelectedExpenseMonths([]); }}>
+                    <Text style={{ color: C.primary, fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>
+                      {t('admin', 'exportClearMonthsLabel')}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <ScrollView>
+                {expenseMonths.map(m => {
+                  const active = selectedExpenseMonths.includes(m);
+                  return (
+                    <TouchableOpacity
+                      key={m}
+                      onPress={() => toggleExpenseMonth(m)}
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomWidth: 0.5, borderBottomColor: C.border }}
+                    >
+                      <Text style={{ color: active ? C.primary : C.text, fontFamily: active ? fontBold : fontRegular, ...typography.body, fontWeight: active ? '700' : '400' }}>
+                        {formatMonthLabel(m)}
+                      </Text>
+                      {active && <Check size={18} color={C.primary} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+              <View style={{ padding: spacing.lg, paddingBottom: insets.bottom + spacing.md }}>
+                <Button variant="primary" label={t('common', 'done')} onPress={() => setMonthPickerOpen(false)} />
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
 
         <TouchableOpacity
           onPress={handleExportExpensesCsv}

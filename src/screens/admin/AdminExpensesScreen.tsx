@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Plus, Trash2, X as XIcon, Wallet, Paperclip, ArrowDownWideNarrow, ArrowUpNarrowWide, Calendar, CalendarClock } from 'lucide-react-native';
+import { ArrowLeft, Plus, Trash2, X as XIcon, Wallet, Paperclip, ArrowDownWideNarrow, ArrowUpNarrowWide, Calendar, CalendarClock, ChevronDown } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,6 +32,7 @@ export default function AdminExpensesScreen() {
   const [categories, setCategories] = useState<string[]>([]);
   const [monthFilter, setMonthFilter] = useState<string>('');
   const [months, setMonths] = useState<string[]>([]);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [sortOption, setSortOption] = useState<ExpenseSort>('date_desc');
   const [entries, setEntries] = useState<ExpenseEntry[]>([]);
   const [totalSpent, setTotalSpent] = useState(0);
@@ -310,32 +311,56 @@ export default function AdminExpensesScreen() {
         )}
 
         {months.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginBottom: spacing.sm }} contentContainerStyle={{ gap: spacing.sm, alignItems: 'center' }}>
-            <TouchableOpacity
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMonthFilter(''); }}
-              style={{
-                paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
-                borderWidth: 1, borderColor: !monthFilter ? C.primary : C.border,
-                backgroundColor: !monthFilter ? C.primary + '15' : C.card,
-              }}
-            >
-              <Text style={{ color: !monthFilter ? C.primary : C.textMuted, ...typography.caption, fontWeight: '700' }}>{t('admin', 'expenseFilterAllMonths')}</Text>
-            </TouchableOpacity>
-            {months.map(m => (
-              <TouchableOpacity
-                key={m}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMonthFilter(m); }}
-                style={{
-                  paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
-                  borderWidth: 1, borderColor: monthFilter === m ? C.primary : C.border,
-                  backgroundColor: monthFilter === m ? C.primary + '15' : C.card,
-                }}
-              >
-                <Text style={{ color: monthFilter === m ? C.primary : C.textMuted, ...typography.caption, fontWeight: '700' }}>{formatMonthLabel(m)}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <TouchableOpacity
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMonthPickerOpen(true); }}
+            style={{
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+              paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md,
+              borderWidth: 1, borderColor: monthFilter ? C.primary : C.border,
+              backgroundColor: monthFilter ? C.primary + '15' : C.card, marginBottom: spacing.sm,
+            }}
+          >
+            <Text style={{ color: monthFilter ? C.primary : C.textMuted, ...typography.caption, fontWeight: '700' }}>
+              {monthFilter ? formatMonthLabel(monthFilter) : t('admin', 'expenseFilterAllMonths')}
+            </Text>
+            <ChevronDown size={16} color={monthFilter ? C.primary : C.textFaint} />
+          </TouchableOpacity>
         )}
+
+        <Modal visible={monthPickerOpen} animationType="slide" transparent onRequestClose={() => setMonthPickerOpen(false)}>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => setMonthPickerOpen(false)}
+            style={{ flex: 1, backgroundColor: '#00000080', justifyContent: 'flex-end' }}
+          >
+            <TouchableOpacity activeOpacity={1} style={{ backgroundColor: C.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, maxHeight: '70%', paddingBottom: insets.bottom + spacing.lg }}>
+              <Text style={{ color: C.text, fontFamily: fontBold, padding: spacing.lg, ...typography.title }}>
+                {t('admin', 'expenseFilterAllMonths')}
+              </Text>
+              <ScrollView>
+                <TouchableOpacity
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMonthFilter(''); setMonthPickerOpen(false); }}
+                  style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomWidth: 0.5, borderBottomColor: C.border }}
+                >
+                  <Text style={{ color: !monthFilter ? C.primary : C.text, fontFamily: !monthFilter ? fontBold : fontRegular, ...typography.body, fontWeight: !monthFilter ? '700' : '400' }}>
+                    {t('admin', 'expenseFilterAllMonths')}
+                  </Text>
+                </TouchableOpacity>
+                {months.map(m => (
+                  <TouchableOpacity
+                    key={m}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMonthFilter(m); setMonthPickerOpen(false); }}
+                    style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomWidth: 0.5, borderBottomColor: C.border }}
+                  >
+                    <Text style={{ color: monthFilter === m ? C.primary : C.text, fontFamily: monthFilter === m ? fontBold : fontRegular, ...typography.body, fontWeight: monthFilter === m ? '700' : '400' }}>
+                      {formatMonthLabel(m)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
 
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           {([
