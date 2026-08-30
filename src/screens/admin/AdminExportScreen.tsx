@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Users, Award, Heart, Download } from 'lucide-react-native';
+import { ArrowLeft, Users, Award, Heart, Download, Wallet, FileArchive } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { File, Paths } from 'expo-file-system';
@@ -25,13 +25,92 @@ export default function AdminExportScreen() {
   const [taluka, setTaluka] = useState('');
   const [panchayat, setPanchayat] = useState('');
   const [village, setVillage] = useState('');
-  const [exporting, setExporting] = useState<ExportKind | null>(null);
+  const [exporting, setExporting] = useState<ExportKind | 'expenses-csv' | 'expenses-zip' | null>(null);
+
+  const [expenseMonths, setExpenseMonths] = useState<string[]>([]);
+  const [selectedExpenseMonths, setSelectedExpenseMonths] = useState<string[]>([]);
 
   useEffect(() => {
     adminApi.fetchAdminMemberFilters()
       .then(res => { if (res.success) setOptions(res.filters); })
       .catch(e => console.error('[ADMIN_EXPORT] Failed to load filter options:', e));
+
+    // Just need the distinct months list — a 1-row page is the cheapest way
+    // to get it without a dedicated endpoint.
+    adminApi.fetchAdminExpenses({ limit: 1 })
+      .then(res => { if (res.success) setExpenseMonths(res.months || []); })
+      .catch(e => console.error('[ADMIN_EXPORT] Failed to load expense months:', e));
   }, []);
+
+  // 'YYYY-MM' -> 'Jul 2026'
+  const formatMonthLabel = useCallback((month: string) => {
+    const [y, m] = month.split('-').map(Number);
+    if (!y || !m) return month;
+    return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  }, []);
+
+  const toggleExpenseMonth = (month: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedExpenseMonths(prev => prev.includes(month) ? prev.filter(m => m !== month) : [...prev, month]);
+  };
+
+  const handleExportExpensesCsv = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setExporting('expenses-csv');
+    try {
+      const csv = await adminApi.exportExpensesCsv(selectedExpenseMonths);
+      const filename = 'expenses.csv';
+      const file = new File(Paths.cache, filename);
+      if (file.exists) file.delete();
+      file.create();
+      file.write(csv);
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(file.uri, { mimeType: 'text/csv', dialogTitle: filename, UTI: 'public.comma-separated-values-text' });
+      } else {
+        Alert.alert(t('common', 'successTitle'), `${t('admin', 'exportSavedPrefix')} ${file.uri}`);
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e: any) {
+      console.error('[ADMIN_EXPORT] Expenses CSV export failed:', e);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t('common', 'errorTitle'), e.response?.data?.message || e.message || t('admin', 'exportError'));
+    } finally {
+      setExporting(null);
+    }
+  }, [selectedExpenseMonths, t]);
+
+  const handleExportExpensesZip = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setExporting('expenses-zip');
+    try {
+      const bytes = await adminApi.exportExpenseBillsZip(selectedExpenseMonths);
+      const filename = 'expense-bills.zip';
+      const file = new File(Paths.cache, filename);
+      if (file.exists) file.delete();
+      file.create();
+      file.write(bytes);
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(file.uri, { mimeType: 'application/zip', dialogTitle: filename, UTI: 'public.zip-archive' });
+      } else {
+        Alert.alert(t('common', 'successTitle'), `${t('admin', 'exportSavedPrefix')} ${file.uri}`);
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e: any) {
+      console.error('[ADMIN_EXPORT] Expense bills ZIP export failed:', e);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      const status = e?.response?.status;
+      const message = status === 404
+        ? t('admin', 'exportBillsNoneFoundError')
+        : (e.response?.data?.message || e.message || t('admin', 'exportError'));
+      Alert.alert(t('common', 'errorTitle'), message);
+    } finally {
+      setExporting(null);
+    }
+  }, [selectedExpenseMonths, t]);
 
   const talukas = district ? (options.talukas?.[district] || []) : [];
   const panchayats = taluka ? (options.panchayats?.[taluka] || []) : [];
@@ -157,6 +236,78 @@ export default function AdminExportScreen() {
           title={t('admin', 'exportMatrimonyTitle')}
           desc={t('admin', 'exportMatrimonyDesc')}
         />
+
+        <View style={{ height: spacing.xl, borderTopWidth: 1, borderTopColor: C.border, marginTop: spacing.md, marginBottom: spacing.lg }} />
+
+        <Text style={{ color: C.text, fontFamily: fontBold, marginBottom: spacing.sm, ...typography.bodyEmphasis, fontWeight: '700' }}>
+          {t('admin', 'exportExpensesSectionTitle')}
+        </Text>
+        <Text style={{ color: C.textFaint, marginBottom: spacing.lg, fontFamily: fontRegular, ...typography.caption }}>
+          {t('admin', 'exportExpenseMonthsHint')}
+        </Text>
+
+        {expenseMonths.length > 0 && (
+          <View style={{ marginBottom: spacing.lg }}>
+            <Text style={{ color: C.textMuted, marginBottom: spacing.sm, fontFamily: fontBold, ...typography.label }}>
+              {t('admin', 'exportExpenseMonthsLabel')}
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              {expenseMonths.map(m => {
+                const active = selectedExpenseMonths.includes(m);
+                return (
+                  <TouchableOpacity key={m} onPress={() => toggleExpenseMonth(m)} style={chipStyle(active)} className="border">
+                    <Text style={chipTextStyle(active)}>{formatMonthLabel(m)}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {selectedExpenseMonths.length > 0 && (
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSelectedExpenseMonths([]); }} style={{ marginTop: spacing.xs }}>
+                <Text style={{ color: C.primary, fontFamily: fontBold, ...typography.caption, fontWeight: '700' }}>
+                  {t('admin', 'exportClearMonthsLabel')}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        <TouchableOpacity
+          onPress={handleExportExpensesCsv}
+          disabled={exporting !== null}
+          style={{
+            flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: C.card,
+            borderColor: C.border, borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg,
+            marginBottom: spacing.md, opacity: exporting && exporting !== 'expenses-csv' ? 0.5 : 1, ...shadow.card,
+          }}
+        >
+          <View style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
+            <Wallet size={20} color={C.error} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: C.text, fontFamily: fontBold, ...typography.bodyEmphasis, fontWeight: '700' }}>{t('admin', 'exportExpensesTitle')}</Text>
+            <Text style={{ color: C.textMuted, fontFamily: fontRegular, marginTop: 2, ...typography.caption }}>{t('admin', 'exportExpensesDesc')}</Text>
+          </View>
+          {exporting === 'expenses-csv' ? <ActivityIndicator size="small" color={C.primary} /> : <Download size={18} color={C.primary} />}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleExportExpensesZip}
+          disabled={exporting !== null}
+          style={{
+            flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: C.card,
+            borderColor: C.border, borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg,
+            marginBottom: spacing.md, opacity: exporting && exporting !== 'expenses-zip' ? 0.5 : 1, ...shadow.card,
+          }}
+        >
+          <View style={{ width: 44, height: 44, borderRadius: radius.md, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}>
+            <FileArchive size={20} color={C.accent} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: C.text, fontFamily: fontBold, ...typography.bodyEmphasis, fontWeight: '700' }}>{t('admin', 'exportExpensesBillsTitle')}</Text>
+            <Text style={{ color: C.textMuted, fontFamily: fontRegular, marginTop: 2, ...typography.caption }}>{t('admin', 'exportExpensesBillsDesc')}</Text>
+          </View>
+          {exporting === 'expenses-zip' ? <ActivityIndicator size="small" color={C.primary} /> : <Download size={18} color={C.primary} />}
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );

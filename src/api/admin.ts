@@ -595,11 +595,13 @@ const buildExpenseFormData = (data: Partial<ExpenseInput>) => {
   return formData;
 };
 
-export const fetchAdminExpenses = async (params: { category?: string; page?: number; limit?: number } = {}) => {
+export type ExpenseSort = 'date_desc' | 'date_asc' | 'amount_desc' | 'amount_asc';
+
+export const fetchAdminExpenses = async (params: { category?: string; month?: string; sort?: ExpenseSort; page?: number; limit?: number } = {}) => {
   const res = await adminClient.get('/admin/expenses', { params });
   return res.data as {
     success: boolean; message?: string; expenses: ExpenseEntry[]; total: number; page: number; totalPages: number;
-    totalSpent: number; categories: string[];
+    totalSpent: number; categories: string[]; months: string[];
   };
 };
 
@@ -840,6 +842,27 @@ export const exportData = async (kind: ExportKind, filters: ExportLocationFilter
     transformResponse: (data) => data, // keep raw CSV text, skip axios's default JSON.parse attempt
   });
   return res.data as string;
+};
+
+// months, if omitted/empty, means "every month" on both of these.
+export const exportExpensesCsv = async (months?: string[]) => {
+  const res = await adminClient.get('/admin/export/expenses', {
+    params: months && months.length > 0 ? { months: months.join(',') } : {},
+    responseType: 'text',
+    transformResponse: (data) => data,
+  });
+  return res.data as string;
+};
+
+// Binary ZIP — returned as an ArrayBuffer so the caller can write it to
+// disk with the newer expo-file-system `File` API (which accepts
+// Uint8Array), the same way exportData's string result gets written above.
+export const exportExpenseBillsZip = async (months?: string[]) => {
+  const res = await adminClient.get('/admin/export/expenses-bills', {
+    params: months && months.length > 0 ? { months: months.join(',') } : {},
+    responseType: 'arraybuffer',
+  });
+  return new Uint8Array(res.data as ArrayBuffer);
 };
 
 // ── Story moderation (admin/superadmin) ──

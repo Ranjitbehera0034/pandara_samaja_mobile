@@ -6,12 +6,12 @@ import {
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Plus, Trash2, X as XIcon, Wallet, Paperclip } from 'lucide-react-native';
+import { ArrowLeft, Plus, Trash2, X as XIcon, Wallet, Paperclip, ArrowDownWideNarrow, ArrowUpNarrowWide, Calendar, CalendarClock } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
-import { ExpenseEntry } from '../../api/admin';
+import { ExpenseEntry, ExpenseSort } from '../../api/admin';
 import EmptyState from '../../components/common/EmptyState';
 import SkeletonBox from '../../components/common/SkeletonBox';
 import Button from '../../components/common/Button';
@@ -30,6 +30,9 @@ export default function AdminExpensesScreen() {
 
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [categories, setCategories] = useState<string[]>([]);
+  const [monthFilter, setMonthFilter] = useState<string>('');
+  const [months, setMonths] = useState<string[]>([]);
+  const [sortOption, setSortOption] = useState<ExpenseSort>('date_desc');
   const [entries, setEntries] = useState<ExpenseEntry[]>([]);
   const [totalSpent, setTotalSpent] = useState(0);
   const [page, setPage] = useState(1);
@@ -53,11 +56,17 @@ export default function AdminExpensesScreen() {
 
   const fetchEntries = useCallback(async (pageNum: number, replace = false) => {
     try {
-      const data = await adminApi.fetchAdminExpenses({ page: pageNum, limit: PAGE_SIZE, category: categoryFilter || undefined });
+      const data = await adminApi.fetchAdminExpenses({
+        page: pageNum, limit: PAGE_SIZE,
+        category: categoryFilter || undefined,
+        month: monthFilter || undefined,
+        sort: sortOption,
+      });
       if (data.success) {
         setEntries(prev => replace ? data.expenses : [...prev, ...data.expenses]);
         setTotalSpent(data.totalSpent ?? 0);
         setCategories(data.categories ?? []);
+        setMonths(data.months ?? []);
         setPage(data.page);
         setTotalPages(data.totalPages ?? 1);
       }
@@ -65,12 +74,19 @@ export default function AdminExpensesScreen() {
       console.error('[ADMIN_EXPENSES] Fetch failed:', e);
       Alert.alert(t('common', 'errorTitle'), t('admin', 'expensesLoadError'));
     }
-  }, [categoryFilter, t]);
+  }, [categoryFilter, monthFilter, sortOption, t]);
 
   useEffect(() => {
     setLoading(true);
     fetchEntries(1, true).finally(() => setLoading(false));
   }, [fetchEntries]);
+
+  // 'YYYY-MM' -> 'Jul 2026' for chip labels.
+  const formatMonthLabel = useCallback((month: string) => {
+    const [y, m] = month.split('-').map(Number);
+    if (!y || !m) return month;
+    return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  }, []);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -266,7 +282,7 @@ export default function AdminExpensesScreen() {
         </View>
 
         {categories.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ gap: spacing.sm, alignItems: 'center' }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginBottom: spacing.sm }} contentContainerStyle={{ gap: spacing.sm, alignItems: 'center' }}>
             <TouchableOpacity
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCategoryFilter(''); }}
               style={{
@@ -292,6 +308,59 @@ export default function AdminExpensesScreen() {
             ))}
           </ScrollView>
         )}
+
+        {months.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginBottom: spacing.sm }} contentContainerStyle={{ gap: spacing.sm, alignItems: 'center' }}>
+            <TouchableOpacity
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMonthFilter(''); }}
+              style={{
+                paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
+                borderWidth: 1, borderColor: !monthFilter ? C.primary : C.border,
+                backgroundColor: !monthFilter ? C.primary + '15' : C.card,
+              }}
+            >
+              <Text style={{ color: !monthFilter ? C.primary : C.textMuted, ...typography.caption, fontWeight: '700' }}>{t('admin', 'expenseFilterAllMonths')}</Text>
+            </TouchableOpacity>
+            {months.map(m => (
+              <TouchableOpacity
+                key={m}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMonthFilter(m); }}
+                style={{
+                  paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
+                  borderWidth: 1, borderColor: monthFilter === m ? C.primary : C.border,
+                  backgroundColor: monthFilter === m ? C.primary + '15' : C.card,
+                }}
+              >
+                <Text style={{ color: monthFilter === m ? C.primary : C.textMuted, ...typography.caption, fontWeight: '700' }}>{formatMonthLabel(m)}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          {([
+            { key: 'date_desc', label: t('admin', 'expenseSortNewest'), icon: CalendarClock },
+            { key: 'date_asc', label: t('admin', 'expenseSortOldest'), icon: Calendar },
+            { key: 'amount_desc', label: t('admin', 'expenseSortHighest'), icon: ArrowDownWideNarrow },
+            { key: 'amount_asc', label: t('admin', 'expenseSortLowest'), icon: ArrowUpNarrowWide },
+          ] as { key: ExpenseSort; label: string; icon: typeof Calendar }[]).map(({ key, label, icon: Icon }) => {
+            const active = sortOption === key;
+            return (
+              <TouchableOpacity
+                key={key}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSortOption(key); }}
+                style={{
+                  flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
+                  paddingVertical: spacing.sm, borderRadius: radius.md, borderWidth: 1,
+                  borderColor: active ? C.primary : C.border, backgroundColor: active ? C.primary + '15' : C.card,
+                }}
+              >
+                <Icon size={12} color={active ? C.primary : C.textMuted} />
+                <Text style={{ color: active ? C.primary : C.textMuted, ...typography.caption, fontWeight: '700' }} numberOfLines={1}>{label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
