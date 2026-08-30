@@ -573,7 +573,7 @@ export default function ChatScreen() {
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                     <Text style={{ color: C.text, fontSize: typography.label.fontSize, lineHeight: typography.label.lineHeight, fontWeight: typography.label.fontWeight }}>
-                      {item.name}{item.relation !== 'Head' ? ` · ${item.relation}` : ''}
+                      {item.name}
                     </Text>
                     <Text style={{ color: C.textFaint, fontSize: typography.caption.fontSize, lineHeight: typography.caption.lineHeight }}>{item.timestamp}</Text>
                   </View>
@@ -728,7 +728,7 @@ export default function ChatScreen() {
 
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: C.text, fontSize: typography.label.fontSize, lineHeight: typography.label.lineHeight, fontWeight: typography.label.fontWeight }} numberOfLines={1}>
-                    {activeThread.name}{activeThread.relation !== 'Head' ? ` · ${activeThread.relation}` : ''}
+                    {activeThread.name}
                   </Text>
                   <Text style={{ color: isActiveThreadBlocked ? C.error : C.success, fontSize: typography.caption.fontSize, lineHeight: typography.caption.lineHeight, fontWeight: '600' }}>
                     {isActiveThreadBlocked ? t('chat', 'blocked') : (activeThread.online ? t('chat', 'online') : t('chat', 'offline'))}
