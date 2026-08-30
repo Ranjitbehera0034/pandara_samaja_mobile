@@ -24,10 +24,16 @@ export interface FacebookLinkPreview {
   siteName: string | null;
 }
 
-// ── Open Graph preview for a shared Facebook link (WhatsApp-style) ──
-export const fetchFacebookLinkPreview = async (url: string) => {
+export type FacebookContent =
+  | { type: 'video'; embedHtml: string; image: string | null }
+  | { type: 'link'; preview: FacebookLinkPreview };
+
+// ── Resolve a shared Facebook link: a playable video embed when it
+// resolves to a real /reel/ or /videos/ URL, otherwise a WhatsApp-style
+// Open Graph link preview (title/description/image). ──
+export const fetchFacebookContent = async (url: string) => {
   const res = await client.get('/portal/link-preview', { params: { url } });
-  return res.data as { success: boolean; message?: string; preview: FacebookLinkPreview | null };
+  return res.data as { success: boolean; message?: string; content: FacebookContent | null };
 };
 
 // ── Like / Unlike a post ──

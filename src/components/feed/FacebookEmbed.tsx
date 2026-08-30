@@ -1,39 +1,137 @@
 // src/components/feed/FacebookEmbed.tsx
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ActivityIndicator, Linking } from 'react-native';
-import { ExternalLink, Users } from 'lucide-react-native';
+import { WebView } from 'react-native-webview';
+import { ExternalLink, Users, Play } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { isFacebookPageUrl } from '../../utils/facebook';
-import { fetchFacebookLinkPreview, FacebookLinkPreview } from '../../api/feed';
+import { fetchFacebookContent, FacebookContent } from '../../api/feed';
 
 interface Props {
   url: string;
 }
 
-// Meta's oEmbed API can't reliably tell a post apart from a video for
-// facebook.com/share/... links — oembed_post fails outright on the
-// generic share-link shape (confirmed live, error code 100 regardless of
-// what the content actually is), so every share link fell through to
-// oembed_video, which "succeeds" even for plain text/photo posts by
-// returning a generic fb-video wrapper pointed at content that isn't a
-// video. Rendering that wrapper in a WebView just shows Facebook's own
-// "video isn't available" error page — which itself renders inside an
-// <iframe>, so the old iframe-presence detection script couldn't tell
-// that apart from a real working embed either. Confirmed live: a plain
-// text post from a Facebook Page rendered exactly this way.
-//
-// Scraping Open Graph tags (title/description/image) instead — the same
-// approach WhatsApp/Telegram/iMessage link previews use — sidesteps the
-// whole problem: it doesn't need to know whether the link is a video, a
-// photo, or a text post, and Facebook always fills in those tags
-// regardless of content type.
+// facebook.com/share/... links are wrapper redirects, and Meta's oEmbed
+// API can't reliably tell a post apart from a video for the wrapper shape
+// itself — oembed_post fails outright on it (confirmed live, error code
+// 100 regardless of actual content), and oembed_video "succeeds" against
+// it but Facebook then refuses to actually play the video (its own "video
+// isn't available" error renders in place of the player). The backend
+// resolves the wrapper to its canonical URL first (facebook.com/reel/... or
+// .../videos/...) and only then requests the embed — confirmed live that
+// THAT is what actually plays. Anything that doesn't resolve to a
+// canonical video/reel path (plain posts, photos) gets a WhatsApp-style
+// Open Graph link preview instead, the same approach WhatsApp/Telegram
+// use — no oEmbed guessing needed for those.
 function openInFacebook(url: string) {
   Linking.openURL(url).catch(() => {});
 }
 
+function wrapperHtml(oembedHtml: string): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <style>
+    body,html{margin:0;padding:0;background:#000;height:100%;}
+    .fb-video, .fb-video iframe, .fb-video span, .fb-video iframe span {
+      width:100% !important;
+      height:100% !important;
+    }
+  </style>
+</head>
+<body>${oembedHtml}</body>
+</html>`;
+}
+
+function FacebookPageCard({ url, label }: { url: string; label: string }) {
+  const { radius } = useTheme();
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={() => openInFacebook(url)}
+      style={{
+        flexDirection: 'row', alignItems: 'center', gap: 10,
+        borderRadius: radius.md, overflow: 'hidden', backgroundColor: '#0866FF',
+        marginTop: 8, padding: 14,
+      }}
+    >
+      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+        <Users size={20} color="#fff" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: '#fff', fontWeight: '600' }}>{label}</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 1 }}>Tap to view on Facebook</Text>
+      </View>
+      <ExternalLink size={18} color="#fff" />
+    </TouchableOpacity>
+  );
+}
+
+// Thumbnail-first, tap to load the real WebView — same "don't load N
+// WebViews in a feed at once" principle YouTubeEmbed already uses. Always
+// shows a persistent "Open in Facebook" corner button rather than trying
+// to auto-detect embed failure: a cross-origin iframe's content can't be
+// inspected from injected JS, so there's no reliable way to tell a real
+// player apart from Facebook's own error page from the outside — offering
+// a guaranteed-working way out is more honest than pretending we can.
+function FacebookVideoEmbed({ url, embedHtml, image }: { url: string; embedHtml: string; image: string | null }) {
+  const { colors, radius } = useTheme();
+  const [playing, setPlaying] = useState(false);
+  const isReel = /\/share\/r\//i.test(url);
+
+  if (playing) {
+    return (
+      <View style={{ aspectRatio: isReel ? 9 / 16 : 16 / 9, maxHeight: 500, borderRadius: radius.md, overflow: 'hidden', backgroundColor: '#000', marginTop: 8 }}>
+        <WebView
+          source={{ html: wrapperHtml(embedHtml), baseUrl: 'https://www.facebook.com' }}
+          style={{ flex: 1, backgroundColor: '#000' }}
+          allowsFullscreenVideo
+          allowsInlineMediaPlayback
+          mediaPlaybackRequiresUserAction={false}
+          javaScriptEnabled
+          domStorageEnabled
+        />
+        <TouchableOpacity
+          onPress={() => openInFacebook(url)}
+          style={{
+            position: 'absolute', top: 8, right: 8,
+            flexDirection: 'row', alignItems: 'center', gap: 4,
+            backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 8, paddingVertical: 5,
+            borderRadius: 6,
+          }}
+        >
+          <ExternalLink size={12} color="#fff" />
+          <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>Facebook</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={() => setPlaying(true)}
+      style={{
+        aspectRatio: isReel ? 9 / 16 : 16 / 9, maxHeight: 500,
+        borderRadius: radius.md, overflow: 'hidden', backgroundColor: '#000',
+        marginTop: 8, alignItems: 'center', justifyContent: 'center',
+      }}
+    >
+      {image && (
+        <Image source={{ uri: image }} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="cover" />
+      )}
+      <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' }}>
+        <Play size={26} color="#fff" fill="#fff" style={{ marginLeft: 3 }} />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 export default function FacebookEmbed({ url }: Props) {
   const { colors, radius, spacing, typography } = useTheme();
-  const [preview, setPreview] = useState<FacebookLinkPreview | null>(null);
+  const [content, setContent] = useState<FacebookContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
 
@@ -45,11 +143,11 @@ export default function FacebookEmbed({ url }: Props) {
     }
     setLoading(true);
     setFailed(false);
-    fetchFacebookLinkPreview(url)
+    fetchFacebookContent(url)
       .then(res => {
         if (cancelled) return;
-        if (res.success && res.preview) {
-          setPreview(res.preview);
+        if (res.success && res.content) {
+          setContent(res.content);
         } else {
           setFailed(true);
         }
@@ -60,28 +158,9 @@ export default function FacebookEmbed({ url }: Props) {
   }, [url]);
 
   // A bare page/profile link has no single post to preview — show a
-  // distinct, honest card up front rather than fetch a preview for it.
+  // distinct, honest card up front rather than fetch anything for it.
   if (isFacebookPageUrl(url)) {
-    return (
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={() => openInFacebook(url)}
-        style={{
-          flexDirection: 'row', alignItems: 'center', gap: 10,
-          borderRadius: radius.md, overflow: 'hidden', backgroundColor: '#0866FF',
-          marginTop: 8, padding: 14,
-        }}
-      >
-        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-          <Users size={20} color="#fff" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: '#fff', fontWeight: '600' }}>Facebook Page</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 1 }}>Tap to view on Facebook</Text>
-        </View>
-        <ExternalLink size={18} color="#fff" />
-      </TouchableOpacity>
-    );
+    return <FacebookPageCard url={url} label="Facebook Page" />;
   }
 
   if (loading) {
@@ -92,30 +171,17 @@ export default function FacebookEmbed({ url }: Props) {
     );
   }
 
-  // Preview fetch failed, or Facebook returned no usable Open Graph data —
-  // degrade to a plain "open in Facebook" card rather than show nothing.
-  if (failed || !preview) {
-    return (
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={() => openInFacebook(url)}
-        style={{
-          flexDirection: 'row', alignItems: 'center', gap: 10,
-          borderRadius: radius.md, overflow: 'hidden', backgroundColor: '#0866FF',
-          marginTop: 8, padding: 14,
-        }}
-      >
-        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
-          <ExternalLink size={20} color="#fff" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: '#fff', fontWeight: '600' }}>Couldn't load preview</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 1 }}>Tap to view on Facebook</Text>
-        </View>
-      </TouchableOpacity>
-    );
+  // Fetch failed, or Facebook returned no usable data — degrade to a
+  // plain "open in Facebook" card rather than show nothing.
+  if (failed || !content) {
+    return <FacebookPageCard url={url} label="Couldn't load preview" />;
   }
 
+  if (content.type === 'video') {
+    return <FacebookVideoEmbed url={url} embedHtml={content.embedHtml} image={content.image} />;
+  }
+
+  const { preview } = content;
   return (
     <TouchableOpacity
       activeOpacity={0.9}
