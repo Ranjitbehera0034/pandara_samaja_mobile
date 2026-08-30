@@ -78,7 +78,7 @@ export default function FindMembershipScreen() {
     setPickerField(null);
   };
 
-  const isValid = name.trim().length > 0 && !!district && !!taluka;
+  const isValid = name.trim().length > 0 && district && taluka && panchayat && village;
 
   const handleSearch = async () => {
     if (!isValid) {
@@ -89,13 +89,7 @@ export default function FindMembershipScreen() {
     setSearching(true);
     setSearched(false);
     try {
-      const data = await searchMembership({
-        name: name.trim(),
-        district,
-        taluka,
-        ...(panchayat ? { panchayat } : {}),
-        ...(village ? { village } : {}),
-      });
+      const data = await searchMembership({ name: name.trim(), district, taluka, panchayat, village });
       setMatches(data.success ? data.matches : []);
       setSearched(true);
     } catch (e: any) {
