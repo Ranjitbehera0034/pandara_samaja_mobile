@@ -25,8 +25,8 @@ export const searchMembership = async (params: {
   name: string;
   district: string;
   taluka: string;
-  panchayat: string;
-  village: string;
+  panchayat?: string;
+  village?: string;
 }) => {
   const res = await client.post('/portal/find-membership/search', params);
   return res.data as { success: boolean; message?: string; matches: FindMembershipMatch[] };
