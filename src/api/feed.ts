@@ -36,6 +36,18 @@ export const fetchFacebookContent = async (url: string) => {
   return res.data as { success: boolean; message?: string; content: FacebookContent | null };
 };
 
+export interface YouTubeChannelPreview {
+  title: string | null;
+  image: string | null;
+}
+
+// ── Channel name + avatar for a shared YouTube channel link (no single
+// video to embed) ──
+export const fetchYouTubeChannelPreview = async (url: string) => {
+  const res = await client.get('/portal/youtube-channel-preview', { params: { url } });
+  return res.data as { success: boolean; message?: string; preview: YouTubeChannelPreview | null };
+};
+
 // ── Like / Unlike a post ──
 export const likePost = async (postId: string) => {
   const res = await client.post(`/portal/posts/${postId}/like`);
