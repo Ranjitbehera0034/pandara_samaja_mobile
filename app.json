@@ -99,7 +99,8 @@
           ],
           "iosShareExtensionName": "Pandara Samaja Share"
         }
-      ]
+      ],
+      "./plugins/withAdiRegistration"
     ],
     "extra": {
       "eas": {
