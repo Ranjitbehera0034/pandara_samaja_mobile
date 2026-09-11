@@ -1,5 +1,5 @@
 // src/components/feed/PostCard.tsx
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput,
   Share, Modal, ScrollView, Alert, Pressable, Animated
@@ -74,6 +74,35 @@ export default function PostCard({
   const [likeScale] = useState(new Animated.Value(1));
   const [viewerVisible, setViewerVisible] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
+  // FlashList recycles the underlying component instance across different
+  // list items as the user scrolls — it does NOT unmount/remount per post,
+  // so any local state here survives a scroll into a totally different
+  // post's row unless it's explicitly reset. Without this, a comment typed
+  // (or even just optimistically appended after sending) on one post could
+  // still be sitting in this instance's state when it gets reused to render
+  // a different post moments later, making the same comment appear to show
+  // up under multiple posts.
+  useEffect(() => {
+    setShowComments(false);
+    setLocalComments(post.comments || []);
+    setLoadingComments(false);
+    setHasMoreComments(false);
+    setCommentsPage(1);
+    setCommentText('');
+    setShowMenu(false);
+    setShowReactions(false);
+    setShowReportModal(false);
+    setReportReason('');
+    setIsEditing(false);
+    setEditContent(post.content);
+    setBookmarked(post.isBookmarked || false);
+    setMyReaction(post.myReaction || (post.isLiked ? 'like' : null));
+    setLocalReactions(post.reactions || { like: post.likes, love: 0, haha: 0, wow: 0, sad: 0, angry: 0 });
+    setViewerVisible(false);
+    setViewerIndex(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post.id]);
+
   const postMedia = post.media?.length ? post.media : urlsToMedia(post.images);
   const youtubeId = extractYouTubeId(post.content);
   const youtubeChannelUrl = !youtubeId ? extractYouTubeChannelUrl(post.content) : null;
