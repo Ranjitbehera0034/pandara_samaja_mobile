@@ -7,6 +7,10 @@ import { useTheme } from '../../theme/ThemeContext';
 
 interface Props {
   videoId: string;
+  // Course lessons navigate here as a deliberate "watch this" action, so
+  // they skip the thumbnail-tap step the feed still wants (a feed full of
+  // posts shouldn't start loading a WebView per video unprompted).
+  autoPlay?: boolean;
 }
 
 // Navigating a WebView's top-level page directly to youtube.com/embed/ID
@@ -32,10 +36,10 @@ function embedUri(videoId: string): string {
 // a custom-built one, so seek bar, captions, quality and fullscreen are all
 // genuinely YouTube's own controls. Thumbnail-first so a feed full of posts
 // doesn't load a WebView per video up front.
-export default function YouTubeEmbed({ videoId }: Props) {
+export default function YouTubeEmbed({ videoId, autoPlay = false }: Props) {
   const { radius } = useTheme();
-  const [playing, setPlaying] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [playing, setPlaying] = useState(autoPlay);
+  const [loading, setLoading] = useState(autoPlay);
 
   // Some videos have embedding disabled by their owner — no client-side
   // fix can play those inline, that's YouTube enforcing the uploader's

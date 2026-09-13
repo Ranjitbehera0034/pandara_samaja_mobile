@@ -27,6 +27,8 @@ import AdminStoryReportsScreen from '../screens/admin/AdminStoryReportsScreen';
 import AdminJobsScreen from '../screens/admin/AdminJobsScreen';
 import AdminJobSubmissionsScreen from '../screens/admin/AdminJobSubmissionsScreen';
 import AdminJobReportsScreen from '../screens/admin/AdminJobReportsScreen';
+import AdminCoursesScreen from '../screens/admin/AdminCoursesScreen';
+import AdminCourseLessonsScreen from '../screens/admin/AdminCourseLessonsScreen';
 import { Leader } from '../api/admin';
 import { FamilyMember } from '../types';
 
@@ -57,6 +59,8 @@ export type AdminStackParams = {
   AdminJobs: undefined;
   AdminJobSubmissions: undefined;
   AdminJobReports: undefined;
+  AdminCourses: undefined;
+  AdminCourseLessons: { courseId: string | number; courseTitle: string };
 };
 
 const Stack = createStackNavigator<AdminStackParams>();
@@ -90,6 +94,8 @@ export default function AdminStack() {
       <Stack.Screen name="AdminJobs" component={AdminJobsScreen} />
       <Stack.Screen name="AdminJobSubmissions" component={AdminJobSubmissionsScreen} />
       <Stack.Screen name="AdminJobReports" component={AdminJobReportsScreen} />
+      <Stack.Screen name="AdminCourses" component={AdminCoursesScreen} />
+      <Stack.Screen name="AdminCourseLessons" component={AdminCourseLessonsScreen} />
     </Stack.Navigator>
   );
 }

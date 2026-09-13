@@ -33,6 +33,10 @@ import FamilyEventsScreen from '../screens/family/FamilyEventsScreen';
 import JobsScreen from '../screens/community/JobsScreen';
 import JobDetailScreen from '../screens/community/JobDetailScreen';
 import JobSubmitScreen from '../screens/community/JobSubmitScreen';
+import CoursesScreen from '../screens/community/CoursesScreen';
+import CourseDetailScreen from '../screens/community/CourseDetailScreen';
+import LessonPlayerScreen from '../screens/community/LessonPlayerScreen';
+import InAppWebViewScreen from '../screens/common/InAppWebViewScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -51,6 +55,10 @@ function FeedStack() {
       <S.Screen name="Jobs" component={JobsScreen} />
       <S.Screen name="JobDetail" component={JobDetailScreen} />
       <S.Screen name="JobSubmit" component={JobSubmitScreen} />
+      <S.Screen name="Courses" component={CoursesScreen} />
+      <S.Screen name="CourseDetail" component={CourseDetailScreen} />
+      <S.Screen name="LessonPlayer" component={LessonPlayerScreen} />
+      <S.Screen name="InAppWebView" component={InAppWebViewScreen} />
       <S.Screen name="LiveStream" component={LiveStreamScreen} />
       <S.Screen name="LiveViewer" component={LiveViewerScreen} options={{ presentation: 'modal' }} />
       <S.Screen name="FamilyTree" component={FamilyTreeScreen} />

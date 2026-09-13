@@ -1097,3 +1097,88 @@ export const rejectReportedJob = async (id: string | number) => {
   const res = await adminClient.post(`/admin/jobs/reports/${id}/reject`);
   return res.data as { success: boolean; message?: string };
 };
+
+// ── Courses (admin/superadmin) ──
+// Admin-authored only — no submission queue, mirrors Announcements rather
+// than the Jobs shape. See the backend's ARCHITECTURE.md "Courses" section.
+
+export interface AdminCourse {
+  id: string | number;
+  title: string;
+  description?: string | null;
+  category?: string | null;
+  thumbnail_url?: string | null;
+  is_published: boolean;
+  created_at: string;
+  lesson_count?: number;
+  lessons?: AdminCourseLesson[];
+  [key: string]: any;
+}
+
+export interface AdminCourseLesson {
+  id: string | number;
+  course_id: string | number;
+  title: string;
+  platform: string;
+  external_url: string;
+  order_index: number;
+  created_at: string;
+}
+
+export const fetchAdminCourses = async (params: { category?: string; page?: number; limit?: number } = {}) => {
+  const res = await adminClient.get('/admin/courses', { params });
+  return res.data as { success: boolean; courses: AdminCourse[]; page: number };
+};
+
+export const fetchAdminCourseById = async (id: string | number) => {
+  const res = await adminClient.get(`/admin/courses/${id}`);
+  return res.data as { success: boolean; course: AdminCourse };
+};
+
+export interface CreateCourseInput {
+  title: string;
+  description?: string;
+  category?: string;
+  thumbnailUrl?: string;
+}
+
+export const createAdminCourse = async (data: CreateCourseInput) => {
+  const res = await adminClient.post('/admin/courses', data);
+  return res.data as { success: boolean; course: AdminCourse };
+};
+
+export const updateAdminCourse = async (id: string | number, data: Partial<CreateCourseInput>) => {
+  const res = await adminClient.put(`/admin/courses/${id}`, data);
+  return res.data as { success: boolean; course: AdminCourse };
+};
+
+export const setCoursePublished = async (id: string | number, isPublished: boolean) => {
+  const res = await adminClient.patch(`/admin/courses/${id}/publish`, { isPublished });
+  return res.data as { success: boolean; course: AdminCourse };
+};
+
+export const deleteAdminCourse = async (id: string | number) => {
+  const res = await adminClient.delete(`/admin/courses/${id}`);
+  return res.data as { success: boolean };
+};
+
+export interface CreateLessonInput {
+  title: string;
+  platform: string;
+  externalUrl: string;
+}
+
+export const addCourseLesson = async (courseId: string | number, data: CreateLessonInput) => {
+  const res = await adminClient.post(`/admin/courses/${courseId}/lessons`, data);
+  return res.data as { success: boolean; lesson: AdminCourseLesson };
+};
+
+export const updateCourseLesson = async (courseId: string | number, lessonId: string | number, data: Partial<CreateLessonInput>) => {
+  const res = await adminClient.put(`/admin/courses/${courseId}/lessons/${lessonId}`, data);
+  return res.data as { success: boolean; lesson: AdminCourseLesson };
+};
+
+export const deleteCourseLesson = async (courseId: string | number, lessonId: string | number) => {
+  const res = await adminClient.delete(`/admin/courses/${courseId}/lessons/${lessonId}`);
+  return res.data as { success: boolean };
+};
