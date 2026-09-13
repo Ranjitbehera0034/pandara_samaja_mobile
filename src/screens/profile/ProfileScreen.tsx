@@ -7,7 +7,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { Edit2, Check, X, Camera, ChevronDown, ChevronUp, Users, Heart, Image as ImageIcon, Calendar, ShieldAlert, Award, Radio, Briefcase, GraduationCap } from 'lucide-react-native';
+import { Edit2, Check, X, Camera, ChevronDown, ChevronUp, Users, Heart, Image as ImageIcon, Calendar, ShieldAlert, Award, Radio, Briefcase, GraduationCap, Mic2 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
@@ -234,6 +234,7 @@ export default function ProfileScreen() {
               { label: t('profile', 'liveStreamLabel'), icon: <Radio size={20} color={C.error} />, screen: 'LiveStream', desc: t('profile', 'liveStreamDesc') },
               { label: t('profile', 'jobsLabel'), icon: <Briefcase size={20} color={C.primary} />, screen: 'Jobs', desc: t('profile', 'jobsDesc') },
               { label: t('profile', 'coursesLabel'), icon: <GraduationCap size={20} color={C.success} />, screen: 'Courses', desc: t('profile', 'coursesDesc') },
+              { label: t('profile', 'songContestLabel'), icon: <Mic2 size={20} color={C.accent} />, screen: 'SongContest', desc: t('profile', 'songContestDesc') },
             ].map(hub => (
               <TouchableOpacity
                 key={hub.label}

@@ -1182,3 +1182,84 @@ export const deleteCourseLesson = async (courseId: string | number, lessonId: st
   const res = await adminClient.delete(`/admin/courses/${courseId}/lessons/${lessonId}`);
   return res.data as { success: boolean };
 };
+
+// ── Song Competition (admin/superadmin) ──
+// Admin launches a contest (draft -> active -> closed) and moderates
+// uploaded entries. See backend ARCHITECTURE.md's "Song Competition" section.
+
+export interface AdminSongContest {
+  id: string | number;
+  title: string;
+  description?: string | null;
+  rules?: string | null;
+  status: 'draft' | 'active' | 'closed';
+  started_at?: string | null;
+  closed_at?: string | null;
+  created_at: string;
+}
+
+export interface AdminSongContestEntry {
+  id: string | number;
+  contest_id: string | number;
+  entry_type: 'individual' | 'group';
+  entry_name: string;
+  village?: string | null;
+  participant_names?: string | null;
+  registered_by_membership_no: string;
+  registered_by_mobile: string;
+  video_url: string;
+  moderation_status: 'pending' | 'approved' | 'rejected';
+  admin_remarks?: string | null;
+  created_at: string;
+}
+
+export const fetchAdminSongContests = async () => {
+  const res = await adminClient.get('/admin/song-contests');
+  return res.data as { success: boolean; contests: AdminSongContest[] };
+};
+
+export interface CreateSongContestInput {
+  title: string;
+  description?: string;
+  rules?: string;
+}
+
+export const createSongContest = async (data: CreateSongContestInput) => {
+  const res = await adminClient.post('/admin/song-contests', data);
+  return res.data as { success: boolean; contest: AdminSongContest };
+};
+
+export const updateSongContest = async (id: string | number, data: Partial<CreateSongContestInput>) => {
+  const res = await adminClient.put(`/admin/song-contests/${id}`, data);
+  return res.data as { success: boolean; contest: AdminSongContest };
+};
+
+export const startSongContest = async (id: string | number) => {
+  const res = await adminClient.post(`/admin/song-contests/${id}/start`);
+  return res.data as { success: boolean; contest?: AdminSongContest; message?: string };
+};
+
+export const closeSongContest = async (id: string | number) => {
+  const res = await adminClient.post(`/admin/song-contests/${id}/close`);
+  return res.data as { success: boolean; contest?: AdminSongContest; message?: string };
+};
+
+export const deleteSongContest = async (id: string | number) => {
+  const res = await adminClient.delete(`/admin/song-contests/${id}`);
+  return res.data as { success: boolean };
+};
+
+export const fetchAdminContestEntries = async (contestId: string | number, status?: 'pending' | 'approved' | 'rejected') => {
+  const res = await adminClient.get(`/admin/song-contests/${contestId}/entries`, { params: { status } });
+  return res.data as { success: boolean; entries: AdminSongContestEntry[] };
+};
+
+export const approveContestEntry = async (entryId: string | number) => {
+  const res = await adminClient.post(`/admin/song-contests/entries/${entryId}/approve`);
+  return res.data as { success: boolean; entry?: AdminSongContestEntry; message?: string };
+};
+
+export const rejectContestEntry = async (entryId: string | number, remark: string) => {
+  const res = await adminClient.post(`/admin/song-contests/entries/${entryId}/reject`, { remark });
+  return res.data as { success: boolean; entry?: AdminSongContestEntry; message?: string };
+};

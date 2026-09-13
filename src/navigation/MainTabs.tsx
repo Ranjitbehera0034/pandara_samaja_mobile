@@ -37,6 +37,10 @@ import CoursesScreen from '../screens/community/CoursesScreen';
 import CourseDetailScreen from '../screens/community/CourseDetailScreen';
 import LessonPlayerScreen from '../screens/community/LessonPlayerScreen';
 import InAppWebViewScreen from '../screens/common/InAppWebViewScreen';
+import SongContestScreen from '../screens/community/SongContestScreen';
+import SongContestDetailScreen from '../screens/community/SongContestDetailScreen';
+import SongContestRegisterScreen from '../screens/community/SongContestRegisterScreen';
+import SongContestEntryDetailScreen from '../screens/community/SongContestEntryDetailScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -59,6 +63,10 @@ function FeedStack() {
       <S.Screen name="CourseDetail" component={CourseDetailScreen} />
       <S.Screen name="LessonPlayer" component={LessonPlayerScreen} />
       <S.Screen name="InAppWebView" component={InAppWebViewScreen} />
+      <S.Screen name="SongContest" component={SongContestScreen} />
+      <S.Screen name="SongContestDetail" component={SongContestDetailScreen} />
+      <S.Screen name="SongContestRegister" component={SongContestRegisterScreen} />
+      <S.Screen name="SongContestEntryDetail" component={SongContestEntryDetailScreen} />
       <S.Screen name="LiveStream" component={LiveStreamScreen} />
       <S.Screen name="LiveViewer" component={LiveViewerScreen} options={{ presentation: 'modal' }} />
       <S.Screen name="FamilyTree" component={FamilyTreeScreen} />

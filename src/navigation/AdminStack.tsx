@@ -29,6 +29,8 @@ import AdminJobSubmissionsScreen from '../screens/admin/AdminJobSubmissionsScree
 import AdminJobReportsScreen from '../screens/admin/AdminJobReportsScreen';
 import AdminCoursesScreen from '../screens/admin/AdminCoursesScreen';
 import AdminCourseLessonsScreen from '../screens/admin/AdminCourseLessonsScreen';
+import AdminSongContestsScreen from '../screens/admin/AdminSongContestsScreen';
+import AdminSongContestEntriesScreen from '../screens/admin/AdminSongContestEntriesScreen';
 import { Leader } from '../api/admin';
 import { FamilyMember } from '../types';
 
@@ -61,6 +63,8 @@ export type AdminStackParams = {
   AdminJobReports: undefined;
   AdminCourses: undefined;
   AdminCourseLessons: { courseId: string | number; courseTitle: string };
+  AdminSongContests: undefined;
+  AdminSongContestEntries: { contestId: string | number; contestTitle: string };
 };
 
 const Stack = createStackNavigator<AdminStackParams>();
@@ -96,6 +100,8 @@ export default function AdminStack() {
       <Stack.Screen name="AdminJobReports" component={AdminJobReportsScreen} />
       <Stack.Screen name="AdminCourses" component={AdminCoursesScreen} />
       <Stack.Screen name="AdminCourseLessons" component={AdminCourseLessonsScreen} />
+      <Stack.Screen name="AdminSongContests" component={AdminSongContestsScreen} />
+      <Stack.Screen name="AdminSongContestEntries" component={AdminSongContestEntriesScreen} />
     </Stack.Navigator>
   );
 }

@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Users, Flag, ShieldCheck, LogOut, ChevronRight, History, Heart, Newspaper, Megaphone, Wallet, Settings as SettingsIcon, Award, PieChart, TrendingUp, Radio, Download, Briefcase, AlertTriangle, GraduationCap } from 'lucide-react-native';
+import { Users, Flag, ShieldCheck, LogOut, ChevronRight, History, Heart, Newspaper, Megaphone, Wallet, Settings as SettingsIcon, Award, PieChart, TrendingUp, Radio, Download, Briefcase, AlertTriangle, GraduationCap, Mic2 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAdminAuth } from '../../context/AdminAuthContext';
@@ -101,6 +101,13 @@ export default function AdminDashboardScreen() {
       title: t('admin', 'coursesCardTitle'),
       desc: t('admin', 'coursesCardDesc'),
       onPress: () => navigateTo('AdminCourses'),
+    },
+    {
+      key: 'songContest',
+      icon: <Mic2 size={24} color={C.accent} />,
+      title: t('admin', 'songContestsCardTitle'),
+      desc: t('admin', 'songContestsCardDesc'),
+      onPress: () => navigateTo('AdminSongContests'),
     },
     {
       key: 'expenses',
