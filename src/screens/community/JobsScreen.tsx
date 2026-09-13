@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Plus, MapPin, Clock, Briefcase } from 'lucide-react-native';
+import { ArrowLeft, Plus, MapPin, Clock, Briefcase, Users } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as jobsApi from '../../api/jobs';
@@ -98,11 +98,17 @@ export default function JobsScreen() {
         <Text style={{ color: C.textMuted, fontFamily: fontRegular, marginTop: 2, ...typography.caption }} numberOfLines={1}>
           {item.organization}
         </Text>
-        <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm }}>
+        <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm, flexWrap: 'wrap' }}>
           {!!item.location && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
               <MapPin size={11} color={C.textFaint} />
               <Text style={{ color: C.textFaint, ...typography.caption }}>{item.location}</Text>
+            </View>
+          )}
+          {!!item.no_of_vacancies && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+              <Users size={11} color={C.textFaint} />
+              <Text style={{ color: C.textFaint, ...typography.caption }} numberOfLines={1}>{item.no_of_vacancies}</Text>
             </View>
           )}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>

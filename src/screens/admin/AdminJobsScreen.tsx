@@ -47,6 +47,7 @@ export default function AdminJobsScreen() {
   const [lastDate, setLastDate] = useState('');
   const [registrationStartDate, setRegistrationStartDate] = useState('');
   const [applicationFee, setApplicationFee] = useState('');
+  const [noOfVacancies, setNoOfVacancies] = useState('');
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async (isRefresh = false) => {
@@ -70,7 +71,7 @@ export default function AdminJobsScreen() {
     setEditing(null);
     setTitle(''); setOrganization(''); setCategory('govt');
     setDescription(''); setLocation(''); setApplicationInfo(''); setContactPhone('');
-    setEligibility(''); setLastDate(''); setRegistrationStartDate(''); setApplicationFee('');
+    setEligibility(''); setLastDate(''); setRegistrationStartDate(''); setApplicationFee(''); setNoOfVacancies('');
   };
 
   const openCreate = () => {
@@ -92,6 +93,7 @@ export default function AdminJobsScreen() {
     setLastDate(item.last_date || '');
     setRegistrationStartDate(item.registration_start_date || '');
     setApplicationFee(item.application_fee || '');
+    setNoOfVacancies(item.no_of_vacancies || '');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowForm(true);
   };
@@ -112,6 +114,7 @@ export default function AdminJobsScreen() {
         lastDate: lastDate.trim() || undefined,
         registrationStartDate: registrationStartDate.trim() || undefined,
         applicationFee: applicationFee.trim() || undefined,
+        noOfVacancies: noOfVacancies.trim() || undefined,
       };
       const data = editing
         ? await adminApi.updateAdminJob(editing.id, payload)
@@ -314,6 +317,15 @@ export default function AdminJobsScreen() {
                 placeholderTextColor={C.textFaint}
                 value={location}
                 onChangeText={setLocation}
+              />
+
+              <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'noOfVacanciesLabelOptional')}</Text>
+              <TextInput
+                style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text, fontFamily: fontRegular, ...typography.body }}
+                placeholder={t('jobs', 'noOfVacanciesPlaceholder')}
+                placeholderTextColor={C.textFaint}
+                value={noOfVacancies}
+                onChangeText={setNoOfVacancies}
               />
 
               <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'registrationStartLabelOptional')}</Text>

@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Linking } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, MapPin, Clock, ExternalLink, Phone, Flag, CalendarClock, CalendarX, IndianRupee, GraduationCap } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Clock, ExternalLink, Phone, Flag, CalendarClock, CalendarX, IndianRupee, GraduationCap, Users } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as jobsApi from '../../api/jobs';
@@ -144,8 +144,17 @@ export default function JobDetailScreen() {
             </View>
           </View>
 
-          {(job.registration_start_date || job.last_date || job.application_fee || job.eligibility) && (
+          {(job.no_of_vacancies || job.registration_start_date || job.last_date || job.application_fee || job.eligibility) && (
             <View style={{ backgroundColor: C.card, borderRadius: radius.lg, paddingHorizontal: spacing.lg, marginTop: spacing.lg }}>
+              {!!job.no_of_vacancies && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                    <Users size={15} color={C.textMuted} />
+                    <Text style={{ color: C.textMuted, ...typography.caption }}>{t('jobs', 'noOfVacanciesLabel')}</Text>
+                  </View>
+                  <Text style={{ color: C.text, ...typography.caption, fontWeight: '700', flexShrink: 1, textAlign: 'right' }}>{job.no_of_vacancies}</Text>
+                </View>
+              )}
               {!!job.registration_start_date && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>

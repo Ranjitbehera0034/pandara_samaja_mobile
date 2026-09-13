@@ -24,6 +24,7 @@ export interface JobPosting {
   last_date?: string | null;
   registration_start_date?: string | null;
   application_fee?: string | null;
+  no_of_vacancies?: string | null;
   posted_by_admin: boolean;
   submitted_by?: string | null;
   created_at: string;
@@ -53,6 +54,7 @@ export interface JobSubmission {
   last_date?: string | null;
   registration_start_date?: string | null;
   application_fee?: string | null;
+  no_of_vacancies?: string | null;
   status: 'pending' | 'rejected';
   admin_remarks?: string | null;
   reviewed_by?: string | null;
@@ -87,6 +89,7 @@ export interface SubmitJobInput {
   lastDate?: string;
   registrationStartDate?: string;
   applicationFee?: string;
+  noOfVacancies?: string;
 }
 
 // POST /api/portal/jobs/submissions — member submits a posting for review.

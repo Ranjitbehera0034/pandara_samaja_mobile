@@ -12,7 +12,7 @@ import { ArrowLeft, X, Clock, XCircle, Phone } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
-import { JobSubmission } from '../../api/admin';
+import { JobSubmission, JobApprovalOverrides } from '../../api/admin';
 import SkeletonBox from '../../components/common/SkeletonBox';
 import EmptyState from '../../components/common/EmptyState';
 import Button from '../../components/common/Button';
@@ -88,13 +88,33 @@ function RemarkModal({ visible, onClose, onSubmit, submitting }: {
 
 function SubmissionDetailModal({ submission, onClose, onApprove, onReject, actingId }: {
   submission: JobSubmission | null; onClose: () => void;
-  onApprove: (s: JobSubmission) => void; onReject: (s: JobSubmission) => void;
+  onApprove: (s: JobSubmission, overrides: JobApprovalOverrides) => void; onReject: (s: JobSubmission) => void;
   actingId: string | number | null;
 }) {
   const { colors: C, spacing, radius, typography } = useTheme();
   const { lang, t } = useLanguage();
   const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
   const fontRegular = lang === 'od' ? 'NotoSansOriya' : undefined;
+
+  // The scraper's OCR extraction is best-effort against messy government
+  // PDFs (see backend scraper/src/structure.ts) — these fields are the
+  // ones most often garbled, so they're editable here before a submission
+  // goes live, pre-filled with whatever was auto-extracted. Title/
+  // organization/description come from the source page's own link text
+  // or a fixed lookup table, not OCR, so they're left read-only.
+  const [noOfVacancies, setNoOfVacancies] = useState('');
+  const [eligibility, setEligibility] = useState('');
+  const [lastDate, setLastDate] = useState('');
+  const [registrationStartDate, setRegistrationStartDate] = useState('');
+  const [applicationFee, setApplicationFee] = useState('');
+
+  useEffect(() => {
+    setNoOfVacancies(submission?.no_of_vacancies || '');
+    setEligibility(submission?.eligibility || '');
+    setLastDate(submission?.last_date || '');
+    setRegistrationStartDate(submission?.registration_start_date || '');
+    setApplicationFee(submission?.application_fee || '');
+  }, [submission?.id]);
 
   if (!submission) return null;
   const isActing = actingId === submission.id;
@@ -108,6 +128,34 @@ function SubmissionDetailModal({ submission, onClose, onApprove, onReject, actin
       </View>
     );
   };
+
+  const EditableField = ({ label, value, onChangeText, multiline }: {
+    label: string; value: string; onChangeText: (v: string) => void; multiline?: boolean;
+  }) => (
+    <View style={{ marginTop: spacing.md }}>
+      <Text style={{ color: C.textMuted, marginBottom: spacing.xs, ...typography.caption, fontWeight: '700' }}>{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        multiline={multiline}
+        placeholder={t('admin', 'jobSubmissionFieldEmptyPlaceholder')}
+        placeholderTextColor={C.textFaint}
+        style={{
+          backgroundColor: C.bg, borderColor: C.border, borderWidth: 1, color: C.text, borderRadius: radius.md,
+          paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontFamily: fontRegular,
+          minHeight: multiline ? 60 : undefined, textAlignVertical: multiline ? 'top' : 'center', ...typography.caption,
+        }}
+      />
+    </View>
+  );
+
+  const doApprove = () => onApprove(submission, {
+    noOfVacancies: noOfVacancies.trim(),
+    eligibility: eligibility.trim(),
+    lastDate: lastDate.trim(),
+    registrationStartDate: registrationStartDate.trim(),
+    applicationFee: applicationFee.trim(),
+  });
 
   return (
     <Modal visible={!!submission} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -134,6 +182,18 @@ function SubmissionDetailModal({ submission, onClose, onApprove, onReject, actin
           <Text style={{ color: C.text, fontFamily: fontRegular, marginTop: spacing.lg, ...typography.body, lineHeight: 22 }}>
             {submission.description}
           </Text>
+
+          {submission.status === 'pending' && (
+            <View style={{ backgroundColor: C.card, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.lg }}>
+              <Text style={{ color: C.textMuted, ...typography.label }}>{t('admin', 'jobSubmissionAutoExtractedHeader')}</Text>
+              <Text style={{ color: C.textFaint, marginTop: 2, ...typography.caption }}>{t('admin', 'jobSubmissionAutoExtractedHelper')}</Text>
+              <EditableField label={t('jobs', 'noOfVacanciesLabel')} value={noOfVacancies} onChangeText={setNoOfVacancies} />
+              <EditableField label={t('jobs', 'registrationStartLabel')} value={registrationStartDate} onChangeText={setRegistrationStartDate} />
+              <EditableField label={t('jobs', 'lastDateLabel')} value={lastDate} onChangeText={setLastDate} />
+              <EditableField label={t('jobs', 'applicationFeeLabel')} value={applicationFee} onChangeText={setApplicationFee} />
+              <EditableField label={t('jobs', 'eligibilityLabel')} value={eligibility} onChangeText={setEligibility} multiline />
+            </View>
+          )}
 
           <View style={{ backgroundColor: C.card, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.lg, gap: spacing.sm }}>
             <Text style={{ color: C.textMuted, ...typography.label }}>{t('jobs', 'howToApplyLabel')}</Text>
@@ -167,7 +227,7 @@ function SubmissionDetailModal({ submission, onClose, onApprove, onReject, actin
                 label={t('admin', 'jobSubmissionApproveButton')}
                 variant="primary"
                 loading={isActing}
-                onPress={() => onApprove(submission)}
+                onPress={doApprove}
               />
               <Button
                 label={t('admin', 'jobSubmissionRejectButton')}
@@ -241,10 +301,10 @@ export default function AdminJobSubmissionsScreen() {
     setSubmissions(prev => prev.filter(s => s.id !== id));
   };
 
-  const doApprove = async (submission: JobSubmission) => {
+  const doApprove = async (submission: JobSubmission, overrides: adminApi.JobApprovalOverrides) => {
     setActingId(submission.id);
     try {
-      const data = await adminApi.approveJobSubmission(submission.id);
+      const data = await adminApi.approveJobSubmission(submission.id, overrides);
       if (data.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         removeFromView(submission.id);
@@ -262,14 +322,14 @@ export default function AdminJobSubmissionsScreen() {
     }
   };
 
-  const handleApprove = (submission: JobSubmission) => {
+  const handleApprove = (submission: JobSubmission, overrides: adminApi.JobApprovalOverrides) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
       t('admin', 'confirmApproveJobTitle'),
       t('admin', 'confirmApproveJobMessage'),
       [
         { text: t('common', 'cancel'), style: 'cancel' },
-        { text: t('admin', 'jobSubmissionApproveButton'), onPress: () => doApprove(submission) },
+        { text: t('admin', 'jobSubmissionApproveButton'), onPress: () => doApprove(submission, overrides) },
       ]
     );
   };

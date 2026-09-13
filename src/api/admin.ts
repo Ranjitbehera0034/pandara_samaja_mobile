@@ -951,6 +951,7 @@ export interface AdminJob {
   last_date?: string | null;
   registration_start_date?: string | null;
   application_fee?: string | null;
+  no_of_vacancies?: string | null;
   posted_by_admin: boolean;
   submitted_by?: string | null;
   moderation_status?: string;
@@ -982,6 +983,7 @@ export interface JobSubmission {
   last_date?: string | null;
   registration_start_date?: string | null;
   application_fee?: string | null;
+  no_of_vacancies?: string | null;
   status: 'pending' | 'rejected';
   admin_remarks?: string | null;
   reviewed_by?: string | null;
@@ -1011,6 +1013,7 @@ export interface CreateJobInput {
   lastDate?: string;
   registrationStartDate?: string;
   applicationFee?: string;
+  noOfVacancies?: string;
   expiresAt?: string;
 }
 
@@ -1039,8 +1042,26 @@ export const fetchAdminJobSubmissions = async (
   };
 };
 
-export const approveJobSubmission = async (id: string | number) => {
-  const res = await adminClient.post(`/admin/jobs/submissions/${id}/approve`);
+export interface JobApprovalOverrides {
+  title?: string;
+  organization?: string;
+  description?: string;
+  location?: string;
+  applicationInfo?: string;
+  eligibility?: string;
+  lastDate?: string;
+  registrationStartDate?: string;
+  applicationFee?: string;
+  noOfVacancies?: string;
+  expiresAt?: string;
+}
+
+// Overrides let an admin correct a garbled OCR-extracted value (eligibility,
+// dates, vacancy count, ...) before it goes live to members, instead of
+// either publishing it as-is or rejecting the whole submission. Omitted
+// fields fall back to the submission's own extracted value.
+export const approveJobSubmission = async (id: string | number, overrides?: JobApprovalOverrides) => {
+  const res = await adminClient.post(`/admin/jobs/submissions/${id}/approve`, overrides || {});
   return res.data as { success: boolean; job: AdminJob };
 };
 

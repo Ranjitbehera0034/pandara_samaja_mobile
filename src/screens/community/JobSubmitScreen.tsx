@@ -34,6 +34,7 @@ export default function JobSubmitScreen() {
   const [lastDate, setLastDate] = useState('');
   const [registrationStartDate, setRegistrationStartDate] = useState('');
   const [applicationFee, setApplicationFee] = useState('');
+  const [noOfVacancies, setNoOfVacancies] = useState('');
   const [saving, setSaving] = useState(false);
 
   const inputStyle = {
@@ -62,6 +63,7 @@ export default function JobSubmitScreen() {
         lastDate: lastDate.trim() || undefined,
         registrationStartDate: registrationStartDate.trim() || undefined,
         applicationFee: applicationFee.trim() || undefined,
+        noOfVacancies: noOfVacancies.trim() || undefined,
       });
       if (data.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -130,6 +132,9 @@ export default function JobSubmitScreen() {
 
           <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'locationLabel')}</Text>
           <TextInput style={inputStyle} placeholder={t('jobs', 'locationPlaceholder')} placeholderTextColor={C.textFaint} value={location} onChangeText={setLocation} />
+
+          <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'noOfVacanciesLabelOptional')}</Text>
+          <TextInput style={inputStyle} placeholder={t('jobs', 'noOfVacanciesPlaceholder')} placeholderTextColor={C.textFaint} value={noOfVacancies} onChangeText={setNoOfVacancies} />
 
           <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'registrationStartLabelOptional')}</Text>
           <TextInput style={inputStyle} placeholder={t('jobs', 'registrationStartPlaceholder')} placeholderTextColor={C.textFaint} value={registrationStartDate} onChangeText={setRegistrationStartDate} />
