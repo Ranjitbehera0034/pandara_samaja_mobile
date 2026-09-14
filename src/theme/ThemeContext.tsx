@@ -1,6 +1,6 @@
 // src/theme/ThemeContext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useColorScheme as useNativeWindColorScheme } from 'nativewind';
+import { useColorScheme as useRNColorScheme } from 'react-native';
 import { storage } from '../utils/secureStorage';
 import { STORAGE_KEYS } from '../config/constants';
 import {
@@ -25,26 +25,35 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { colorScheme, setColorScheme } = useNativeWindColorScheme();
+  // React Native's own hook — reactively tracks the OS appearance, used
+  // only as the fallback for 'system' mode. Deliberately NOT nativewind's
+  // useColorScheme/setColorScheme: nativewind's setColorScheme('light' |
+  // 'dark') routes through RN's Appearance.setColorScheme(), which is a
+  // testing-oriented API (see React Native's own docs) that doesn't
+  // reliably override the OS appearance on a real device — picking
+  // "Light" while the OS is in Dark Mode visibly did nothing. This app
+  // has zero Tailwind `dark:` classes anywhere (confirmed) — every screen
+  // already reads colors.* from this context, not nativewind's own
+  // dark-mode system — so the fix is to stop depending on that bridge
+  // entirely and resolve the scheme directly from this app's own
+  // persisted `mode`.
+  const systemScheme = useRNColorScheme();
   const [mode, setModeState] = useState<ThemeMode>('system');
 
   useEffect(() => {
     storage.getItem(STORAGE_KEYS.THEME).then((saved) => {
       if (saved === 'light' || saved === 'dark' || saved === 'system') {
         setModeState(saved);
-        setColorScheme(saved);
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setMode = async (m: ThemeMode) => {
     setModeState(m);
-    setColorScheme(m);
     await storage.setItem(STORAGE_KEYS.THEME, m);
   };
 
-  const scheme: ResolvedScheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const scheme: ResolvedScheme = mode === 'system' ? (systemScheme === 'dark' ? 'dark' : 'light') : mode;
   const colors = palettes[scheme];
 
   return (
