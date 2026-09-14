@@ -21,6 +21,13 @@ export interface Occasion {
   endMonthDay: string;
   accentColor: string;
   ringColors: [string, string, string];
+  // Login-greeting content (WelcomeModal) — always Odia, matching that
+  // component's existing deliberate house convention (see its own file
+  // comment), independent of the member's selected app language.
+  emoji: string;
+  greetingTitle: string;
+  // {name} is replaced with the member's name, or removed entirely if unknown.
+  greetingMessage: string;
 }
 
 const FIXED_OCCASIONS: Occasion[] = [
@@ -31,6 +38,9 @@ const FIXED_OCCASIONS: Occasion[] = [
     endMonthDay: '08-15',
     accentColor: '#FF9933',
     ringColors: ['#FF9933', '#FFFFFF', '#138808'],
+    emoji: '🇮🇳',
+    greetingTitle: 'ସ୍ୱାଧୀନତା ଦିବସର ଶୁଭକାମନା',
+    greetingMessage: '{name}ସ୍ୱାଧୀନତା ଦିବସର ହାର୍ଦ୍ଦିକ ଶୁଭକାମନା ଓ ଅଭିନନ୍ଦନ।',
   },
   {
     id: 'republic_day',
@@ -39,6 +49,9 @@ const FIXED_OCCASIONS: Occasion[] = [
     endMonthDay: '01-26',
     accentColor: '#FF9933',
     ringColors: ['#FF9933', '#FFFFFF', '#138808'],
+    emoji: '🇮🇳',
+    greetingTitle: 'ଗଣତନ୍ତ୍ର ଦିବସର ଶୁଭକାମନା',
+    greetingMessage: '{name}ଗଣତନ୍ତ୍ର ଦିବସର ହାର୍ଦ୍ଦିକ ଶୁଭକାମନା।',
   },
 ];
 
@@ -49,10 +62,28 @@ const FIXED_OCCASIONS: Occasion[] = [
 // deliberately different from the national-holiday tricolor ring: this is
 // a religious/cultural festival, not a civic one, and reusing the flag
 // colors here would read as wrong to anyone who noticed.
-const LUNAR_OCCASIONS: { id: string; label: string; date: string; accentColor: string; ringColors: [string, string, string] }[] = [
-  { id: 'ganesh_chaturthi_2026', label: 'Ganesh Chaturthi', date: '2026-09-14', accentColor: '#E2725B', ringColors: ['#DC143C', '#FF8C00', '#FFD700'] },
-  { id: 'ganesh_chaturthi_2027', label: 'Ganesh Chaturthi', date: '2027-09-04', accentColor: '#E2725B', ringColors: ['#DC143C', '#FF8C00', '#FFD700'] },
-  { id: 'ganesh_chaturthi_2028', label: 'Ganesh Chaturthi', date: '2028-08-23', accentColor: '#E2725B', ringColors: ['#DC143C', '#FF8C00', '#FFD700'] },
+const LUNAR_OCCASIONS: (Omit<Occasion, 'startMonthDay' | 'endMonthDay'> & { date: string })[] = [
+  {
+    id: 'ganesh_chaturthi_2026', label: 'Ganesh Chaturthi', date: '2026-09-14',
+    accentColor: '#E2725B', ringColors: ['#DC143C', '#FF8C00', '#FFD700'],
+    emoji: '🙏🐘',
+    greetingTitle: 'ଶ୍ରୀ ଗଣେଶ ଚତୁର୍ଥୀର ଶୁଭେଚ୍ଛା',
+    greetingMessage: '{name}ଶ୍ରୀ ଗଣେଶ ଚତୁର୍ଥୀର ହାର୍ଦ୍ଦିକ ଶୁଭେଚ୍ଛା। ବିଘ୍ନହର୍ତ୍ତା ଗଣେଶଙ୍କ ଆଶୀର୍ବାଦ ଆପଣଙ୍କ ଉପରେ ସଦା ରହୁ।',
+  },
+  {
+    id: 'ganesh_chaturthi_2027', label: 'Ganesh Chaturthi', date: '2027-09-04',
+    accentColor: '#E2725B', ringColors: ['#DC143C', '#FF8C00', '#FFD700'],
+    emoji: '🙏🐘',
+    greetingTitle: 'ଶ୍ରୀ ଗଣେଶ ଚତୁର୍ଥୀର ଶୁଭେଚ୍ଛା',
+    greetingMessage: '{name}ଶ୍ରୀ ଗଣେଶ ଚତୁର୍ଥୀର ହାର୍ଦ୍ଦିକ ଶୁଭେଚ୍ଛା। ବିଘ୍ନହର୍ତ୍ତା ଗଣେଶଙ୍କ ଆଶୀର୍ବାଦ ଆପଣଙ୍କ ଉପରେ ସଦା ରହୁ।',
+  },
+  {
+    id: 'ganesh_chaturthi_2028', label: 'Ganesh Chaturthi', date: '2028-08-23',
+    accentColor: '#E2725B', ringColors: ['#DC143C', '#FF8C00', '#FFD700'],
+    emoji: '🙏🐘',
+    greetingTitle: 'ଶ୍ରୀ ଗଣେଶ ଚତୁର୍ଥୀର ଶୁଭେଚ୍ଛା',
+    greetingMessage: '{name}ଶ୍ରୀ ଗଣେଶ ଚତୁର୍ଥୀର ହାର୍ଦ୍ଦିକ ଶୁଭେଚ୍ଛା। ବିଘ୍ନହର୍ତ୍ତା ଗଣେଶଙ୍କ ଆଶୀର୍ବାଦ ଆପଣଙ୍କ ଉପରେ ସଦା ରହୁ।',
+  },
 ];
 
 function toMonthDay(date: Date): string {
