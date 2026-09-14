@@ -42,10 +42,18 @@ const FIXED_OCCASIONS: Occasion[] = [
   },
 ];
 
-// Populate with confirmed real dates for the current/next year, e.g.
-// { id: 'diwali_2026', label: 'Diwali', date: '2026-11-08', ... }.
-// Left empty deliberately — see the file-level comment above.
-const LUNAR_OCCASIONS: { id: string; label: string; date: string; accentColor: string; ringColors: [string, string, string] }[] = [];
+// Populated only with dates verified against an authoritative source
+// (drikpanchang.com / publicholidays.in, cross-checked, 2026-09-14) — not
+// derived by any calculation in this file, per the comment above. Ganesh
+// Chaturthi's colors are a warm vermilion/saffron/gold treatment,
+// deliberately different from the national-holiday tricolor ring: this is
+// a religious/cultural festival, not a civic one, and reusing the flag
+// colors here would read as wrong to anyone who noticed.
+const LUNAR_OCCASIONS: { id: string; label: string; date: string; accentColor: string; ringColors: [string, string, string] }[] = [
+  { id: 'ganesh_chaturthi_2026', label: 'Ganesh Chaturthi', date: '2026-09-14', accentColor: '#E2725B', ringColors: ['#DC143C', '#FF8C00', '#FFD700'] },
+  { id: 'ganesh_chaturthi_2027', label: 'Ganesh Chaturthi', date: '2027-09-04', accentColor: '#E2725B', ringColors: ['#DC143C', '#FF8C00', '#FFD700'] },
+  { id: 'ganesh_chaturthi_2028', label: 'Ganesh Chaturthi', date: '2028-08-23', accentColor: '#E2725B', ringColors: ['#DC143C', '#FF8C00', '#FFD700'] },
+];
 
 function toMonthDay(date: Date): string {
   const mm = String(date.getMonth() + 1).padStart(2, '0');
