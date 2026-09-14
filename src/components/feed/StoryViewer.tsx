@@ -339,7 +339,7 @@ export default function StoryViewer({ visible, stories, currentMemberId, onClose
             <Video
               source={{ uri: mediaUrl }}
               style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
-              resizeMode={ResizeMode.COVER}
+              resizeMode={ResizeMode.CONTAIN}
               shouldPlay={!isPaused}
               isLooping={false}
               onError={(e) => console.log('Video error:', e)}
@@ -348,7 +348,7 @@ export default function StoryViewer({ visible, stories, currentMemberId, onClose
             <Image
               source={{ uri: mediaUrl }}
               style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
-              resizeMode="cover"
+              resizeMode="contain"
             />
           )}
         </View>

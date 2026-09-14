@@ -44,7 +44,7 @@ export default function MediaGrid({ media, onVideoPlay, onMediaPress }: Props) {
           <Image
             source={{ uri: cleanPhoto(item.url) || item.url }}
             style={{ width: MEDIA_WIDTH, height: MEDIA_WIDTH * 0.6 }}
-            contentFit="cover"
+            contentFit="contain"
             transition={200}
           />
         )}
