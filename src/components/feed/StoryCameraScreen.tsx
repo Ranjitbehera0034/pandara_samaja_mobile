@@ -42,6 +42,22 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
   const cameraRef = useRef<CameraRef>(null);
   const [filterId, setFilterId] = useState('normal');
   const [capturing, setCapturing] = useState(false);
+  // useCameraDevice() can legitimately never resolve to a device — no
+  // camera hardware at all (every simulator), or a real device where
+  // enumeration fails for some other reason. Previously this left the
+  // screen on an unconditional spinner with no close button anywhere in
+  // that branch — a genuine dead end with no way out except force-
+  // quitting the app (confirmed directly: reproduced on the iOS
+  // Simulator, swipe-to-dismiss does nothing, no visible button). A
+  // timeout distinguishes "still initializing" from "never going to
+  // resolve" so there's always a way out.
+  const [deviceTimedOut, setDeviceTimedOut] = useState(false);
+  useEffect(() => {
+    if (device) return;
+    setDeviceTimedOut(false);
+    const timer = setTimeout(() => setDeviceTimedOut(true), 4000);
+    return () => clearTimeout(timer);
+  }, [device]);
 
   // Camera sensor orientation doesn't follow UI rotation the way flexbox
   // layouts do — most apps (Instagram, WhatsApp) keep their camera screens
@@ -108,7 +124,18 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
       <View style={styles.container}>
         {!hasPermission || !device ? (
           <View style={styles.center}>
-            <ActivityIndicator color="#fff" />
+            {deviceTimedOut ? (
+              <>
+                <Text style={styles.unavailableText}>{t('feed', 'storyCameraUnavailableMessage')}</Text>
+              </>
+            ) : (
+              <ActivityIndicator color="#fff" />
+            )}
+            <View style={[styles.topBar, { top: insets.top + 12, justifyContent: 'flex-start' }]}>
+              <TouchableOpacity onPress={onClose} style={styles.iconButton}>
+                <X size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
           </View>
         ) : (
           <>
@@ -171,4 +198,5 @@ const styles = StyleSheet.create({
   shutterRow: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   shutterOuter: { width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
+  unavailableText: { color: '#fff', fontSize: 15, textAlign: 'center', paddingHorizontal: 32, lineHeight: 22 },
 });
