@@ -5,7 +5,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Megaphone, Bell, Briefcase } from 'lucide-react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
@@ -26,7 +25,7 @@ import { compressVideo } from '../../utils/videoCompression';
 import { deleteTempFile } from '../../utils/tempFiles';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { getActiveOccasion } from '../../theme/occasions';
+import { getTodayFestival, FESTIVAL_ACCENT_COLOR } from '../../data/odiaFestivals';
 
 // Feed skeleton list loader
 function FeedSkeleton({ colors, spacing, radius }: { colors: ReturnType<typeof useTheme>['colors']; spacing: ReturnType<typeof useTheme>['spacing']; radius: ReturnType<typeof useTheme>['radius'] }) {
@@ -61,7 +60,8 @@ export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const { colors, spacing, radius, typography } = useTheme();
   const { t } = useLanguage();
-  const occasion = getActiveOccasion();
+  const festival = getTodayFestival();
+  const accent = festival?.color || FESTIVAL_ACCENT_COLOR;
   const [posts, setPosts] = useState<Post[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -417,21 +417,16 @@ export default function FeedScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
       {/* Polished Top Header */}
-      <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: occasion ? occasion.accentColor + '15' : colors.bg }}>
+      <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: festival ? accent + '15' : colors.bg }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          {occasion ? (
-            <LinearGradient
-              colors={occasion.ringColors}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={{ width: 36, height: 36, borderRadius: radius.full, padding: 2, alignItems: 'center', justifyContent: 'center' }}
-            >
+          {festival ? (
+            <View style={{ width: 36, height: 36, borderRadius: radius.full, padding: 2, borderWidth: 2, borderColor: accent, alignItems: 'center', justifyContent: 'center' }}>
               <Image
                 source={require('../../../assets/logo.png')}
-                style={{ width: 32, height: 32, borderRadius: radius.lg }}
+                style={{ width: 30, height: 30, borderRadius: radius.lg }}
                 contentFit="cover"
               />
-            </LinearGradient>
+            </View>
           ) : (
             <Image
               source={require('../../../assets/logo.png')}
@@ -439,7 +434,7 @@ export default function FeedScreen() {
               contentFit="cover"
             />
           )}
-          <Text style={{ color: occasion?.accentColor || colors.text, letterSpacing: 0.3, ...typography.title }}>{t('common', 'appName')}</Text>
+          <Text style={{ color: festival ? accent : colors.text, letterSpacing: 0.3, ...typography.title }}>{t('common', 'appName')}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
           <TouchableOpacity
