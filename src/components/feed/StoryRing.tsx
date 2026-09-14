@@ -181,9 +181,18 @@ export default function StoryRing({ stories, onAddStory, onViewStory }: Props) {
       {showCamera && (
         <ErrorBoundary
           fallback={() => null}
-          onError={() => {
+          onError={(error) => {
             setShowCamera(false);
-            Alert.alert(t('feed', 'storyCameraPermissionDeniedTitle'), t('feed', 'storyCameraCrashedMessage'));
+            // TEMPORARY diagnostic: this crash is currently 100% reproducible
+            // on the closed-testing build with no clear root cause found via
+            // static investigation (permission strings, Android/iOS config,
+            // and the vision-camera API usage all check out). Appending the
+            // real error text so it can be read back and the actual cause
+            // identified — revert to the plain friendly message once fixed.
+            Alert.alert(
+              t('feed', 'storyCameraPermissionDeniedTitle'),
+              `${t('feed', 'storyCameraCrashedMessage')}\n\n[Debug] ${error.message}`
+            );
           }}
         >
           <StoryCameraScreen
