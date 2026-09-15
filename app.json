@@ -106,7 +106,8 @@
           "iosShareExtensionName": "Pandara Samaja Share"
         }
       ],
-      "./plugins/withAdiRegistration"
+      "./plugins/withAdiRegistration",
+      "./plugins/withAndroidRawPropsJsiValueFix"
     ],
     "extra": {
       "eas": {
