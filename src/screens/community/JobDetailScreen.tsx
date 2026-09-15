@@ -182,15 +182,19 @@ export default function JobDetailScreen() {
                   <Text style={{ color: C.text, ...typography.caption, fontWeight: '700', flexShrink: 1, textAlign: 'right' }}>{job.application_fee}</Text>
                 </View>
               )}
-              {!!job.eligibility && (
-                <View style={{ paddingVertical: spacing.md }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
-                    <GraduationCap size={15} color={C.textMuted} />
-                    <Text style={{ color: C.textMuted, ...typography.caption }}>{t('jobs', 'eligibilityLabel')}</Text>
-                  </View>
-                  <Text style={{ color: C.text, fontFamily: fontRegular, ...typography.caption, lineHeight: 19 }}>{job.eligibility}</Text>
+              <View style={{ paddingVertical: spacing.md }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
+                  <GraduationCap size={15} color={C.textMuted} />
+                  <Text style={{ color: C.textMuted, ...typography.caption }}>{t('jobs', 'eligibilityLabel')}</Text>
                 </View>
-              )}
+                {job.eligibility ? (
+                  <Text style={{ color: C.text, fontFamily: fontRegular, ...typography.caption, lineHeight: 19 }}>{job.eligibility}</Text>
+                ) : (
+                  <Text style={{ color: C.textFaint, fontFamily: fontRegular, fontStyle: 'italic', ...typography.caption, lineHeight: 19 }}>
+                    {t('jobs', 'eligibilityNotAvailable')}
+                  </Text>
+                )}
+              </View>
             </View>
           )}
 
