@@ -18,6 +18,7 @@ import EmptyState from '../../components/common/EmptyState';
 import Button from '../../components/common/Button';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { COURSE_CATEGORIES, courseCategoryLabel } from '../../data/courseCategories';
 
 export default function AdminCoursesScreen() {
   const navigation = useNavigation<any>();
@@ -168,7 +169,7 @@ export default function AdminCoursesScreen() {
         <View style={{ flex: 1 }}>
           {!!item.category && (
             <Text style={{ alignSelf: 'flex-start', color: C.primary, backgroundColor: C.primary + '15', borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 3, ...typography.caption, fontWeight: '700' }}>
-              {item.category}
+              {courseCategoryLabel(item.category, lang)}
             </Text>
           )}
           <Text style={{ color: C.text, fontFamily: fontBold, marginTop: spacing.xs, ...typography.bodyEmphasis }}>{item.title}</Text>
@@ -215,7 +216,7 @@ export default function AdminCoursesScreen() {
         </TouchableOpacity>
       </View>
     </View>
-  ), [C, spacing, radius, typography, shadow, fontBold, t, removingId, togglingId, navigation]);
+  ), [C, spacing, radius, typography, shadow, fontBold, t, removingId, togglingId, navigation, lang]);
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top }}>
@@ -277,13 +278,23 @@ export default function AdminCoursesScreen() {
               />
 
               <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('courses', 'categoryLabel')}</Text>
-              <TextInput
-                style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text, fontFamily: fontRegular, ...typography.body }}
-                placeholder={t('courses', 'categoryPlaceholder')}
-                placeholderTextColor={C.textFaint}
-                value={category}
-                onChangeText={setCategory}
-              />
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg }}>
+                {COURSE_CATEGORIES.map(c => (
+                  <TouchableOpacity
+                    key={c.key}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCategory(category === c.key ? '' : c.key); }}
+                    style={{
+                      paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
+                      backgroundColor: category === c.key ? C.primary : C.bg,
+                      borderWidth: 1, borderColor: category === c.key ? C.primary : C.border,
+                    }}
+                  >
+                    <Text style={{ color: category === c.key ? '#fff' : C.textMuted, fontFamily: fontRegular, ...typography.caption, fontWeight: '700' }}>
+                      {lang === 'od' ? c.or : c.en}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
               <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('courses', 'courseDescriptionLabel')}</Text>
               <TextInput

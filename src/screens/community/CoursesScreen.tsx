@@ -3,7 +3,7 @@
 // (YouTube/Udemy/Coursera/etc.) for skill-building and govt exam prep.
 // Read-only browse; no submission path (see backend ARCHITECTURE.md).
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Alert, Image } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Alert, Image, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, GraduationCap } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -13,6 +13,7 @@ import { Course } from '../../api/courses';
 import EmptyState from '../../components/common/EmptyState';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { COURSE_CATEGORIES, courseCategoryLabel } from '../../data/courseCategories';
 
 const PAGE_SIZE = 20;
 
@@ -30,10 +31,12 @@ export default function CoursesScreen() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [category, setCategory] = useState<string | null>(null);
 
-  const load = useCallback(async (pageNum: number, replace = false) => {
+  const load = useCallback(async (pageNum: number, replace = false, categoryOverride?: string | null) => {
     try {
-      const data = await coursesApi.fetchCourses({ page: pageNum, limit: PAGE_SIZE });
+      const activeCategory = categoryOverride !== undefined ? categoryOverride : category;
+      const data = await coursesApi.fetchCourses({ page: pageNum, limit: PAGE_SIZE, category: activeCategory || undefined });
       if (data.success) {
         setCourses(prev => (replace ? data.courses : [...prev, ...data.courses]));
         setPage(data.page);
@@ -43,12 +46,20 @@ export default function CoursesScreen() {
       console.error('[COURSES] Fetch failed:', e);
       Alert.alert(t('common', 'errorTitle'), t('courses', 'loadError'));
     }
-  }, [t]);
+  }, [t, category]);
 
   useEffect(() => {
     setLoading(true);
     load(1, true).finally(() => setLoading(false));
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const selectCategory = (next: string | null) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCategory(next);
+    setLoading(true);
+    load(1, true, next).finally(() => setLoading(false));
+  };
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -84,7 +95,7 @@ export default function CoursesScreen() {
       <View style={{ flex: 1 }}>
         {!!item.category && (
           <Text style={{ alignSelf: 'flex-start', color: C.primary, backgroundColor: C.primary + '15', borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 3, ...typography.caption, fontWeight: '700' }}>
-            {item.category}
+            {courseCategoryLabel(item.category, lang)}
           </Text>
         )}
         <Text style={{ color: C.text, fontFamily: fontBold, marginTop: spacing.xs, ...typography.bodyEmphasis }} numberOfLines={2}>
@@ -97,7 +108,7 @@ export default function CoursesScreen() {
         )}
       </View>
     </TouchableOpacity>
-  ), [C, spacing, radius, typography, shadow, fontBold, fontRegular, navigation]);
+  ), [C, spacing, radius, typography, shadow, fontBold, fontRegular, navigation, lang]);
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top }}>
@@ -111,6 +122,40 @@ export default function CoursesScreen() {
       <Text style={{ color: C.textMuted, fontFamily: fontRegular, paddingHorizontal: spacing.lg, marginBottom: spacing.md, ...typography.caption }}>
         {t('courses', 'listSubtitle')}
       </Text>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm, paddingBottom: spacing.md }}
+      >
+        <TouchableOpacity
+          onPress={() => selectCategory(null)}
+          style={{
+            paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
+            backgroundColor: category === null ? C.primary : C.card,
+            borderWidth: 1, borderColor: category === null ? C.primary : C.border,
+          }}
+        >
+          <Text style={{ color: category === null ? '#fff' : C.textMuted, fontFamily: fontRegular, ...typography.caption, fontWeight: '700' }}>
+            {t('courses', 'allCategoriesLabel')}
+          </Text>
+        </TouchableOpacity>
+        {COURSE_CATEGORIES.map(c => (
+          <TouchableOpacity
+            key={c.key}
+            onPress={() => selectCategory(c.key)}
+            style={{
+              paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
+              backgroundColor: category === c.key ? C.primary : C.card,
+              borderWidth: 1, borderColor: category === c.key ? C.primary : C.border,
+            }}
+          >
+            <Text style={{ color: category === c.key ? '#fff' : C.textMuted, fontFamily: fontRegular, ...typography.caption, fontWeight: '700' }}>
+              {lang === 'od' ? c.or : c.en}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
