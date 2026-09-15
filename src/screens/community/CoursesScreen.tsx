@@ -131,12 +131,13 @@ export default function CoursesScreen() {
         <TouchableOpacity
           onPress={() => selectCategory(null)}
           style={{
+            flexShrink: 0, alignSelf: 'flex-start',
             paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
             backgroundColor: category === null ? C.primary : C.card,
             borderWidth: 1, borderColor: category === null ? C.primary : C.border,
           }}
         >
-          <Text style={{ color: category === null ? '#fff' : C.textMuted, fontFamily: fontRegular, ...typography.caption, fontWeight: '700' }}>
+          <Text numberOfLines={1} style={{ color: category === null ? '#fff' : C.textMuted, fontFamily: fontRegular, ...typography.caption, fontWeight: '700' }}>
             {t('courses', 'allCategoriesLabel')}
           </Text>
         </TouchableOpacity>
@@ -145,12 +146,13 @@ export default function CoursesScreen() {
             key={c.key}
             onPress={() => selectCategory(c.key)}
             style={{
+              flexShrink: 0, alignSelf: 'flex-start',
               paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
               backgroundColor: category === c.key ? C.primary : C.card,
               borderWidth: 1, borderColor: category === c.key ? C.primary : C.border,
             }}
           >
-            <Text style={{ color: category === c.key ? '#fff' : C.textMuted, fontFamily: fontRegular, ...typography.caption, fontWeight: '700' }}>
+            <Text numberOfLines={1} style={{ color: category === c.key ? '#fff' : C.textMuted, fontFamily: fontRegular, ...typography.caption, fontWeight: '700' }}>
               {lang === 'od' ? c.or : c.en}
             </Text>
           </TouchableOpacity>
