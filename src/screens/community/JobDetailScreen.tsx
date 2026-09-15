@@ -144,59 +144,45 @@ export default function JobDetailScreen() {
             </View>
           </View>
 
-          {(job.no_of_vacancies || job.registration_start_date || job.last_date || job.application_fee || job.eligibility) && (
-            <View style={{ backgroundColor: C.card, borderRadius: radius.lg, paddingHorizontal: spacing.lg, marginTop: spacing.lg }}>
-              {!!job.no_of_vacancies && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                    <Users size={15} color={C.textMuted} />
-                    <Text style={{ color: C.textMuted, ...typography.caption }}>{t('jobs', 'noOfVacanciesLabel')}</Text>
-                  </View>
-                  <Text style={{ color: C.text, ...typography.caption, fontWeight: '700', flexShrink: 1, textAlign: 'right' }}>{job.no_of_vacancies}</Text>
+          <View style={{ borderWidth: 1, borderColor: C.border, borderRadius: radius.lg, overflow: 'hidden', marginTop: spacing.lg }}>
+            {([
+              { icon: Users, label: t('jobs', 'categoryLabel'), value: job.category === 'govt' ? t('jobs', 'categoryGovt') : t('jobs', 'categoryPrivate') },
+              ...(job.location ? [{ icon: MapPin, label: t('jobs', 'locationDetailLabel'), value: job.location }] : []),
+              ...(job.no_of_vacancies ? [{ icon: Users, label: t('jobs', 'noOfVacanciesLabel'), value: job.no_of_vacancies }] : []),
+              ...(job.registration_start_date ? [{ icon: CalendarClock, label: t('jobs', 'registrationStartLabel'), value: job.registration_start_date }] : []),
+              ...(job.last_date ? [{ icon: CalendarX, label: t('jobs', 'lastDateLabel'), value: job.last_date, valueColor: C.error }] : []),
+              ...(job.application_fee ? [{ icon: IndianRupee, label: t('jobs', 'applicationFeeLabel'), value: job.application_fee }] : []),
+              {
+                icon: GraduationCap, label: t('jobs', 'eligibilityLabel'),
+                value: job.eligibility || t('jobs', 'eligibilityNotAvailable'),
+                multiline: true, faint: !job.eligibility,
+              },
+            ] as { icon: any; label: string; value: string; valueColor?: string; multiline?: boolean; faint?: boolean }[]).map((row, i) => (
+              <View
+                key={row.label}
+                style={{ flexDirection: 'row', backgroundColor: C.card, borderTopWidth: i === 0 ? 0 : 1, borderTopColor: C.border }}
+              >
+                <View style={{
+                  width: 128, flexDirection: 'row', alignItems: 'flex-start', gap: 6,
+                  paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md,
+                  borderRightWidth: 1, borderRightColor: C.border, backgroundColor: C.bg,
+                }}>
+                  <row.icon size={13} color={C.textMuted} style={{ marginTop: 1 }} />
+                  <Text style={{ color: C.textMuted, ...typography.caption, flexShrink: 1, lineHeight: 17 }}>{row.label}</Text>
                 </View>
-              )}
-              {!!job.registration_start_date && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                    <CalendarClock size={15} color={C.textMuted} />
-                    <Text style={{ color: C.textMuted, ...typography.caption }}>{t('jobs', 'registrationStartLabel')}</Text>
-                  </View>
-                  <Text style={{ color: C.text, ...typography.caption, fontWeight: '700', flexShrink: 1, textAlign: 'right' }}>{job.registration_start_date}</Text>
+                <View style={{ flex: 1, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, justifyContent: 'center' }}>
+                  <Text style={{
+                    color: row.faint ? C.textFaint : (row.valueColor || C.text),
+                    fontFamily: fontRegular,
+                    fontStyle: row.faint ? 'italic' : 'normal',
+                    ...typography.caption,
+                    fontWeight: row.multiline ? '400' : '700',
+                    lineHeight: 19,
+                  }}>{row.value}</Text>
                 </View>
-              )}
-              {!!job.last_date && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                    <CalendarX size={15} color={C.textMuted} />
-                    <Text style={{ color: C.textMuted, ...typography.caption }}>{t('jobs', 'lastDateLabel')}</Text>
-                  </View>
-                  <Text style={{ color: C.error, ...typography.caption, fontWeight: '700', flexShrink: 1, textAlign: 'right' }}>{job.last_date}</Text>
-                </View>
-              )}
-              {!!job.application_fee && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 0.5, borderBottomColor: C.border }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                    <IndianRupee size={15} color={C.textMuted} />
-                    <Text style={{ color: C.textMuted, ...typography.caption }}>{t('jobs', 'applicationFeeLabel')}</Text>
-                  </View>
-                  <Text style={{ color: C.text, ...typography.caption, fontWeight: '700', flexShrink: 1, textAlign: 'right' }}>{job.application_fee}</Text>
-                </View>
-              )}
-              <View style={{ paddingVertical: spacing.md }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
-                  <GraduationCap size={15} color={C.textMuted} />
-                  <Text style={{ color: C.textMuted, ...typography.caption }}>{t('jobs', 'eligibilityLabel')}</Text>
-                </View>
-                {job.eligibility ? (
-                  <Text style={{ color: C.text, fontFamily: fontRegular, ...typography.caption, lineHeight: 19 }}>{job.eligibility}</Text>
-                ) : (
-                  <Text style={{ color: C.textFaint, fontFamily: fontRegular, fontStyle: 'italic', ...typography.caption, lineHeight: 19 }}>
-                    {t('jobs', 'eligibilityNotAvailable')}
-                  </Text>
-                )}
               </View>
-            </View>
-          )}
+            ))}
+          </View>
 
           <Text style={{ color: C.textMuted, marginTop: spacing.xl, ...typography.label }}>{t('jobs', 'descriptionLabel')}</Text>
           <Text style={{ color: C.text, fontFamily: fontRegular, marginTop: spacing.xs, ...typography.body, lineHeight: 22 }}>
