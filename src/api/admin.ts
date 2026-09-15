@@ -943,6 +943,7 @@ export interface AdminJob {
   title: string;
   organization: string;
   category: 'govt' | 'private';
+  sector?: string | null;
   description: string;
   location?: string | null;
   application_info: string;
@@ -976,6 +977,7 @@ export interface JobSubmission {
   title: string;
   organization: string;
   category: 'govt' | 'private';
+  sector?: string | null;
   description: string;
   location?: string | null;
   application_info: string;
@@ -1003,6 +1005,7 @@ export interface CreateJobInput {
   title: string;
   organization: string;
   category: 'govt' | 'private';
+  sector?: string;
   description: string;
   location?: string;
   applicationInfo: string;
@@ -1045,6 +1048,7 @@ export const fetchAdminJobSubmissions = async (
 export interface JobApprovalOverrides {
   title?: string;
   organization?: string;
+  sector?: string;
   description?: string;
   location?: string;
   applicationInfo?: string;

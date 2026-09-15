@@ -8,13 +8,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Linking } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, MapPin, Clock, ExternalLink, Phone, Flag, CalendarClock, CalendarX, IndianRupee, GraduationCap, Users } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Clock, ExternalLink, Phone, Flag, CalendarClock, CalendarX, IndianRupee, GraduationCap, Users, Landmark } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as jobsApi from '../../api/jobs';
 import { JobPosting } from '../../api/jobs';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { jobSectorLabel } from '../../data/jobSectors';
 
 export default function JobDetailScreen() {
   const navigation = useNavigation<any>();
@@ -147,6 +148,7 @@ export default function JobDetailScreen() {
           <View style={{ borderWidth: 1, borderColor: C.border, borderRadius: radius.lg, overflow: 'hidden', marginTop: spacing.lg }}>
             {([
               { icon: Users, label: t('jobs', 'categoryLabel'), value: job.category === 'govt' ? t('jobs', 'categoryGovt') : t('jobs', 'categoryPrivate') },
+              ...(job.sector ? [{ icon: Landmark, label: t('jobs', 'sectorLabel'), value: jobSectorLabel(job.sector, lang) }] : []),
               ...(job.location ? [{ icon: MapPin, label: t('jobs', 'locationDetailLabel'), value: job.location }] : []),
               ...(job.no_of_vacancies ? [{ icon: Users, label: t('jobs', 'noOfVacanciesLabel'), value: job.no_of_vacancies }] : []),
               ...(job.registration_start_date ? [{ icon: CalendarClock, label: t('jobs', 'registrationStartLabel'), value: job.registration_start_date }] : []),

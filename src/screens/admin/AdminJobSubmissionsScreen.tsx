@@ -16,8 +16,10 @@ import { JobSubmission, JobApprovalOverrides } from '../../api/admin';
 import SkeletonBox from '../../components/common/SkeletonBox';
 import EmptyState from '../../components/common/EmptyState';
 import Button from '../../components/common/Button';
+import Chip from '../../components/common/Chip';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { JOB_SECTORS } from '../../data/jobSectors';
 
 const PAGE_SIZE = 30;
 type StatusFilter = '' | 'pending' | 'rejected';
@@ -107,6 +109,9 @@ function SubmissionDetailModal({ submission, onClose, onApprove, onReject, actin
   const [lastDate, setLastDate] = useState('');
   const [registrationStartDate, setRegistrationStartDate] = useState('');
   const [applicationFee, setApplicationFee] = useState('');
+  // Auto-classified by the scraper (scraper/src/sector.ts) — best-effort,
+  // same as the OCR'd fields above; admin can correct it here too.
+  const [sector, setSector] = useState('');
 
   useEffect(() => {
     setNoOfVacancies(submission?.no_of_vacancies || '');
@@ -114,6 +119,7 @@ function SubmissionDetailModal({ submission, onClose, onApprove, onReject, actin
     setLastDate(submission?.last_date || '');
     setRegistrationStartDate(submission?.registration_start_date || '');
     setApplicationFee(submission?.application_fee || '');
+    setSector(submission?.sector || '');
   }, [submission?.id]);
 
   if (!submission) return null;
@@ -155,6 +161,7 @@ function SubmissionDetailModal({ submission, onClose, onApprove, onReject, actin
     lastDate: lastDate.trim(),
     registrationStartDate: registrationStartDate.trim(),
     applicationFee: applicationFee.trim(),
+    sector: sector.trim(),
   });
 
   return (
@@ -187,6 +194,21 @@ function SubmissionDetailModal({ submission, onClose, onApprove, onReject, actin
             <View style={{ backgroundColor: C.card, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.lg }}>
               <Text style={{ color: C.textMuted, ...typography.label }}>{t('admin', 'jobSubmissionAutoExtractedHeader')}</Text>
               <Text style={{ color: C.textFaint, marginTop: 2, ...typography.caption }}>{t('admin', 'jobSubmissionAutoExtractedHelper')}</Text>
+              {submission.category === 'govt' && (
+                <View style={{ marginTop: spacing.md }}>
+                  <Text style={{ color: C.textMuted, marginBottom: spacing.xs, ...typography.caption, fontWeight: '700' }}>{t('jobs', 'sectorLabel')}</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                    {JOB_SECTORS.map(s => (
+                      <Chip
+                        key={s.key}
+                        label={lang === 'od' ? s.or : s.en}
+                        selected={sector === s.key}
+                        onPress={() => setSector(sector === s.key ? '' : s.key)}
+                      />
+                    ))}
+                  </View>
+                </View>
+              )}
               <EditableField label={t('jobs', 'noOfVacanciesLabel')} value={noOfVacancies} onChangeText={setNoOfVacancies} />
               <EditableField label={t('jobs', 'registrationStartLabel')} value={registrationStartDate} onChangeText={setRegistrationStartDate} />
               <EditableField label={t('jobs', 'lastDateLabel')} value={lastDate} onChangeText={setLastDate} />

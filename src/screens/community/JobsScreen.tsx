@@ -4,7 +4,7 @@
 // "Apply" always happens outside the app (see JobDetailScreen) — there's
 // no in-app application tracking.
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Alert, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Plus, MapPin, Clock, Briefcase, Users } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -12,8 +12,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as jobsApi from '../../api/jobs';
 import { JobPosting } from '../../api/jobs';
 import EmptyState from '../../components/common/EmptyState';
+import Chip from '../../components/common/Chip';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { JOB_SECTORS, jobSectorLabel } from '../../data/jobSectors';
 
 type CategoryFilter = '' | 'govt' | 'private';
 const PAGE_SIZE = 20;
@@ -27,6 +29,7 @@ export default function JobsScreen() {
   const fontBold = lang === 'od' ? 'NotoSansOriya-Bold' : undefined;
 
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('');
+  const [sectorFilter, setSectorFilter] = useState<string | null>(null);
   const [jobs, setJobs] = useState<JobPosting[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -38,6 +41,7 @@ export default function JobsScreen() {
     try {
       const data = await jobsApi.fetchJobs({
         category: categoryFilter || undefined,
+        sector: sectorFilter || undefined,
         page: pageNum,
         limit: PAGE_SIZE,
       });
@@ -50,12 +54,23 @@ export default function JobsScreen() {
       console.error('[JOBS] Fetch failed:', e);
       Alert.alert(t('common', 'errorTitle'), t('jobs', 'loadError'));
     }
-  }, [categoryFilter, t]);
+  }, [categoryFilter, sectorFilter, t]);
 
   useEffect(() => {
     setLoading(true);
     load(1, true).finally(() => setLoading(false));
   }, [load]);
+
+  const selectCategory = (value: CategoryFilter) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCategoryFilter(value);
+    if (value !== 'govt') setSectorFilter(null); // sectors only meaningful for govt jobs
+  };
+
+  const selectSector = (value: string | null) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSectorFilter(value);
+  };
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -89,9 +104,16 @@ export default function JobsScreen() {
           borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md, ...shadow.card,
         }}
       >
-        <Text style={{ alignSelf: 'flex-start', color: badgeColor, backgroundColor: badgeColor + '15', borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 3, ...typography.caption, fontWeight: '700' }}>
-          {isGovt ? t('jobs', 'categoryGovt') : t('jobs', 'categoryPrivate')}
-        </Text>
+        <View style={{ flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' }}>
+          <Text style={{ alignSelf: 'flex-start', color: badgeColor, backgroundColor: badgeColor + '15', borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 3, ...typography.caption, fontWeight: '700' }}>
+            {isGovt ? t('jobs', 'categoryGovt') : t('jobs', 'categoryPrivate')}
+          </Text>
+          {!!item.sector && (
+            <Text style={{ alignSelf: 'flex-start', color: C.textMuted, backgroundColor: C.textMuted + '15', borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 3, ...typography.caption, fontWeight: '700' }}>
+              {jobSectorLabel(item.sector, lang)}
+            </Text>
+          )}
+        </View>
         <Text style={{ color: C.text, fontFamily: fontBold, marginTop: spacing.sm, ...typography.bodyEmphasis }} numberOfLines={1}>
           {item.title}
         </Text>
@@ -118,7 +140,7 @@ export default function JobsScreen() {
         </View>
       </TouchableOpacity>
     );
-  }, [C, spacing, radius, typography, shadow, fontBold, fontRegular, t, navigation]);
+  }, [C, spacing, radius, typography, shadow, fontBold, fontRegular, t, navigation, lang]);
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: insets.top }}>
@@ -137,21 +159,32 @@ export default function JobsScreen() {
 
       <View style={{ flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.md }}>
         {FILTERS.map(f => (
-          <TouchableOpacity
+          <Chip
             key={f.value || 'all'}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCategoryFilter(f.value); }}
-            style={{
-              paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
-              backgroundColor: categoryFilter === f.value ? C.primary : C.card,
-              borderWidth: 1, borderColor: categoryFilter === f.value ? C.primary : C.border,
-            }}
-          >
-            <Text style={{ color: categoryFilter === f.value ? '#fff' : C.textMuted, ...typography.caption, fontWeight: '700' }}>
-              {t('jobs', f.labelKey)}
-            </Text>
-          </TouchableOpacity>
+            label={t('jobs', f.labelKey)}
+            selected={categoryFilter === f.value}
+            onPress={() => selectCategory(f.value)}
+          />
         ))}
       </View>
+
+      {categoryFilter === 'govt' && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm, paddingBottom: spacing.md }}
+        >
+          <Chip label={t('jobs', 'allSectorsLabel')} selected={sectorFilter === null} onPress={() => selectSector(null)} />
+          {JOB_SECTORS.map(s => (
+            <Chip
+              key={s.key}
+              label={lang === 'od' ? s.or : s.en}
+              selected={sectorFilter === s.key}
+              onPress={() => selectSector(s.key)}
+            />
+          ))}
+        </ScrollView>
+      )}
 
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

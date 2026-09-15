@@ -25,6 +25,8 @@ export interface JobPosting {
   registration_start_date?: string | null;
   application_fee?: string | null;
   no_of_vacancies?: string | null;
+  // Only meaningful for category:'govt' — see src/data/jobSectors.ts.
+  sector?: string | null;
   posted_by_admin: boolean;
   submitted_by?: string | null;
   created_at: string;
@@ -65,7 +67,7 @@ export interface JobSubmission {
 }
 
 // GET /api/portal/jobs — published postings, newest first, excludes expired.
-export const fetchJobs = async (params: { category?: 'govt' | 'private'; page?: number; limit?: number } = {}) => {
+export const fetchJobs = async (params: { category?: 'govt' | 'private'; sector?: string; page?: number; limit?: number } = {}) => {
   const res = await client.get('/portal/jobs', { params });
   return res.data as { success: boolean; jobs: JobPosting[]; page: number };
 };
@@ -90,6 +92,7 @@ export interface SubmitJobInput {
   registrationStartDate?: string;
   applicationFee?: string;
   noOfVacancies?: string;
+  sector?: string;
 }
 
 // POST /api/portal/jobs/submissions — member submits a posting for review.
