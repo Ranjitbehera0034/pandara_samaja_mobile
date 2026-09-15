@@ -196,9 +196,26 @@ export default function FeedScreen() {
   });
 
   // ── Post actions ──
+  // PostCard shows its own optimistic "liked" state immediately on tap, but
+  // that's component-local — if the card remounts later (recycled by the
+  // FlatList's virtualization, or the screen unmounting/remounting on
+  // navigation), it re-derives from this `posts` array. Previously nothing
+  // here ever wrote the like back into `posts`, so a like from earlier in
+  // the session could silently "vanish" back to whatever was last fetched
+  // from the server — apply the toggle's own authoritative response
+  // (liked, likes_count) so that baseline is always correct.
   const handleLikePost = useCallback(async (id: string) => {
     try {
-      await feedApi.likePost(id);
+      const data = await feedApi.likePost(id);
+      if (data.success) {
+        setPosts(prev =>
+          prev.map(p =>
+            p.id === id
+              ? { ...p, isLiked: data.liked, likes: data.likes_count, reactions: { ...p.reactions, like: data.likes_count } }
+              : p
+          )
+        );
+      }
     } catch (e) {
       console.error('[LIKE] Error:', e);
     }
