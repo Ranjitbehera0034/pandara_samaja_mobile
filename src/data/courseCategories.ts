@@ -30,6 +30,8 @@ export const COURSE_CATEGORIES: CourseCategory[] = [
   { key: 'College & Higher Education', en: 'College & Higher Education', or: 'ମହାବିଦ୍ୟାଳୟ ଓ ଉଚ୍ଚ ଶିକ୍ଷା' },
   { key: 'Software Skills', en: 'Software Skills', or: 'ସଫ୍ଟୱେର୍ ଦକ୍ଷତା' },
   { key: 'Hardware Skills', en: 'Hardware Skills', or: 'ହାର୍ଡୱେର୍ ଦକ୍ଷତା' },
+  { key: 'Vocational Skills', en: 'Vocational Skills', or: 'ବୃତ୍ତିମୂଳକ ଦକ୍ଷତା' },
+  { key: 'Commercial & Business', en: 'Commercial & Business', or: 'ବାଣିଜ୍ୟ ଓ ବ୍ୟବସାୟ' },
 ];
 
 export function courseCategoryLabel(key: string | null | undefined, lang: 'en' | 'od'): string {

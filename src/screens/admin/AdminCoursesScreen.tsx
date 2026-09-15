@@ -9,7 +9,7 @@ import {
   Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView, Switch,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Plus, Trash2, Edit2, X as XIcon, ListChecks } from 'lucide-react-native';
+import { ArrowLeft, Plus, Trash2, Edit2, X as XIcon, ListChecks, ClipboardList } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
@@ -226,6 +226,12 @@ export default function AdminCoursesScreen() {
           <ArrowLeft size={20} color={C.text} />
         </TouchableOpacity>
         <Text style={{ color: C.text, fontFamily: fontBold, flex: 1, ...typography.heading }}>{t('admin', 'coursesTitle')}</Text>
+        <TouchableOpacity
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('AdminCourseLessonSubmissions'); }}
+          style={{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border }}
+        >
+          <ClipboardList size={16} color={C.text} />
+        </TouchableOpacity>
         <TouchableOpacity
           onPress={openCreate}
           style={{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}

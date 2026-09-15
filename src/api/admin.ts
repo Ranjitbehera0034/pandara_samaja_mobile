@@ -1187,6 +1187,46 @@ export const deleteCourseLesson = async (courseId: string | number, lessonId: st
   return res.data as { success: boolean };
 };
 
+// ── Course lesson submissions (review queue) ──
+// Videos the daily YouTube-channel scraper discovers (see backend
+// scraper/src/sources/youtubeChannels.ts) — never auto-published, same
+// "admin approves before it's live" property as job submissions.
+export interface CourseLessonSubmission {
+  id: string | number;
+  title: string;
+  platform: string;
+  external_url: string;
+  category?: string | null;
+  channel_name?: string | null;
+  source_ref?: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_remarks?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  submitted_at: string;
+  [key: string]: any;
+}
+
+export const fetchCourseLessonSubmissions = async (
+  params: { status?: 'pending' | 'approved' | 'rejected'; page?: number; limit?: number } = {}
+) => {
+  const res = await adminClient.get('/admin/course-lesson-submissions', { params });
+  return res.data as { success: boolean; submissions: CourseLessonSubmission[]; page: number };
+};
+
+export const approveCourseLessonSubmission = async (
+  id: string | number,
+  data: { existingCourseId?: string | number; newCourseTitle?: string; newCourseCategory?: string }
+) => {
+  const res = await adminClient.post(`/admin/course-lesson-submissions/${id}/approve`, data);
+  return res.data as { success: boolean; lesson: AdminCourseLesson; courseId: string | number };
+};
+
+export const rejectCourseLessonSubmission = async (id: string | number, remark?: string) => {
+  const res = await adminClient.post(`/admin/course-lesson-submissions/${id}/reject`, { remark });
+  return res.data as { success: boolean; submission: CourseLessonSubmission };
+};
+
 // ── Song Competition (admin/superadmin) ──
 // Admin launches a contest (draft -> active -> closed) and moderates
 // uploaded entries. See backend ARCHITECTURE.md's "Song Competition" section.
