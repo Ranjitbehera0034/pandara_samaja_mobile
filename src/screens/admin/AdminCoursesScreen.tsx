@@ -16,6 +16,7 @@ import * as adminApi from '../../api/admin';
 import { AdminCourse } from '../../api/admin';
 import EmptyState from '../../components/common/EmptyState';
 import Button from '../../components/common/Button';
+import Chip from '../../components/common/Chip';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { COURSE_CATEGORIES, courseCategoryLabel } from '../../data/courseCategories';
@@ -280,19 +281,12 @@ export default function AdminCoursesScreen() {
               <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('courses', 'categoryLabel')}</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg }}>
                 {COURSE_CATEGORIES.map(c => (
-                  <TouchableOpacity
+                  <Chip
                     key={c.key}
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCategory(category === c.key ? '' : c.key); }}
-                    style={{
-                      paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
-                      backgroundColor: category === c.key ? C.primary : C.bg,
-                      borderWidth: 1, borderColor: category === c.key ? C.primary : C.border,
-                    }}
-                  >
-                    <Text style={{ color: category === c.key ? '#fff' : C.textMuted, fontFamily: fontRegular, ...typography.caption, fontWeight: '700' }}>
-                      {lang === 'od' ? c.or : c.en}
-                    </Text>
-                  </TouchableOpacity>
+                    label={lang === 'od' ? c.or : c.en}
+                    selected={category === c.key}
+                    onPress={() => setCategory(category === c.key ? '' : c.key)}
+                  />
                 ))}
               </View>
 

@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as coursesApi from '../../api/courses';
 import { Course } from '../../api/courses';
 import EmptyState from '../../components/common/EmptyState';
+import Chip from '../../components/common/Chip';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { COURSE_CATEGORIES, courseCategoryLabel } from '../../data/courseCategories';
@@ -128,34 +129,14 @@ export default function CoursesScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm, paddingBottom: spacing.md }}
       >
-        <TouchableOpacity
-          onPress={() => selectCategory(null)}
-          style={{
-            flexShrink: 0, alignSelf: 'flex-start',
-            paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
-            backgroundColor: category === null ? C.primary : C.card,
-            borderWidth: 1, borderColor: category === null ? C.primary : C.border,
-          }}
-        >
-          <Text numberOfLines={1} style={{ color: category === null ? '#fff' : C.textMuted, fontFamily: fontRegular, ...typography.caption, fontWeight: '700' }}>
-            {t('courses', 'allCategoriesLabel')}
-          </Text>
-        </TouchableOpacity>
+        <Chip label={t('courses', 'allCategoriesLabel')} selected={category === null} onPress={() => selectCategory(null)} />
         {COURSE_CATEGORIES.map(c => (
-          <TouchableOpacity
+          <Chip
             key={c.key}
+            label={lang === 'od' ? c.or : c.en}
+            selected={category === c.key}
             onPress={() => selectCategory(c.key)}
-            style={{
-              flexShrink: 0, alignSelf: 'flex-start',
-              paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full,
-              backgroundColor: category === c.key ? C.primary : C.card,
-              borderWidth: 1, borderColor: category === c.key ? C.primary : C.border,
-            }}
-          >
-            <Text numberOfLines={1} style={{ color: category === c.key ? '#fff' : C.textMuted, fontFamily: fontRegular, ...typography.caption, fontWeight: '700' }}>
-              {lang === 'od' ? c.or : c.en}
-            </Text>
-          </TouchableOpacity>
+          />
         ))}
       </ScrollView>
 
