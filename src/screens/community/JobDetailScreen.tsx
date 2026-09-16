@@ -6,18 +6,20 @@
 // it. Members can report a suspicious listing, which auto-hides it
 // pending admin review.
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Linking, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, MapPin, Clock, ExternalLink, Phone, Flag, CalendarClock, CalendarX, IndianRupee, GraduationCap, Users, Landmark } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Clock, ExternalLink, Phone, Flag, CalendarClock, CalendarX, IndianRupee, GraduationCap, Users, Landmark, Pencil, X as XIcon } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as jobsApi from '../../api/jobs';
 import { JobPosting } from '../../api/jobs';
 import * as coursesApi from '../../api/courses';
 import { Course } from '../../api/courses';
+import Button from '../../components/common/Button';
+import Chip from '../../components/common/Chip';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { jobSectorLabel } from '../../data/jobSectors';
+import { JOB_SECTORS, jobSectorLabel } from '../../data/jobSectors';
 import { courseCategoryForJobSector } from '../../data/jobSectorToCourseCategory';
 
 export default function JobDetailScreen() {
@@ -34,6 +36,80 @@ export default function JobDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [reporting, setReporting] = useState(false);
   const [recommendedCourses, setRecommendedCourses] = useState<Course[]>([]);
+
+  // ── Suggest an edit — a member noticed wrong/outdated info on this
+  // already-published posting. Never applies directly; an admin reviews
+  // it (see AdminJobEditSuggestionsScreen). Fields are pre-filled with the
+  // job's current values so a member only needs to touch what's wrong.
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editOrganization, setEditOrganization] = useState('');
+  const [editSector, setEditSector] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editApplicationInfo, setEditApplicationInfo] = useState('');
+  const [editEligibility, setEditEligibility] = useState('');
+  const [editLastDate, setEditLastDate] = useState('');
+  const [editRegistrationStartDate, setEditRegistrationStartDate] = useState('');
+  const [editApplicationFee, setEditApplicationFee] = useState('');
+  const [editNoOfVacancies, setEditNoOfVacancies] = useState('');
+  const [editNote, setEditNote] = useState('');
+  const [submittingEdit, setSubmittingEdit] = useState(false);
+
+  const openEditForm = () => {
+    if (!job) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setEditTitle(job.title || '');
+    setEditOrganization(job.organization || '');
+    setEditSector(job.sector || '');
+    setEditDescription(job.description || '');
+    setEditLocation(job.location || '');
+    setEditApplicationInfo(job.application_info || '');
+    setEditEligibility(job.eligibility || '');
+    setEditLastDate(job.last_date || '');
+    setEditRegistrationStartDate(job.registration_start_date || '');
+    setEditApplicationFee(job.application_fee || '');
+    setEditNoOfVacancies(job.no_of_vacancies || '');
+    setEditNote('');
+    setShowEditForm(true);
+  };
+
+  const submitEdit = async () => {
+    if (!editNote.trim()) {
+      Alert.alert(t('common', 'errorTitle'), t('jobs', 'editNoteRequiredError'));
+      return;
+    }
+    setSubmittingEdit(true);
+    try {
+      const data = await jobsApi.suggestJobEdit(id, {
+        title: editTitle.trim(),
+        organization: editOrganization.trim(),
+        sector: editSector.trim(),
+        description: editDescription.trim(),
+        location: editLocation.trim(),
+        applicationInfo: editApplicationInfo.trim(),
+        eligibility: editEligibility.trim(),
+        lastDate: editLastDate.trim(),
+        registrationStartDate: editRegistrationStartDate.trim(),
+        applicationFee: editApplicationFee.trim(),
+        noOfVacancies: editNoOfVacancies.trim(),
+        note: editNote.trim(),
+      });
+      if (data.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setShowEditForm(false);
+        Alert.alert(t('common', 'successTitle'), t('jobs', 'editSuggestionSubmittedMessage'));
+      } else {
+        throw new Error(t('jobs', 'editSuggestionSubmitError'));
+      }
+    } catch (e: any) {
+      console.error('[JOB_DETAIL] Edit suggestion failed:', e);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(t('common', 'errorTitle'), e.message || t('jobs', 'editSuggestionSubmitError'));
+    } finally {
+      setSubmittingEdit(false);
+    }
+  };
 
   const load = useCallback(async () => {
     try {
@@ -118,6 +194,11 @@ export default function JobDetailScreen() {
           <ArrowLeft size={20} color={C.text} />
         </TouchableOpacity>
         <Text style={{ color: C.text, fontFamily: fontBold, flex: 1, ...typography.heading }}>{t('jobs', 'detailTitle')}</Text>
+        {!!job && (
+          <TouchableOpacity onPress={openEditForm} style={{ padding: spacing.xs, borderRadius: radius.full, backgroundColor: C.card, marginRight: spacing.xs }}>
+            <Pencil size={18} color={C.textMuted} />
+          </TouchableOpacity>
+        )}
         {!!job && (
           <TouchableOpacity onPress={handleReport} disabled={reporting} style={{ padding: spacing.xs, borderRadius: radius.full, backgroundColor: C.card }}>
             {reporting ? <ActivityIndicator size="small" color={C.error} /> : <Flag size={18} color={C.error} />}
@@ -259,6 +340,91 @@ export default function JobDetailScreen() {
           </Text>
         </ScrollView>
       )}
+
+      <Modal visible={showEditForm} animationType="slide" transparent onRequestClose={() => setShowEditForm(false)}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}
+        >
+          <View style={{ backgroundColor: C.bg, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xl, paddingBottom: insets.bottom + spacing.xl, maxHeight: '90%' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
+              <Text style={{ color: C.text, fontFamily: fontBold, flex: 1, ...typography.title }}>{t('jobs', 'suggestEditTitle')}</Text>
+              <TouchableOpacity onPress={() => setShowEditForm(false)}>
+                <XIcon size={22} color={C.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={{ color: C.textFaint, marginBottom: spacing.lg, ...typography.caption }}>{t('jobs', 'suggestEditHelperText')}</Text>
+
+              <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'editNoteLabel')}</Text>
+              <TextInput
+                style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text, fontFamily: fontRegular, minHeight: 70, textAlignVertical: 'top', ...typography.body }}
+                placeholder={t('jobs', 'editNotePlaceholder')}
+                placeholderTextColor={C.textFaint}
+                value={editNote}
+                onChangeText={setEditNote}
+                multiline
+              />
+
+              {job?.category === 'govt' && (
+                <>
+                  <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'sectorLabel')}</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg }}>
+                    {JOB_SECTORS.map(s => (
+                      <Chip
+                        key={s.key}
+                        label={lang === 'od' ? s.or : s.en}
+                        selected={editSector === s.key}
+                        onPress={() => setEditSector(editSector === s.key ? '' : s.key)}
+                      />
+                    ))}
+                  </View>
+                </>
+              )}
+
+              {([
+                { label: t('jobs', 'jobTitleLabel'), value: editTitle, set: setEditTitle },
+                { label: t('jobs', 'organizationLabel'), value: editOrganization, set: setEditOrganization },
+                { label: t('jobs', 'noOfVacanciesLabel'), value: editNoOfVacancies, set: setEditNoOfVacancies },
+                { label: t('jobs', 'registrationStartLabel'), value: editRegistrationStartDate, set: setEditRegistrationStartDate },
+                { label: t('jobs', 'lastDateLabel'), value: editLastDate, set: setEditLastDate },
+                { label: t('jobs', 'applicationFeeLabel'), value: editApplicationFee, set: setEditApplicationFee },
+                { label: t('jobs', 'locationDetailLabel'), value: editLocation, set: setEditLocation },
+                { label: t('jobs', 'howToApplyLabel'), value: editApplicationInfo, set: setEditApplicationInfo },
+              ]).map(f => (
+                <View key={f.label}>
+                  <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{f.label}</Text>
+                  <TextInput
+                    style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text, fontFamily: fontRegular, ...typography.body }}
+                    placeholderTextColor={C.textFaint}
+                    value={f.value}
+                    onChangeText={f.set}
+                  />
+                </View>
+              ))}
+
+              <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'eligibilityLabel')}</Text>
+              <TextInput
+                style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text, fontFamily: fontRegular, minHeight: 70, textAlignVertical: 'top', ...typography.body }}
+                value={editEligibility}
+                onChangeText={setEditEligibility}
+                multiline
+              />
+
+              <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'descriptionLabel')}</Text>
+              <TextInput
+                style={{ borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, marginBottom: spacing.lg, backgroundColor: C.card, borderColor: C.border, color: C.text, fontFamily: fontRegular, minHeight: 90, textAlignVertical: 'top', ...typography.body }}
+                value={editDescription}
+                onChangeText={setEditDescription}
+                multiline
+              />
+
+              <Button variant="primary" label={t('jobs', 'submitEditButton')} onPress={submitEdit} loading={submittingEdit} />
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }

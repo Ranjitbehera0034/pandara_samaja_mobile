@@ -26,6 +26,7 @@ import AdminExportScreen from '../screens/admin/AdminExportScreen';
 import AdminStoryReportsScreen from '../screens/admin/AdminStoryReportsScreen';
 import AdminJobsScreen from '../screens/admin/AdminJobsScreen';
 import AdminJobSubmissionsScreen from '../screens/admin/AdminJobSubmissionsScreen';
+import AdminJobEditSuggestionsScreen from '../screens/admin/AdminJobEditSuggestionsScreen';
 import AdminJobReportsScreen from '../screens/admin/AdminJobReportsScreen';
 import AdminCoursesScreen from '../screens/admin/AdminCoursesScreen';
 import AdminCourseLessonsScreen from '../screens/admin/AdminCourseLessonsScreen';
@@ -61,6 +62,7 @@ export type AdminStackParams = {
   AdminStoryReports: undefined;
   AdminJobs: undefined;
   AdminJobSubmissions: undefined;
+  AdminJobEditSuggestions: undefined;
   AdminJobReports: undefined;
   AdminCourses: undefined;
   AdminCourseLessons: { courseId: string | number; courseTitle: string };
@@ -99,6 +101,7 @@ export default function AdminStack() {
       <Stack.Screen name="AdminStoryReports" component={AdminStoryReportsScreen} />
       <Stack.Screen name="AdminJobs" component={AdminJobsScreen} />
       <Stack.Screen name="AdminJobSubmissions" component={AdminJobSubmissionsScreen} />
+      <Stack.Screen name="AdminJobEditSuggestions" component={AdminJobEditSuggestionsScreen} />
       <Stack.Screen name="AdminJobReports" component={AdminJobReportsScreen} />
       <Stack.Screen name="AdminCourses" component={AdminCoursesScreen} />
       <Stack.Screen name="AdminCourseLessons" component={AdminCourseLessonsScreen} />

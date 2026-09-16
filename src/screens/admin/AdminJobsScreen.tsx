@@ -10,7 +10,7 @@ import {
   Modal, TextInput, KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft, Plus, Trash2, Edit2, X as XIcon, ClipboardList, Flag } from 'lucide-react-native';
+import { ArrowLeft, Plus, Trash2, Edit2, X as XIcon, ClipboardList, Flag, Pencil } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as adminApi from '../../api/admin';
@@ -219,6 +219,12 @@ export default function AdminJobsScreen() {
           style={{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border }}
         >
           <ClipboardList size={16} color={C.text} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('AdminJobEditSuggestions'); }}
+          style={{ width: 36, height: 36, borderRadius: radius.full, backgroundColor: C.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.border }}
+        >
+          <Pencil size={16} color={C.text} />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={openCreate}

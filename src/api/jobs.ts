@@ -113,3 +113,28 @@ export const reportJob = async (id: string | number, reason?: string) => {
   const res = await client.post(`/portal/jobs/${id}/report`, { reason });
   return res.data as { success: boolean };
 };
+
+export interface JobEditSuggestionInput {
+  // Only send the fields actually being corrected — everything is
+  // optional except `note`, which the backend requires.
+  title?: string;
+  organization?: string;
+  sector?: string;
+  description?: string;
+  location?: string;
+  applicationInfo?: string;
+  eligibility?: string;
+  lastDate?: string;
+  registrationStartDate?: string;
+  applicationFee?: string;
+  noOfVacancies?: string;
+  note: string;
+}
+
+// POST /api/portal/jobs/:id/edit-suggestions — propose a correction to an
+// already-published posting. Never applies directly — an admin reviews it
+// (see src/api/admin.ts's approveJobEditSuggestion).
+export const suggestJobEdit = async (id: string | number, data: JobEditSuggestionInput) => {
+  const res = await client.post(`/portal/jobs/${id}/edit-suggestions`, data);
+  return res.data as { success: boolean; suggestion: any };
+};

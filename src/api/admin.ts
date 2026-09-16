@@ -1074,6 +1074,54 @@ export const rejectJobSubmission = async (id: string | number, remark: string) =
   return res.data as { success: boolean; submission: JobSubmission };
 };
 
+// ── Job edit suggestions — a member's proposed correction to an
+// already-published posting. Approving applies it to the live posting
+// immediately; an admin editing the posting directly via updateAdminJob()
+// is a separate path, unaffected by this queue.
+export interface JobEditSuggestion {
+  id: string | number;
+  job_id: string | number;
+  suggested_by: string;
+  suggester_name?: string | null;
+  current_title?: string;
+  current_organization?: string;
+  title?: string | null;
+  organization?: string | null;
+  sector?: string | null;
+  description?: string | null;
+  location?: string | null;
+  application_info?: string | null;
+  eligibility?: string | null;
+  last_date?: string | null;
+  registration_start_date?: string | null;
+  application_fee?: string | null;
+  no_of_vacancies?: string | null;
+  note: string;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_remarks?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  submitted_at: string;
+  [key: string]: any;
+}
+
+export const fetchJobEditSuggestions = async (
+  params: { status?: 'pending' | 'approved' | 'rejected'; page?: number; limit?: number } = {}
+) => {
+  const res = await adminClient.get('/admin/jobs/edit-suggestions', { params });
+  return res.data as { success: boolean; suggestions: JobEditSuggestion[]; page: number };
+};
+
+export const approveJobEditSuggestion = async (id: string | number) => {
+  const res = await adminClient.post(`/admin/jobs/edit-suggestions/${id}/approve`, {});
+  return res.data as { success: boolean; job: AdminJob };
+};
+
+export const rejectJobEditSuggestion = async (id: string | number, remark?: string) => {
+  const res = await adminClient.post(`/admin/jobs/edit-suggestions/${id}/reject`, { remark });
+  return res.data as { success: boolean; suggestion: JobEditSuggestion };
+};
+
 // ── Job report queue — live listings flagged by members, mirrors the
 // story-reports approve/reject flow exactly. ──
 
