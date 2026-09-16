@@ -1,6 +1,6 @@
 {
   "name": "pandara_mobile",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.tsx",
   "dependencies": {
     "@config-plugins/react-native-webrtc": "^13.0.0",
