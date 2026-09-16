@@ -79,7 +79,9 @@ export default function MemberProfileScreen() {
 
   const handleMessage = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    navigation.navigate('Chat', { withId: profile.id, withMobile: profile.mobile, withName: profile.name });
+    // chat_mobile is always the real number — profile.mobile may be masked
+    // for a female member's own privacy (see backend routes/members.ts).
+    navigation.navigate('Chat', { withId: profile.id, withMobile: profile.chat_mobile || profile.mobile, withName: profile.name });
   };
 
   const handleTabPress = (tabKey: 'posts' | 'family' | 'gallery') => {

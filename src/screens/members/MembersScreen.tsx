@@ -170,7 +170,9 @@ export default function MembersScreen() {
       onSubscribe={() => handleSubscribe(item.membership_no)}
       onMessage={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        navigation.navigate('Chat', { withId: item.membership_no, withMobile: item.mobile, withName: item.name });
+        // chat_mobile is always the real number — item.mobile may be masked
+        // for a female member's own privacy (see backend routes/members.ts).
+        navigation.navigate('Chat', { withId: item.membership_no, withMobile: item.chat_mobile || item.mobile, withName: item.name });
       }}
       subscribing={subscribing === item.membership_no}
     />

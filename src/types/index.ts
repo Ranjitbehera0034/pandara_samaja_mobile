@@ -4,7 +4,16 @@ export interface Member {
   membership_no: string;       // e.g. "MEM1234567"
   name: string;
   head_gender: 'male' | 'female' | null;
+  // Masked (e.g. "••••••1234") when head_gender is female and this isn't
+  // the viewer's own record — admin/superadmin see the real value via the
+  // separate admin members screen. Use chat_mobile, never this field, to
+  // start a chat — see that field's own comment.
   mobile: string;
+  // Always the real, unmasked number — needed because in-app chat
+  // identifies which individual within a shared membership_no login
+  // someone is messaging by their own mobile number, independent of
+  // whether `mobile` above is masked for display.
+  chat_mobile?: string;
   male: number | null;         // count of male family members
   female: number | null;       // count of female family members
   district: string | null;
