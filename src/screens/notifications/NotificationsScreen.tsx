@@ -142,6 +142,8 @@ export default function NotificationsScreen() {
       navigation.navigate('MemberProfile', { id: notif.senderId });
     } else if (notif.type === 'message' && notif.senderId && notif.senderMobile) {
       navigation.navigate('Chat', { withId: notif.senderId, withMobile: notif.senderMobile, withName: notif.title });
+    } else if ((notif.type === 'new_job' || notif.type === 'job_deadline_reminder') && notif.postId) {
+      navigation.navigate('JobDetail', { id: notif.postId });
     }
   };
 
@@ -163,6 +165,7 @@ export default function NotificationsScreen() {
         case 'comment': return '💬';
         case 'follow': return '👥';
         case 'message': return '✉️';
+        case 'new_job': case 'job_deadline_reminder': return '💼';
         default: return '📢';
       }
     };
