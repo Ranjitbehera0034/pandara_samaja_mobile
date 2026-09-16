@@ -4,7 +4,7 @@
 // "Apply" always happens outside the app (see JobDetailScreen) — there's
 // no in-app application tracking.
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Plus, MapPin, Clock, Briefcase, Users } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -13,6 +13,7 @@ import * as jobsApi from '../../api/jobs';
 import { JobPosting } from '../../api/jobs';
 import EmptyState from '../../components/common/EmptyState';
 import Chip from '../../components/common/Chip';
+import ChipFilterRow from '../../components/common/ChipFilterRow';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { JOB_SECTORS, jobSectorLabel } from '../../data/jobSectors';
@@ -169,11 +170,7 @@ export default function JobsScreen() {
       </View>
 
       {categoryFilter === 'govt' && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm, paddingBottom: spacing.md }}
-        >
+        <ChipFilterRow>
           <Chip label={t('jobs', 'allSectorsLabel')} selected={sectorFilter === null} onPress={() => selectSector(null)} />
           {JOB_SECTORS.map(s => (
             <Chip
@@ -183,7 +180,7 @@ export default function JobsScreen() {
               onPress={() => selectSector(s.key)}
             />
           ))}
-        </ScrollView>
+        </ChipFilterRow>
       )}
 
       {loading ? (

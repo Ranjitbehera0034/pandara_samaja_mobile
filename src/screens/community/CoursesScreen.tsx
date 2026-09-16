@@ -3,7 +3,7 @@
 // (YouTube/Udemy/Coursera/etc.) for skill-building and govt exam prep.
 // Read-only browse; no submission path (see backend ARCHITECTURE.md).
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Alert, Image, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, RefreshControl, Alert, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, GraduationCap } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -12,6 +12,7 @@ import * as coursesApi from '../../api/courses';
 import { Course } from '../../api/courses';
 import EmptyState from '../../components/common/EmptyState';
 import Chip from '../../components/common/Chip';
+import ChipFilterRow from '../../components/common/ChipFilterRow';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { COURSE_CATEGORIES, courseCategoryLabel } from '../../data/courseCategories';
@@ -124,11 +125,7 @@ export default function CoursesScreen() {
         {t('courses', 'listSubtitle')}
       </Text>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm, paddingBottom: spacing.md }}
-      >
+      <ChipFilterRow>
         <Chip label={t('courses', 'allCategoriesLabel')} selected={category === null} onPress={() => selectCategory(null)} />
         {COURSE_CATEGORIES.map(c => (
           <Chip
@@ -138,7 +135,7 @@ export default function CoursesScreen() {
             onPress={() => selectCategory(c.key)}
           />
         ))}
-      </ScrollView>
+      </ChipFilterRow>
 
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
