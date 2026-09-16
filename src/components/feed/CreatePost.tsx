@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {
-  Image as ImageIcon, Video, MapPin, Send, X, BarChart
+  Image as ImageIcon, Video, MapPin, Send, X, BarChart, Camera as CameraIcon
 } from 'lucide-react-native';
 import { MediaItem, Poll } from '../../types';
 import { containsBannedContent } from '../../utils/feedUtils';
@@ -70,6 +70,27 @@ export default function CreatePost({ onPostCreate, initialContent }: Props) {
     if (!result.canceled) {
       const newPreviews = result.assets.map(a => ({ uri: a.uri, type: 'video' as const }));
       setPreviews(prev => [...prev, ...newPreviews]);
+    }
+  };
+
+  // Native camera app handles both photo and video capture in one flow
+  // (its own built-in photo/video toggle) — no need for a custom camera
+  // screen like Stories has, since posts don't apply filters to media.
+  const captureFromCamera = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(t('feedComponents', 'genericErrorTitle'), t('feedComponents', 'cameraPermissionDeniedMessage'));
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images', 'videos'],
+      videoMaxDuration: 60,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      const type = asset.type === 'video' ? 'video' as const : 'image' as const;
+      setPreviews(prev => [...prev, { uri: asset.uri, type }]);
     }
   };
 
@@ -311,6 +332,11 @@ export default function CreatePost({ onPostCreate, initialContent }: Props) {
             {/* Bottom Actions bar */}
             <View style={{ borderColor: colors.card, borderTopWidth: 1, paddingTop: spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+                {/* Camera — take a photo or record a video directly */}
+                <TouchableOpacity onPress={captureFromCamera} style={{ backgroundColor: colors.card, padding: spacing.sm, borderRadius: radius.md }}>
+                  <CameraIcon size={20} color={colors.text} />
+                </TouchableOpacity>
+
                 {/* Images */}
                 <TouchableOpacity onPress={pickImage} style={{ backgroundColor: colors.card, padding: spacing.sm, borderRadius: radius.md }}>
                   <ImageIcon size={20} color={colors.primaryLight} />

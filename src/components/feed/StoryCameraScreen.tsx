@@ -3,7 +3,16 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ScreenOrientation from 'expo-screen-orientation';
-import { Camera, type CameraRef, useCameraDevice, useCameraPermission, usePhotoOutput } from 'react-native-vision-camera';
+import {
+  Camera,
+  type CameraRef,
+  type Recorder,
+  useCameraDevice,
+  useCameraPermission,
+  useMicrophonePermission,
+  usePhotoOutput,
+  useVideoOutput,
+} from 'react-native-vision-camera';
 import { ImageFormat, Skia } from '@shopify/react-native-skia';
 import { File, Paths } from 'expo-file-system';
 import { X, RotateCcw } from 'lucide-react-native';
@@ -29,19 +38,30 @@ const FILTER_TINTS: Record<string, string | null> = {
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onCapture: (uri: string, mediaType: 'image') => void;
+  onCapture: (uri: string, mediaType: 'image' | 'video') => void;
 }
 
 export default function StoryCameraScreen({ visible, onClose, onCapture }: Props) {
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const { hasPermission } = useCameraPermission();
+  const { hasPermission: hasMicPermission, requestPermission: requestMicPermission } = useMicrophonePermission();
   const [position, setPosition] = useState<'front' | 'back'>('back');
   const device = useCameraDevice(position);
   const photoOutput = usePhotoOutput();
+  const videoOutput = useVideoOutput({ enableAudio: true });
   const cameraRef = useRef<CameraRef>(null);
   const [filterId, setFilterId] = useState('normal');
   const [capturing, setCapturing] = useState(false);
+  // Press-and-hold-to-record, tap-for-photo — same convention as
+  // Instagram/WhatsApp stories. recordingRef mirrors isRecording so the
+  // onLongPress/onPressOut handlers (closed over at render time) always
+  // see the current value rather than a stale one.
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  const recorderRef = useRef<Recorder | null>(null);
+  const recordingRef = useRef(false);
+  const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // useCameraDevice() can legitimately never resolve to a device — no
   // camera hardware at all (every simulator), or a real device where
   // enumeration fails for some other reason. Previously this left the
@@ -101,7 +121,7 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
   }, [activeFilter]);
 
   const handleCapture = useCallback(async () => {
-    if (capturing) return;
+    if (capturing || recordingRef.current) return;
     setCapturing(true);
     try {
       const photo = await photoOutput.capturePhoto({}, {});
@@ -116,6 +136,85 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
       setCapturing(false);
     }
   }, [capturing, photoOutput, applyFilterAndSave, onCapture, onClose]);
+
+  const stopRecordTimer = useCallback(() => {
+    if (recordTimerRef.current) {
+      clearInterval(recordTimerRef.current);
+      recordTimerRef.current = null;
+    }
+    setRecordSeconds(0);
+  }, []);
+
+  // No filter is baked into recorded video (unlike photos, via
+  // applyFilterAndSave) — vision-camera v5 doesn't expose a way to run a
+  // custom per-frame filter over recorded output, only the live preview
+  // tint (see FILTER_TINTS above), same limitation noted there.
+  const handleStartRecording = useCallback(async () => {
+    if (capturing || recordingRef.current) return;
+    if (!hasMicPermission) {
+      const granted = await requestMicPermission();
+      if (!granted) return;
+    }
+    try {
+      const recorder = await videoOutput.createRecorder({});
+      recorderRef.current = recorder;
+      recordingRef.current = true;
+      setIsRecording(true);
+      setRecordSeconds(0);
+      recordTimerRef.current = setInterval(() => setRecordSeconds((s) => s + 1), 1000);
+
+      await recorder.startRecording(
+        (filePath) => {
+          recordingRef.current = false;
+          recorderRef.current = null;
+          setIsRecording(false);
+          stopRecordTimer();
+          const uri = filePath.startsWith('file://') ? filePath : `file://${filePath}`;
+          onCapture(uri, 'video');
+          onClose();
+        },
+        (error) => {
+          console.error('[STORY_CAMERA] Video recording failed:', error);
+          recordingRef.current = false;
+          recorderRef.current = null;
+          setIsRecording(false);
+          stopRecordTimer();
+        }
+      );
+    } catch (e) {
+      console.error('[STORY_CAMERA] Failed to start video recording:', e);
+      recordingRef.current = false;
+      recorderRef.current = null;
+      setIsRecording(false);
+      stopRecordTimer();
+    }
+  }, [capturing, hasMicPermission, requestMicPermission, videoOutput, onCapture, onClose, stopRecordTimer]);
+
+  const handleStopRecording = useCallback(async () => {
+    if (!recordingRef.current || !recorderRef.current) return;
+    try {
+      await recorderRef.current.stopRecording();
+    } catch (e) {
+      console.error('[STORY_CAMERA] Failed to stop video recording:', e);
+    }
+  }, []);
+
+  const handleClose = useCallback(async () => {
+    if (recordingRef.current && recorderRef.current) {
+      try {
+        await recorderRef.current.cancelRecording();
+      } catch (e) {
+        console.error('[STORY_CAMERA] Failed to cancel in-progress recording:', e);
+      }
+      recordingRef.current = false;
+      recorderRef.current = null;
+      setIsRecording(false);
+      stopRecordTimer();
+    }
+    onClose();
+  }, [onClose, stopRecordTimer]);
+
+  useEffect(() => () => stopRecordTimer(), [stopRecordTimer]);
 
   if (!visible) return null;
 
@@ -132,7 +231,7 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
               <ActivityIndicator color="#fff" />
             )}
             <View style={[styles.topBar, { top: insets.top + 12, justifyContent: 'flex-start' }]}>
-              <TouchableOpacity onPress={onClose} style={styles.iconButton}>
+              <TouchableOpacity onPress={handleClose} style={styles.iconButton}>
                 <X size={24} color="#fff" />
               </TouchableOpacity>
             </View>
@@ -143,7 +242,7 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
               ref={cameraRef}
               style={StyleSheet.absoluteFill}
               device={device}
-              outputs={[photoOutput]}
+              outputs={[photoOutput, videoOutput]}
               isActive={visible}
             />
             {FILTER_TINTS[filterId] && (
@@ -151,31 +250,56 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
             )}
 
             <View style={[styles.topBar, { top: insets.top + 12 }]}>
-              <TouchableOpacity onPress={onClose} style={styles.iconButton}>
+              <TouchableOpacity onPress={handleClose} style={styles.iconButton}>
                 <X size={24} color="#fff" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setPosition((p) => (p === 'back' ? 'front' : 'back'))} style={styles.iconButton}>
+              {isRecording && (
+                <View style={styles.recordingBadge}>
+                  <View style={styles.recordingDot} />
+                  <Text style={styles.recordingText}>
+                    {`${Math.floor(recordSeconds / 60).toString().padStart(2, '0')}:${(recordSeconds % 60).toString().padStart(2, '0')}`}
+                  </Text>
+                </View>
+              )}
+              <TouchableOpacity
+                onPress={() => setPosition((p) => (p === 'back' ? 'front' : 'back'))}
+                disabled={isRecording}
+                style={[styles.iconButton, isRecording && styles.iconButtonDisabled]}
+              >
                 <RotateCcw size={22} color="#fff" />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.filterStrip}>
-              {STORY_FILTERS.map((f) => (
-                <TouchableOpacity
-                  key={f.id}
-                  onPress={() => setFilterId(f.id)}
-                  style={[styles.filterChip, filterId === f.id && styles.filterChipActive]}
-                >
-                  <Text style={[styles.filterChipText, filterId === f.id && styles.filterChipTextActive]}>
-                    {t('feed', f.labelKey)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {!isRecording && (
+              <View style={styles.filterStrip}>
+                {STORY_FILTERS.map((f) => (
+                  <TouchableOpacity
+                    key={f.id}
+                    onPress={() => setFilterId(f.id)}
+                    style={[styles.filterChip, filterId === f.id && styles.filterChipActive]}
+                  >
+                    <Text style={[styles.filterChipText, filterId === f.id && styles.filterChipTextActive]}>
+                      {t('feed', f.labelKey)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             <View style={[styles.shutterRow, { bottom: insets.bottom + 36 }]}>
-              <TouchableOpacity onPress={handleCapture} disabled={capturing} style={styles.shutterOuter}>
-                {capturing ? <ActivityIndicator color="#fff" /> : <View style={styles.shutterInner} />}
+              <TouchableOpacity
+                onPress={handleCapture}
+                onLongPress={handleStartRecording}
+                onPressOut={handleStopRecording}
+                delayLongPress={300}
+                disabled={capturing}
+                style={[styles.shutterOuter, isRecording && styles.shutterOuterRecording]}
+              >
+                {capturing ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <View style={[styles.shutterInner, isRecording && styles.shutterInnerRecording]} />
+                )}
               </TouchableOpacity>
             </View>
           </>
@@ -190,6 +314,10 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   topBar: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20 },
   iconButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center' },
+  iconButtonDisabled: { opacity: 0.4 },
+  recordingBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 14, paddingHorizontal: 10, paddingVertical: 6 },
+  recordingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#ff3b30' },
+  recordingText: { color: '#fff', fontSize: 13, fontWeight: '600' },
   filterStrip: { position: 'absolute', bottom: 130, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap', paddingHorizontal: 12, gap: 8 },
   filterChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.45)' },
   filterChipActive: { backgroundColor: '#fff' },
@@ -197,6 +325,8 @@ const styles = StyleSheet.create({
   filterChipTextActive: { color: '#000' },
   shutterRow: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   shutterOuter: { width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  shutterOuterRecording: { borderColor: '#ff3b30' },
   shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
+  shutterInnerRecording: { width: 32, height: 32, borderRadius: 8, backgroundColor: '#ff3b30' },
   unavailableText: { color: '#fff', fontSize: 15, textAlign: 'center', paddingHorizontal: 32, lineHeight: 22 },
 });
