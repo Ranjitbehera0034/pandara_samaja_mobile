@@ -13,9 +13,12 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as jobsApi from '../../api/jobs';
 import { JobPosting } from '../../api/jobs';
+import * as coursesApi from '../../api/courses';
+import { Course } from '../../api/courses';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { jobSectorLabel } from '../../data/jobSectors';
+import { courseCategoryForJobSector } from '../../data/jobSectorToCourseCategory';
 
 export default function JobDetailScreen() {
   const navigation = useNavigation<any>();
@@ -30,6 +33,7 @@ export default function JobDetailScreen() {
   const [job, setJob] = useState<JobPosting | null>(null);
   const [loading, setLoading] = useState(true);
   const [reporting, setReporting] = useState(false);
+  const [recommendedCourses, setRecommendedCourses] = useState<Course[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -44,6 +48,18 @@ export default function JobDetailScreen() {
   }, [id, t]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Suggest exam-prep courses matching this job's sector — purely a UI-side
+  // join (src/data/jobSectorToCourseCategory.ts) against the existing
+  // courses API, no backend change needed since both taxonomies already
+  // share category keys by design.
+  useEffect(() => {
+    const category = courseCategoryForJobSector(job?.sector);
+    if (!category) { setRecommendedCourses([]); return; }
+    coursesApi.fetchCourses({ category, limit: 3 })
+      .then(data => { if (data.success) setRecommendedCourses(data.courses); })
+      .catch(e => console.error('[JOB_DETAIL] Recommended courses fetch failed:', e));
+  }, [job?.sector]);
 
   const looksLikeUrl = (s: string) => /^https?:\/\//i.test(s.trim());
 
@@ -190,6 +206,30 @@ export default function JobDetailScreen() {
           <Text style={{ color: C.text, fontFamily: fontRegular, marginTop: spacing.xs, ...typography.body, lineHeight: 22 }}>
             {job.description}
           </Text>
+
+          {recommendedCourses.length > 0 && (
+            <View style={{ marginTop: spacing.xl }}>
+              <Text style={{ color: C.textMuted, marginBottom: spacing.sm, ...typography.label }}>{t('jobs', 'recommendedCoursesLabel')}</Text>
+              {recommendedCourses.map(c => (
+                <TouchableOpacity
+                  key={c.id}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('CourseDetail', { id: c.id }); }}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+                    backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderRadius: radius.lg,
+                    padding: spacing.md, marginBottom: spacing.sm,
+                  }}
+                >
+                  <View style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: C.primary + '15', alignItems: 'center', justifyContent: 'center' }}>
+                    <GraduationCap size={18} color={C.primary} />
+                  </View>
+                  <Text style={{ flex: 1, color: C.text, fontFamily: fontRegular, ...typography.caption, fontWeight: '700' }} numberOfLines={2}>
+                    {c.title}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
           <View style={{ backgroundColor: C.card, borderColor: C.border, borderWidth: 1, borderRadius: radius.lg, padding: spacing.lg, marginTop: spacing.xl, ...shadow.card }}>
             <Text style={{ color: C.textMuted, ...typography.label }}>{t('jobs', 'howToApplyLabel')}</Text>
