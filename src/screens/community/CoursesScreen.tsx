@@ -11,7 +11,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as coursesApi from '../../api/courses';
 import { Course } from '../../api/courses';
 import EmptyState from '../../components/common/EmptyState';
-import Chip from '../../components/common/Chip';
 import ChipFilterRow from '../../components/common/ChipFilterRow';
 import { useTheme } from '../../theme/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -125,17 +124,13 @@ export default function CoursesScreen() {
         {t('courses', 'listSubtitle')}
       </Text>
 
-      <ChipFilterRow>
-        <Chip label={t('courses', 'allCategoriesLabel')} selected={category === null} onPress={() => selectCategory(null)} />
-        {COURSE_CATEGORIES.map(c => (
-          <Chip
-            key={c.key}
-            label={lang === 'od' ? c.or : c.en}
-            selected={category === c.key}
-            onPress={() => selectCategory(c.key)}
-          />
-        ))}
-      </ChipFilterRow>
+      <ChipFilterRow
+        title={t('courses', 'filterByCategoryTitle')}
+        allLabel={t('courses', 'allCategoriesLabel')}
+        options={COURSE_CATEGORIES.map(c => ({ key: c.key, label: lang === 'od' ? c.or : c.en }))}
+        selected={category}
+        onSelect={selectCategory}
+      />
 
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

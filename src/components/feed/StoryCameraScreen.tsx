@@ -1,6 +1,6 @@
 // src/components/feed/StoryCameraScreen.tsx
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import {
@@ -49,7 +49,14 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
   const [position, setPosition] = useState<'front' | 'back'>('back');
   const device = useCameraDevice(position);
   const photoOutput = usePhotoOutput();
-  const videoOutput = useVideoOutput({ enableAudio: true });
+  // Audio is only enabled once mic permission is actually granted — video
+  // recording must never be fully blocked by a denied/not-yet-granted mic
+  // permission (previously it was: handleStartRecording silently returned
+  // if the permission prompt was denied, so every subsequent hold-to-
+  // record attempt no-op'd forever with zero visible feedback — a real
+  // "video story doesn't work" report traced to exactly this). Recording
+  // without audio is a legitimate fallback; doing nothing at all isn't.
+  const videoOutput = useVideoOutput({ enableAudio: hasMicPermission });
   const cameraRef = useRef<CameraRef>(null);
   const [filterId, setFilterId] = useState('normal');
   const [capturing, setCapturing] = useState(false);
@@ -78,6 +85,16 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
     const timer = setTimeout(() => setDeviceTimedOut(true), 4000);
     return () => clearTimeout(timer);
   }, [device]);
+
+  // Ask for mic permission as soon as the screen opens rather than only
+  // at the moment of the first hold-to-record — by the time a user
+  // actually tries to record, the OS prompt (and this permission) has
+  // already been resolved instead of interrupting the gesture.
+  useEffect(() => {
+    if (visible && !hasMicPermission) {
+      requestMicPermission().catch(() => {});
+    }
+  }, [visible, hasMicPermission, requestMicPermission]);
 
   // Camera sensor orientation doesn't follow UI rotation the way flexbox
   // layouts do — most apps (Instagram, WhatsApp) keep their camera screens
@@ -132,10 +149,11 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
       onClose();
     } catch (e) {
       console.error('[STORY_CAMERA] Capture failed:', e);
+      Alert.alert(t('common', 'errorTitle'), t('feed', 'storyCameraCaptureFailedMessage'));
     } finally {
       setCapturing(false);
     }
-  }, [capturing, photoOutput, applyFilterAndSave, onCapture, onClose]);
+  }, [capturing, photoOutput, applyFilterAndSave, onCapture, onClose, t]);
 
   const stopRecordTimer = useCallback(() => {
     if (recordTimerRef.current) {
@@ -149,12 +167,16 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
   // applyFilterAndSave) — vision-camera v5 doesn't expose a way to run a
   // custom per-frame filter over recorded output, only the live preview
   // tint (see FILTER_TINTS above), same limitation noted there.
+  //
+  // Deliberately does NOT gate on hasMicPermission — mic permission is
+  // requested proactively on mount (see the effect above) and videoOutput
+  // already tracks it (enableAudio: hasMicPermission), so recording always
+  // proceeds; it just comes out silent if the mic permission was denied.
+  // A previous version returned early here when permission wasn't
+  // granted, which meant a denied prompt made every future hold-to-record
+  // silently do nothing — the actual "video story doesn't work" bug.
   const handleStartRecording = useCallback(async () => {
     if (capturing || recordingRef.current) return;
-    if (!hasMicPermission) {
-      const granted = await requestMicPermission();
-      if (!granted) return;
-    }
     try {
       const recorder = await videoOutput.createRecorder({});
       recorderRef.current = recorder;
@@ -179,6 +201,7 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
           recorderRef.current = null;
           setIsRecording(false);
           stopRecordTimer();
+          Alert.alert(t('common', 'errorTitle'), t('feed', 'storyVideoRecordingFailedMessage'));
         }
       );
     } catch (e) {
@@ -187,8 +210,9 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
       recorderRef.current = null;
       setIsRecording(false);
       stopRecordTimer();
+      Alert.alert(t('common', 'errorTitle'), t('feed', 'storyVideoRecordingFailedMessage'));
     }
-  }, [capturing, hasMicPermission, requestMicPermission, videoOutput, onCapture, onClose, stopRecordTimer]);
+  }, [capturing, videoOutput, onCapture, onClose, stopRecordTimer, t]);
 
   const handleStopRecording = useCallback(async () => {
     if (!recordingRef.current || !recorderRef.current) return;
@@ -196,8 +220,13 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
       await recorderRef.current.stopRecording();
     } catch (e) {
       console.error('[STORY_CAMERA] Failed to stop video recording:', e);
+      recordingRef.current = false;
+      recorderRef.current = null;
+      setIsRecording(false);
+      stopRecordTimer();
+      Alert.alert(t('common', 'errorTitle'), t('feed', 'storyVideoRecordingFailedMessage'));
     }
-  }, []);
+  }, [stopRecordTimer, t]);
 
   const handleClose = useCallback(async () => {
     if (recordingRef.current && recorderRef.current) {

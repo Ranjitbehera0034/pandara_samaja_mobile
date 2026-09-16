@@ -170,17 +170,13 @@ export default function JobsScreen() {
       </View>
 
       {categoryFilter === 'govt' && (
-        <ChipFilterRow>
-          <Chip label={t('jobs', 'allSectorsLabel')} selected={sectorFilter === null} onPress={() => selectSector(null)} />
-          {JOB_SECTORS.map(s => (
-            <Chip
-              key={s.key}
-              label={lang === 'od' ? s.or : s.en}
-              selected={sectorFilter === s.key}
-              onPress={() => selectSector(s.key)}
-            />
-          ))}
-        </ChipFilterRow>
+        <ChipFilterRow
+          title={t('jobs', 'filterBySectorTitle')}
+          allLabel={t('jobs', 'allSectorsLabel')}
+          options={JOB_SECTORS.map(s => ({ key: s.key, label: lang === 'od' ? s.or : s.en }))}
+          selected={sectorFilter}
+          onSelect={selectSector}
+        />
       )}
 
       {loading ? (
