@@ -60,10 +60,18 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
   const cameraRef = useRef<CameraRef>(null);
   const [filterId, setFilterId] = useState('normal');
   const [capturing, setCapturing] = useState(false);
-  // Press-and-hold-to-record, tap-for-photo — same convention as
-  // Instagram/WhatsApp stories. recordingRef mirrors isRecording so the
-  // onLongPress/onPressOut handlers (closed over at render time) always
-  // see the current value rather than a stale one.
+  // Explicit Photo/Video mode toggle, tap-shutter-to-start/stop in Video
+  // mode — same convention as the OS's own Camera app. An earlier version
+  // used press-and-hold-to-record (Instagram/WhatsApp's convention), but
+  // that turned out to not be discoverable here: reports kept coming back
+  // as "selecting video just takes a photo instead" — an explicit mode
+  // switch removes the ambiguity, and requesting mic permission right when
+  // Video mode is chosen (see handleSelectVideoMode) makes the permission
+  // prompt visibly tied to that action instead of a background request on
+  // screen-open that looked like it wasn't asking for permission at all.
+  const [mode, setMode] = useState<'photo' | 'video'>('photo');
+  // recordingRef mirrors isRecording so callbacks (closed over at render
+  // time) always see the current value rather than a stale one.
   const [isRecording, setIsRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
   const recorderRef = useRef<Recorder | null>(null);
@@ -85,16 +93,6 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
     const timer = setTimeout(() => setDeviceTimedOut(true), 4000);
     return () => clearTimeout(timer);
   }, [device]);
-
-  // Ask for mic permission as soon as the screen opens rather than only
-  // at the moment of the first hold-to-record — by the time a user
-  // actually tries to record, the OS prompt (and this permission) has
-  // already been resolved instead of interrupting the gesture.
-  useEffect(() => {
-    if (visible && !hasMicPermission) {
-      requestMicPermission().catch(() => {});
-    }
-  }, [visible, hasMicPermission, requestMicPermission]);
 
   // Camera sensor orientation doesn't follow UI rotation the way flexbox
   // layouts do — most apps (Instagram, WhatsApp) keep their camera screens
@@ -163,18 +161,30 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
     setRecordSeconds(0);
   }, []);
 
+  // Requesting mic permission here (rather than a background request on
+  // screen-open) ties the OS prompt visibly to the moment the user chose
+  // Video — a prior version requested it invisibly on mount, which read
+  // as "not asking for permission at all" since nothing on screen
+  // correlated with it.
+  const handleSelectVideoMode = useCallback(() => {
+    if (isRecording || capturing) return;
+    setMode('video');
+    if (!hasMicPermission) {
+      requestMicPermission().catch(() => {});
+    }
+  }, [isRecording, capturing, hasMicPermission, requestMicPermission]);
+
   // No filter is baked into recorded video (unlike photos, via
   // applyFilterAndSave) — vision-camera v5 doesn't expose a way to run a
   // custom per-frame filter over recorded output, only the live preview
   // tint (see FILTER_TINTS above), same limitation noted there.
   //
-  // Deliberately does NOT gate on hasMicPermission — mic permission is
-  // requested proactively on mount (see the effect above) and videoOutput
-  // already tracks it (enableAudio: hasMicPermission), so recording always
-  // proceeds; it just comes out silent if the mic permission was denied.
-  // A previous version returned early here when permission wasn't
-  // granted, which meant a denied prompt made every future hold-to-record
-  // silently do nothing — the actual "video story doesn't work" bug.
+  // Deliberately does NOT gate on hasMicPermission — videoOutput already
+  // tracks it (enableAudio: hasMicPermission), so recording always
+  // proceeds; it just comes out silent if mic permission was denied. A
+  // previous version returned early here when permission wasn't granted,
+  // which meant a denied prompt made every future record attempt silently
+  // do nothing — the actual "video story doesn't work" bug.
   const handleStartRecording = useCallback(async () => {
     if (capturing || recordingRef.current) return;
     try {
@@ -227,6 +237,16 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
       Alert.alert(t('common', 'errorTitle'), t('feed', 'storyVideoRecordingFailedMessage'));
     }
   }, [stopRecordTimer, t]);
+
+  const handleShutterPress = useCallback(() => {
+    if (mode === 'photo') {
+      handleCapture();
+    } else if (isRecording) {
+      handleStopRecording();
+    } else {
+      handleStartRecording();
+    }
+  }, [mode, isRecording, handleCapture, handleStopRecording, handleStartRecording]);
 
   const handleClose = useCallback(async () => {
     if (recordingRef.current && recorderRef.current) {
@@ -299,7 +319,7 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
               </TouchableOpacity>
             </View>
 
-            {!isRecording && (
+            {mode === 'photo' && !isRecording && (
               <View style={styles.filterStrip}>
                 {STORY_FILTERS.map((f) => (
                   <TouchableOpacity
@@ -315,14 +335,32 @@ export default function StoryCameraScreen({ visible, onClose, onCapture }: Props
               </View>
             )}
 
+            {!isRecording && (
+              <View style={[styles.modeToggleRow, { top: insets.top + 64 }]}>
+                <TouchableOpacity
+                  onPress={() => setMode('photo')}
+                  style={[styles.modeButton, mode === 'photo' && styles.modeButtonActive]}
+                >
+                  <Text style={[styles.modeButtonText, mode === 'photo' && styles.modeButtonTextActive]}>
+                    {t('feed', 'storyCameraPhotoModeLabel')}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleSelectVideoMode}
+                  style={[styles.modeButton, mode === 'video' && styles.modeButtonActive]}
+                >
+                  <Text style={[styles.modeButtonText, mode === 'video' && styles.modeButtonTextActive]}>
+                    {t('feed', 'storyCameraVideoModeLabel')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             <View style={[styles.shutterRow, { bottom: insets.bottom + 36 }]}>
               <TouchableOpacity
-                onPress={handleCapture}
-                onLongPress={handleStartRecording}
-                onPressOut={handleStopRecording}
-                delayLongPress={300}
+                onPress={handleShutterPress}
                 disabled={capturing}
-                style={[styles.shutterOuter, isRecording && styles.shutterOuterRecording]}
+                style={[styles.shutterOuter, mode === 'video' && styles.shutterOuterVideoMode]}
               >
                 {capturing ? (
                   <ActivityIndicator color="#fff" />
@@ -352,9 +390,14 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: '#fff' },
   filterChipText: { color: '#fff', fontSize: 13, fontWeight: '600' },
   filterChipTextActive: { color: '#000' },
+  modeToggleRow: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 10 },
+  modeButton: { paddingHorizontal: 18, paddingVertical: 7, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.45)' },
+  modeButtonActive: { backgroundColor: '#fff' },
+  modeButtonText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  modeButtonTextActive: { color: '#000' },
   shutterRow: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   shutterOuter: { width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  shutterOuterRecording: { borderColor: '#ff3b30' },
+  shutterOuterVideoMode: { borderColor: '#ff3b30' },
   shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
   shutterInnerRecording: { width: 32, height: 32, borderRadius: 8, backgroundColor: '#ff3b30' },
   unavailableText: { color: '#fff', fontSize: 15, textAlign: 'center', paddingHorizontal: 32, lineHeight: 22 },

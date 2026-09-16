@@ -58,6 +58,8 @@ const translations = {
       storyCameraOpenSettingsMessage: 'Camera access was denied and can\'t be re-requested from here. Open Settings and turn on Camera for this app.',
       storyCameraCaptureFailedMessage: 'Could not take the photo. Please try again.',
       storyVideoRecordingFailedMessage: 'Could not record the video. Please try again.',
+      storyCameraPhotoModeLabel: 'Photo',
+      storyCameraVideoModeLabel: 'Video',
       storyCameraOpenSettingsAction: 'Open Settings',
       filterNormal: 'Normal', filterBw: 'B&W', filterVintage: 'Vintage', filterWarm: 'Warm', filterCool: 'Cool', filterVivid: 'Vivid',
     },
@@ -1393,6 +1395,8 @@ const translations = {
       storyCameraOpenSettingsAction: 'ସେଟିଂସ୍ ଖୋଲନ୍ତୁ',
       storyCameraCaptureFailedMessage: 'ଫଟୋ ଉଠାଇ ହେଲା ନାହିଁ। ଦୟାକରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।',
       storyVideoRecordingFailedMessage: 'ଭିଡିଓ ରେକର୍ଡ ହୋଇପାରିଲା ନାହିଁ। ଦୟାକରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।',
+      storyCameraPhotoModeLabel: 'ଫଟୋ',
+      storyCameraVideoModeLabel: 'ଭିଡିଓ',
       filterNormal: 'ସାଧାରଣ', filterBw: 'ବ୍ଲାକ୍ ଆଣ୍ଡ ହ୍ଵାଇଟ୍', filterVintage: 'ଭିନ୍ଟେଜ', filterWarm: 'ୱାର୍ମ', filterCool: 'କୁଲ୍', filterVivid: 'ଭିଭିଡ୍',
     },
     notifications: {
